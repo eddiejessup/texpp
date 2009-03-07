@@ -1,0 +1,22 @@
+include_directories(${Boost_INCLUDE_DIRS})
+#add_definitions(-DBOOST_NO_EXCEPTIONS)
+
+add_definitions(-fPIC)
+
+set(libtexpp_SOURCES
+    common.cc
+    token.cc
+    lexer.cc
+    logger.cc
+    parser.cc
+    base/misc.cc
+    base/show.cc
+    base/func.cc
+    base/files.cc
+    base/variables.cc
+    base/base.cc
+)
+
+add_library(libtexpp ${libtexpp_SOURCES})
+set_target_properties(libtexpp PROPERTIES OUTPUT_NAME texpp)
+
