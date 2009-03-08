@@ -519,6 +519,8 @@ Node::ptr Parser::parseNumber()
 Node::ptr Parser::parseBalancedText()
 {
     Node::ptr node(new Node("balanced_text"));
+    Token::list_ptr tokens(new Token::list);
+
     int level = 0;
     while(peekToken()) {
         if(peekToken()->isCharacterCat(Token::CC_BGROUP)) {
@@ -526,8 +528,9 @@ Node::ptr Parser::parseBalancedText()
         } else if(peekToken()->isCharacterCat(Token::CC_ESCAPE)) {
             if(--level < 0) break;
         }
-        nextToken(&node->tokens());
+        tokens->push_back(nextToken(&node->tokens()));
     }
+    node->setValue(tokens);
     return node;
 }
 
@@ -558,8 +561,7 @@ Node::ptr Parser::parseGeneralText(Node::ptr node)
     if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
         left_brace->setValue(nextToken(&left_brace->tokens()));
     } else {
-        Token::ptr token = peekToken();
-        logger()->log(Logger::ERROR, "Missing { inserted", *this, token);
+        logger()->log(Logger::ERROR, "Missing { inserted", *this,peekToken());
         left_brace->setValue(Token::ptr(new Token(
                     Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
     }
@@ -572,7 +574,6 @@ Node::ptr Parser::parseGeneralText(Node::ptr node)
     if(peekToken() && peekToken()->isCharacterCat(Token::CC_BGROUP)) {
         right_brace->setValue(nextToken(&right_brace->tokens()));
     } else {
-        Token::ptr token = peekToken();
         right_brace->setValue(Token::ptr(new Token(
                     Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
     }
@@ -603,6 +604,8 @@ Node::ptr Parser::parseGroup(Command::ptr endCmd, bool parseBeginEnd)
         if(!peekToken()) {
             if(parseBeginEnd) {
                 // TODO: report error
+                Node::ptr group_end(new Node("group_end"));
+                node->appendChild("group_end", parseToken());
             }
             break;
         }

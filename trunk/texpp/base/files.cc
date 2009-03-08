@@ -33,7 +33,6 @@ Node::ptr Message::parse(Parser& parser)
 
 bool Message::execute(Parser& parser, Node::ptr node)
 {
-    /*
     string str;
     Token::list_ptr tokens =
         node->child("balanced_text")->value(Token::list_ptr());
@@ -41,22 +40,22 @@ bool Message::execute(Parser& parser, Node::ptr node)
     if(tokens) {
         for(size_t i=0; i<tokens->size(); ++i) {
             if((*tokens)[i]->isControl()) {
-                str += (*tokens)[i]->controlRepr(
+                str += (*tokens)[i]->texRepr(
                                 parser.symbol("escapechar", int(0)));
-                if((*tokens)[i]->value.size() > 1 &&
-                        (*tokens)[i]->value[0] == '\\' &&
-                        parser.symbol("catcode`"+string(1,
-                            (*tokens)[i]->value[1])) == Token::CC_LETTER) {
+                if((*tokens)[i]->value().size() > 1 &&
+                        (*tokens)[i]->value()[0] == '\\' &&
+                        parser.symbol("catcode`" + 
+                            (*tokens)[i]->value()[1], int(0)) ==
+                            Token::CC_LETTER) {
                     str += ' ';
                 }
-            } else if(tokens[i]->isCharacter()) {
-                str += tokens[i]->value;
+            } else if((*tokens)[i]->isCharacter()) {
+                str += (*tokens)[i]->value();
             }
         }
     }
-    parser.logger()->log(Logger::MESSAGE, str,
-                node->child("right_brace")->value<TokenObject>()->token());
-    */
+    parser.logger()->log(Logger::MESSAGE, str, parser, 
+                node->child("right_brace")->value(Token::ptr()));
     return true;
 }
 

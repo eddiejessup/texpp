@@ -18,6 +18,7 @@
 
 #include <texpp/base/variables.h>
 #include <texpp/parser.h>
+#include <texpp/lexer.h>
 
 #include <iostream>
 
@@ -32,13 +33,16 @@ const any& Variable::get(Parser& parser, bool global)
 bool Variable::set(Parser& parser, const any& value, bool global)
 {
     string varname = name().substr(1);
+    parser.setSymbol(varname, value, global);
+    return true;
+    /*
     any s = parser.symbolAny(varname, global);
     if(s.type() == value.type()) {
         parser.setSymbol(varname, value, global);
         return true;
     } else {
         return false;
-    }
+    }*/
 }
 
 Node::ptr IntegerVariable::parse(Parser& parser)
@@ -54,11 +58,19 @@ Node::ptr IntegerVariable::parse(Parser& parser)
 bool IntegerVariable::execute(Parser& parser, Node::ptr node)
 {
     std::cout << "IntegerVariable:" << node->child(2)->value(int(0)) << std::endl;
-    parser.setSymbol(name().substr(1),
-                node->child(2)->value(int(0)));
-    return true;
+    return set(parser, node->child(2)->value(int(0)));
 }
 
+bool EndlinecharVariable::set(Parser& parser, const any& value, bool global)
+{
+    if(IntegerVariable::set(parser, value, global)) {
+        assert(value.type() == typeid(int));
+        parser.lexer()->setEndlinechar(*unsafe_any_cast<int>(&value));
+        return true;
+    } else {
+        return false;
+    }
+}
 
 } // namespace base
 } // namespace texpp

@@ -41,6 +41,13 @@ public:
     bool execute(Parser& parser, Node::ptr node);
 };
 
+class EndlinecharVariable: public IntegerVariable
+{
+public:
+    EndlinecharVariable(const string& name): IntegerVariable(name) {}
+    bool set(Parser& parser, const any& value, bool global = false);
+};
+
 } // namespace base
 } // namespace texpp
 
