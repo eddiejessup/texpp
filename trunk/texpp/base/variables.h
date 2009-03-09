@@ -38,6 +38,7 @@ public:
 
     virtual const any& get(Parser& parser, bool global = false);
     virtual bool set(Parser& parser, const any& value, bool global = false);
+    virtual bool check(Parser&, Node::ptr) { return true; }
 
 protected:
     any m_initValue;
@@ -60,6 +61,23 @@ public:
     bool set(Parser& parser, const any& value, bool global = false);
 };
 
+class CharcodeVariable: public IntegerVariable
+{
+public:
+    CharcodeVariable(const string& name, const any& initValue = any())
+        : IntegerVariable(name, initValue) {}
+    bool check(Parser& parser, Node::ptr node);
+};
+
+class CatcodeVariable: public CharcodeVariable
+{
+public:
+    CatcodeVariable(const string& name, const any& initValue = any())
+        : CharcodeVariable(name, initValue) {}
+    bool set(Parser& parser, const any& value, bool global = false);
+};
+
+
 template<class Cmd>
 class FixedVariableGroup: public FixedCommandGroup<Cmd>
 {
@@ -71,6 +89,7 @@ public:
     const any& initValue() const { return m_initValue; }
     void setInitValue(const any& initValue) { m_initValue = initValue; }
 
+    string groupType() const { return "register"; }
     Command::ptr createCommand(const string& name) {
         return Command::ptr(new Cmd(name, m_initValue));
     }
@@ -81,6 +100,17 @@ public:
 
 protected:
     any m_initValue;
+};
+
+template<class Cmd>
+class CharcodeVariableGroup: public FixedVariableGroup<Cmd>
+{
+public:
+    CharcodeVariableGroup(const string& name,
+                size_t maxCount, const any& initValue)
+        : FixedVariableGroup<Cmd>(name, maxCount, initValue) {}
+
+    string groupType() const { return "character"; }
 };
 
 } // namespace base

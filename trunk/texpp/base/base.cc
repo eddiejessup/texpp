@@ -42,6 +42,12 @@ void initSymbols(Parser& parser)
             new FixedVariableGroup<T>(name, maxcount, value))); \
         parser.setSymbol(name, value)
 
+    #define __TEXPP_SET_CHARCODE_GROUP(name, value, maxcount, T) \
+        parser.setSymbol("\\" name, Command::ptr( \
+            new CharcodeVariableGroup<T>(name, maxcount, value))); \
+        parser.setSymbol(name, value)
+
+
     __TEXPP_SET_COMMAND("relax",      Relax);
     __TEXPP_SET_COMMAND("par",        Relax);
     __TEXPP_SET_COMMAND("let",        Let);
@@ -49,6 +55,8 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("message",    Message);
 
     __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
+
+    __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256, CatcodeVariable);
 
     __TEXPP_SET_VARIABLE("endlinechar", int(0), EndlinecharVariable);
 

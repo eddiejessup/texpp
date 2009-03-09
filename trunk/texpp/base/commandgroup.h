@@ -34,6 +34,8 @@ public:
     virtual Command::ptr item(size_t n) = 0;
     virtual Command::ptr createCommand(const string& name) = 0;
 
+    virtual string groupType() const { return "group"; }
+
     bool parseArgs(Parser& parser, Node::ptr node);
     bool execute(Parser& parser, Node::ptr node);
 };
