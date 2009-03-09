@@ -30,7 +30,7 @@ class Let: public Command
 public:
     explicit Let(const string& name): Command(name) {}
 
-    Node::ptr parse(Parser& parser);
+    bool parseArgs(Parser& parser, Node::ptr node);
     bool execute(Parser&, Node::ptr);
 };
 
@@ -39,7 +39,7 @@ class FutureLet: public Command
 public:
     explicit FutureLet(const string& name): Command(name) {}
 
-    Node::ptr parse(Parser& parser);
+    bool parseArgs(Parser& parser, Node::ptr node);
     bool execute(Parser&, Node::ptr);
 };
 

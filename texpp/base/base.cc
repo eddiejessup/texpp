@@ -23,6 +23,7 @@
 #include <texpp/base/func.h>
 #include <texpp/base/files.h>
 #include <texpp/base/variables.h>
+#include <texpp/base/commandgroup.h>
 
 namespace texpp {
 namespace base {
@@ -36,11 +37,18 @@ void initSymbols(Parser& parser)
         parser.setSymbol("\\" name, Command::ptr(new T(name, ##__VA_ARGS__))); \
         parser.setSymbol(name, value)
 
+    #define __TEXPP_SET_VARIABLE_GROUP(name, value, maxcount, T) \
+        parser.setSymbol("\\" name, Command::ptr( \
+            new FixedVariableGroup<T>(name, maxcount, value))); \
+        parser.setSymbol(name, value)
+
     __TEXPP_SET_COMMAND("relax",      Relax);
     __TEXPP_SET_COMMAND("par",        Relax);
     __TEXPP_SET_COMMAND("let",        Let);
     __TEXPP_SET_COMMAND("show",       Show);
     __TEXPP_SET_COMMAND("message",    Message);
+
+    __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
 
     __TEXPP_SET_VARIABLE("endlinechar", int(0), EndlinecharVariable);
 

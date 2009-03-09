@@ -22,16 +22,12 @@
 namespace texpp {
 namespace base {
 
-Node::ptr Let::parse(Parser& parser)
+bool Let::parseArgs(Parser& parser, Node::ptr node)
 {
-    Node::ptr node(new Node(name()));
-
-    node->appendChild("command", parser.parseControlSequence());
     node->appendChild("lvalue", parser.parseControlSequence());
     node->appendChild("equals", parser.parseOptionalEquals(true));
     node->appendChild("rvalue", parser.parseToken());
-
-    return node;
+    return true;
 }
 
 bool Let::execute(Parser& parser, Node::ptr node)
@@ -46,18 +42,15 @@ bool Let::execute(Parser& parser, Node::ptr node)
     return true;
 }
 
-Node::ptr FutureLet::parse(Parser& parser)
+bool FutureLet::parseArgs(Parser& parser, Node::ptr node)
 {
-    Node::ptr node(new Node(name()));
-
-    node->appendChild("command", parser.parseControlSequence());
     node->appendChild("lvalue", parser.parseControlSequence());
     node->appendChild("token", parser.parseOptionalEquals(true));
     node->appendChild("rvalue", parser.parseToken());
 
     // XXX TODO: push tokens back
 
-    return node;
+    return true;
 }
 
 bool FutureLet::execute(Parser& parser, Node::ptr node)

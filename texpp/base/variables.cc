@@ -27,7 +27,8 @@ namespace base {
 
 const any& Variable::get(Parser& parser, bool global)
 {
-    return parser.symbolAny(name().substr(1), global);
+    const any& ret = parser.symbolAny(name().substr(1), global);
+    return !ret.empty() ? ret : m_initValue;
 }
 
 bool Variable::set(Parser& parser, const any& value, bool global)
@@ -45,20 +46,17 @@ bool Variable::set(Parser& parser, const any& value, bool global)
     }*/
 }
 
-Node::ptr IntegerVariable::parse(Parser& parser)
+bool IntegerVariable::parseArgs(Parser& parser, Node::ptr node)
 {
-    Node::ptr node(new Node(name()));
-    node->appendChild("command", parser.parseControlSequence());
     node->appendChild("equals", parser.parseOptionalEquals(false));
     node->appendChild("rvalue", parser.parseNumber());
-
-    return node;
+    return true;
 }
 
 bool IntegerVariable::execute(Parser& parser, Node::ptr node)
 {
-    std::cout << "IntegerVariable:" << node->child(2)->value(int(0)) << std::endl;
-    return set(parser, node->child(2)->value(int(0)));
+    std::cout << "IntegerVariable:" << node->child("rvalue")->value(int(0)) << std::endl;
+    return set(parser, node->child("rvalue")->value(int(0)));
 }
 
 bool EndlinecharVariable::set(Parser& parser, const any& value, bool global)

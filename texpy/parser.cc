@@ -133,7 +133,7 @@ void export_parser()
         .def("endGroup", &Parser::endGroup)
 
         // Parse helpers
-        .def("parseCommand", &Parser::parseCommand)
+        .def("parseCommandArgs", &Parser::parseCommandArgs)
         .def("executeCommand", &Parser::executeCommand)
         ;
 

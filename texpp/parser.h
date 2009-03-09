@@ -95,7 +95,7 @@ public:
     virtual string repr() const;
     virtual string texRepr(char escape = '\\') const;
 
-    virtual Node::ptr parse(Parser&) { return Node::ptr(); }
+    virtual bool parseArgs(Parser&, Node::ptr) { return false; }
     virtual bool execute(Parser&, Node::ptr) { return false; }
 
 protected:
@@ -111,7 +111,7 @@ public:
     const Token::ptr& token() const { return m_token; }
 
     string texRepr(char escape = '\\') const;
-    Node::ptr parse(Parser&);
+    bool parseArgs(Parser&, Node::ptr);
     bool execute(Parser&, Node::ptr);
 
 protected:
@@ -138,16 +138,18 @@ public:
     //////// Parse helpers
     bool helperIsImplicitCharacter(Token::CatCode catCode);
 
-    Node::ptr parseGroup(Command::ptr endCmd = Command::ptr(),
-                         bool parseBeginEnd = true);
-
-    Node::ptr parseCommand(Command::ptr command) {
-        return command->parse(*this);
+    bool parseCommandArgs(Command::ptr command, Node::ptr node) {
+        return command->parseArgs(*this, node);
     }
 
     bool executeCommand(Command::ptr command, Node::ptr node) {
         return command->execute(*this, node);
     }
+
+    Node::ptr parseGroup(Command::ptr endCmd = Command::ptr(),
+                         bool parseBeginEnd = true);
+
+    Node::ptr parseCommand(Command::ptr command);
 
     Node::ptr parseToken();
     Node::ptr parseControlSequence();

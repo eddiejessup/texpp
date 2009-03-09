@@ -30,7 +30,7 @@ class Message: public Command
 public:
     explicit Message(const string& name): Command(name) {}
 
-    Node::ptr parse(Parser& parser);
+    bool parseArgs(Parser& parser, Node::ptr node);
     bool execute(Parser& parser, Node::ptr node);
 };
 

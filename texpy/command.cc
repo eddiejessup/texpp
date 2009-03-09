@@ -38,14 +38,14 @@ public:
         return Cmd::texRepr(escape);
     }
 
-    Node::ptr parse(Parser& p) {
-        if(override f = this->get_override("parse"))
-            return f(p);
-        return Cmd::parse(p);
+    bool parseArgs(Parser& p, Node::ptr n) {
+        if(override f = this->get_override("parseArgs"))
+            return f(p, n);
+        return Cmd::parseArgs(p, n);
     }
 
-    Node::ptr default_parse(Parser& p) {
-        return Cmd::parse(p);
+    bool default_parseArgs(Parser& p, Node::ptr n) {
+        return Cmd::parseArgs(p, n);
     }
 
     bool execute(Parser& p, Node::ptr n) {
@@ -71,8 +71,8 @@ inline void export_derived_command(const char* name)
            name, _init())
         .def("texRepr", &Cmd::texRepr,
                     &CommandWrap<Cmd>::default_texRepr)
-        .def("parse", &Cmd::parse,
-                    &CommandWrap<Cmd>::default_parse)
+        .def("parseArgs", &Cmd::parseArgs,
+                    &CommandWrap<Cmd>::default_parseArgs)
         .def("execute", &Cmd::execute,
                     &CommandWrap<Cmd>::default_execute)
         ;
@@ -89,8 +89,8 @@ void export_command()
             return_value_policy<copy_const_reference>())
         .def("texRepr", &Command::texRepr,
                     &CommandWrap<Command>::default_texRepr)
-        .def("parse", &Command::parse,
-                    &CommandWrap<Command>::default_parse)
+        .def("parseArgs", &Command::parseArgs,
+                    &CommandWrap<Command>::default_parseArgs)
         .def("execute", &Command::execute,
                     &CommandWrap<Command>::default_execute)
         ;

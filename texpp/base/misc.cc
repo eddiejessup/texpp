@@ -21,13 +21,6 @@
 namespace texpp {
 namespace base {
 
-Node::ptr Relax::parse(Parser& parser)
-{
-    Node::ptr node(new Node(name()));
-    node->appendChild("command", parser.parseControlSequence());
-    return node;
-}
-
 } // namespace base
 } // namespace texpp
 

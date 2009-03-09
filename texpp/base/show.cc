@@ -24,12 +24,10 @@
 namespace texpp {
 namespace base {
 
-Node::ptr Show::parse(Parser& parser)
+bool Show::parseArgs(Parser& parser, Node::ptr node)
 {
-    Node::ptr node(new Node(name()));
-    node->appendChild("command", parser.parseControlSequence());
     node->appendChild("token", parser.parseToken());
-    return node;
+    return true;
 }
 
 bool Show::execute(Parser& parser, Node::ptr node)

@@ -84,12 +84,10 @@ string TokenCommand::texRepr(char) const
     return m_token->meaning();
 }
 
-Node::ptr TokenCommand::parse(Parser& parser)
+bool TokenCommand::parseArgs(Parser&, Node::ptr node)
 {
-    Node::ptr node(new Node(name()));
-    node->appendChild("command", parser.parseControlSequence());
     node->setValue(m_token);
-    return node;
+    return true;
 }
 
 bool TokenCommand::execute(Parser&, Node::ptr)
@@ -301,6 +299,14 @@ bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
         }
     }
     return false;
+}
+
+Node::ptr Parser::parseCommand(Command::ptr command)
+{
+    Node::ptr node(new Node("command"));
+    node->appendChild("control_token", parseToken());
+    command->parseArgs(*this, node); // XXX check errors
+    return node;
 }
 
 Node::ptr Parser::parseToken()

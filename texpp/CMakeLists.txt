@@ -14,6 +14,7 @@ set(libtexpp_SOURCES
     base/func.cc
     base/files.cc
     base/variables.cc
+    base/commandgroup.cc
     base/base.cc
 )
 
