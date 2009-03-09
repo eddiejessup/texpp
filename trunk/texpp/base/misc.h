@@ -30,7 +30,7 @@ class Relax: public Command
 public:
     explicit Relax(const string& name): Command(name) {}
 
-    Node::ptr parse(Parser& parser);
+    bool parseArgs(Parser&, Node::ptr) { return true; }
     bool execute(Parser&, Node::ptr) { return true; }
 };
 

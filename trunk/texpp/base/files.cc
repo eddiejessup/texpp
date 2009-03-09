@@ -23,12 +23,10 @@
 namespace texpp {
 namespace base {
 
-Node::ptr Message::parse(Parser& parser)
+bool Message::parseArgs(Parser& parser, Node::ptr node)
 {
-    Node::ptr node(new Node(name()));
-    node->appendChild("command", parser.parseControlSequence());
     parser.parseGeneralText(node);
-    return node;
+    return true;
 }
 
 bool Message::execute(Parser& parser, Node::ptr node)

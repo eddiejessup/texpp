@@ -22,30 +22,65 @@
 #include <texpp/common.h>
 #include <texpp/parser.h>
 
+#include <texpp/base/commandgroup.h>
+
 namespace texpp {
 namespace base {
 
 class Variable: public Command
 {
 public:
-    Variable(const string& name): Command(name) {}
+    Variable(const string& name, const any& initValue = any())
+        : Command(name), m_initValue(initValue) {}
+
+    const any& initValue() const { return m_initValue; }
+    void setInitValue(const any& initValue) { m_initValue = initValue; }
+
     virtual const any& get(Parser& parser, bool global = false);
     virtual bool set(Parser& parser, const any& value, bool global = false);
+
+protected:
+    any m_initValue;
 };
 
 class IntegerVariable: public Variable
 {
 public:
-    IntegerVariable(const string& name): Variable(name) {}
-    Node::ptr parse(Parser& parser);
+    IntegerVariable(const string& name, const any& initValue = any(0))
+        : Variable(name, initValue) {}
+    bool parseArgs(Parser& parser, Node::ptr node);
     bool execute(Parser& parser, Node::ptr node);
 };
 
 class EndlinecharVariable: public IntegerVariable
 {
 public:
-    EndlinecharVariable(const string& name): IntegerVariable(name) {}
+    EndlinecharVariable(const string& name, const any& initValue = any())
+        : IntegerVariable(name, initValue) {}
     bool set(Parser& parser, const any& value, bool global = false);
+};
+
+template<class Cmd>
+class FixedVariableGroup: public FixedCommandGroup<Cmd>
+{
+public:
+    FixedVariableGroup(const string& name,
+                size_t maxCount, const any& initValue)
+        : FixedCommandGroup<Cmd>(name, maxCount), m_initValue(initValue) {}
+
+    const any& initValue() const { return m_initValue; }
+    void setInitValue(const any& initValue) { m_initValue = initValue; }
+
+    Command::ptr createCommand(const string& name) {
+        return Command::ptr(new Cmd(name, m_initValue));
+    }
+
+    /*Node::ptr parse(Parser& parser);
+    bool execute(Parser& parser, Node::ptr node);
+    */
+
+protected:
+    any m_initValue;
 };
 
 } // namespace base
