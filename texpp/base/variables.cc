@@ -18,6 +18,7 @@
 
 #include <texpp/base/variables.h>
 #include <texpp/parser.h>
+#include <texpp/logger.h>
 #include <texpp/lexer.h>
 
 #include <iostream>
@@ -50,7 +51,7 @@ bool IntegerVariable::parseArgs(Parser& parser, Node::ptr node)
 {
     node->appendChild("equals", parser.parseOptionalEquals(false));
     node->appendChild("rvalue", parser.parseNumber());
-    return true;
+    return check(parser, node->child("rvalue"));
 }
 
 bool IntegerVariable::execute(Parser& parser, Node::ptr node)
@@ -64,6 +65,40 @@ bool EndlinecharVariable::set(Parser& parser, const any& value, bool global)
     if(IntegerVariable::set(parser, value, global)) {
         assert(value.type() == typeid(int));
         parser.lexer()->setEndlinechar(*unsafe_any_cast<int>(&value));
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool CharcodeVariable::check(Parser& parser, Node::ptr node)
+{
+    assert(node->valueAny().type() == typeid(int));
+    int n = node->value(int(0));
+    if(n < 0 || n > 255) {
+        Node::ptr node1 = node;
+        while(node1->childrenCount() > 0)
+            node1 = node1->child(node1->childrenCount()-1);
+
+        std::ostringstream msg;
+        msg << "Invalid code (" << n << "), should be in the range 0..255";
+        parser.logger()->log(Logger::ERROR, msg.str(), parser,
+            node1->tokens().size() > 0 ? node1->tokens().back() : Token::ptr());
+
+        node->setValue(int(0));
+    }
+    return true;
+}
+
+bool CatcodeVariable::set(Parser& parser, const any& value, bool global)
+{
+    if(CharcodeVariable::set(parser, value, global)) {
+        assert(value.type() == typeid(int));
+        assert(name().substr(0, 7) == "catcode");
+        std::istringstream str(name().substr(7));
+        int n; str >> n;
+        assert(n >= 0 && n < 256);
+        parser.lexer()->setCatcode(n, *unsafe_any_cast<int>(&value));
         return true;
     } else {
         return false;

@@ -35,7 +35,8 @@ bool CommandGroupBase::parseArgs(Parser& parser, Node::ptr node)
             node1 = node1->child(node1->childrenCount()-1);
 
         std::ostringstream msg;
-        msg << "Bad register code (" << number->value(int(0)) << ")";
+        msg << "Bad " << groupType() << " code ("
+            << number->value(int(0)) << ")";
         parser.logger()->log(Logger::ERROR, msg.str(), parser,
             node1->tokens().size() > 0 ? node1->tokens().back() : Token::ptr());
         
