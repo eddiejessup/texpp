@@ -22,10 +22,12 @@
 #include <texpp/base/show.h>
 #include <texpp/base/func.h>
 #include <texpp/base/files.h>
-#include <texpp/base/variables.h>
+#include <texpp/base/variable.h>
+#include <texpp/base/integer.h>
 #include <texpp/base/commandgroup.h>
 
 #include <boost/lexical_cast.hpp>
+#include <ctime>
 
 namespace texpp {
 namespace base {
@@ -180,6 +182,13 @@ void initSymbols(Parser& parser)
     parser.setSymbol("tolerance", int(10000));
     parser.setSymbol("mag", int(1000));
     parser.setSymbol("maxdeadcycles", int(25));
+
+    std::time_t t; std::time(&t);
+    std::tm* time = std::localtime(&t);
+    parser.setSymbol("year", int(1900+time->tm_year));
+    parser.setSymbol("month", int(1+time->tm_mon));
+    parser.setSymbol("day", int(time->tm_mday));
+    parser.setSymbol("time", int(time->tm_hour*60 + time->tm_min));
 }
 
 } // namespace base

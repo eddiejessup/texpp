@@ -44,39 +44,6 @@ protected:
     any m_initValue;
 };
 
-class IntegerVariable: public Variable
-{
-public:
-    IntegerVariable(const string& name, const any& initValue = any(0))
-        : Variable(name, initValue) {}
-    bool parseArgs(Parser& parser, Node::ptr node);
-    bool execute(Parser& parser, Node::ptr node);
-};
-
-class EndlinecharVariable: public IntegerVariable
-{
-public:
-    EndlinecharVariable(const string& name, const any& initValue = any())
-        : IntegerVariable(name, initValue) {}
-    bool set(Parser& parser, const any& value, bool global = false);
-};
-
-class CharcodeVariable: public IntegerVariable
-{
-public:
-    CharcodeVariable(const string& name, const any& initValue = any())
-        : IntegerVariable(name, initValue) {}
-    bool check(Parser& parser, Node::ptr node);
-};
-
-class CatcodeVariable: public CharcodeVariable
-{
-public:
-    CatcodeVariable(const string& name, const any& initValue = any())
-        : CharcodeVariable(name, initValue) {}
-    bool set(Parser& parser, const any& value, bool global = false);
-};
-
 template<class Cmd>
 class FixedVariableGroup: public FixedCommandGroup<Cmd>
 {
@@ -101,20 +68,8 @@ protected:
     any m_initValue;
 };
 
-template<class Cmd>
-class CharcodeVariableGroup: public FixedVariableGroup<Cmd>
-{
-public:
-    CharcodeVariableGroup(const string& name,
-                size_t maxCount, const any& initValue)
-        : FixedVariableGroup<Cmd>(name, maxCount, initValue) {}
-
-    string groupType() const { return "character"; }
-};
-
 } // namespace base
 } // namespace texpp
-
 
 #endif
 

@@ -20,7 +20,8 @@
 #include <texpp/logger.h>
 
 #include <texpp/base/base.h>
-#include <texpp/base/variables.h>
+#include <texpp/base/variable.h>
+#include <texpp/base/integer.h>
 
 #include <iostream>
 #include <sstream>

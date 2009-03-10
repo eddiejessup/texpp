@@ -16,7 +16,7 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <texpp/base/variables.h>
+#include <texpp/base/integer.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 #include <texpp/lexer.h>
@@ -25,27 +25,6 @@
 
 namespace texpp {
 namespace base {
-
-const any& Variable::get(Parser& parser, bool global)
-{
-    const any& ret = parser.symbolAny(name().substr(1), global);
-    return !ret.empty() ? ret : m_initValue;
-}
-
-bool Variable::set(Parser& parser, const any& value, bool global)
-{
-    string varname = name().substr(1);
-    parser.setSymbol(varname, value, global);
-    return true;
-    /*
-    any s = parser.symbolAny(varname, global);
-    if(s.type() == value.type()) {
-        parser.setSymbol(varname, value, global);
-        return true;
-    } else {
-        return false;
-    }*/
-}
 
 bool IntegerVariable::parseArgs(Parser& parser, Node::ptr node)
 {

@@ -13,7 +13,8 @@ set(libtexpp_SOURCES
     base/show.cc
     base/func.cc
     base/files.cc
-    base/variables.cc
+    base/variable.cc
+    base/integer.cc
     base/commandgroup.cc
     base/base.cc
 )
