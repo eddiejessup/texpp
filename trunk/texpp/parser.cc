@@ -459,8 +459,10 @@ Node::ptr Parser::parseNormalInteger()
                 "Improper alphabetic constant", *this, peekToken());
             node->setValue(int(0));
         }
-        return node;
+        if(helperIsImplicitCharacter(Token::CC_SPACE))
+            nextToken(&node->tokens());
 
+        return node;
     }
     
     std::stringstream digits;
@@ -527,7 +529,7 @@ Node::ptr Parser::parseNormalInteger()
 
     if(digits.str().size() == 0) {
         logger()->log(Logger::ERROR,
-            "Missing number, treated as zero.",
+            "Missing number, treated as zero",
                                         *this, peekToken());
         result = 0;
     } else if(toobig) {
@@ -535,6 +537,10 @@ Node::ptr Parser::parseNormalInteger()
     }
 
     node->setValue(result);
+
+    if(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&node->tokens());
+
     return node;
 }
 
