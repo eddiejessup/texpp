@@ -26,14 +26,14 @@
 namespace texpp {
 namespace base {
 
-bool IntegerVariable::parseArgs(Parser& parser, Node::ptr node)
+bool InternalInteger::parseArgs(Parser& parser, Node::ptr node)
 {
     node->appendChild("equals", parser.parseOptionalEquals(false));
     node->appendChild("rvalue", parser.parseNumber());
     return check(parser, node->child("rvalue"));
 }
 
-bool IntegerVariable::execute(Parser& parser, Node::ptr node)
+bool InternalInteger::execute(Parser& parser, Node::ptr node)
 {
     return set(parser, node->child("rvalue")->value(int(0)));
 }
@@ -53,28 +53,16 @@ bool CharcodeVariable::check(Parser& parser, Node::ptr node)
 {
     assert(node->valueAny().type() == typeid(int));
     int n = node->value(int(0));
-    if(n < 0 || n > 255) {
+    if(n < m_min || n > m_max) {
         parser.logger()->log(Logger::ERROR, "Invalid code (" +
-                                boost::lexical_cast<string>(n) +
-                                "), should be in the range 0..255",
-                                parser, node->lastToken());
-
-        return false;
-    }
-    return true;
-}
-
-bool CatcodeVariable::check(Parser& parser, Node::ptr node)
-{
-    assert(node->valueAny().type() == typeid(int));
-    int n = node->value(int(0));
-    if(n < 0 || n > 15) {
-        parser.logger()->log(Logger::ERROR, "Invalid code (" +
-                                boost::lexical_cast<string>(n) +
-                                "), should be in the range 0..15",
-                                parser, node->lastToken());
+            boost::lexical_cast<string>(n) +
+            "), should be in the range " +
+            boost::lexical_cast<string>(m_min) + ".." +
+            boost::lexical_cast<string>(m_max),
+            parser, node->lastToken());
 
         node->setValue(int(0));
+        return false;
     }
     return true;
 }

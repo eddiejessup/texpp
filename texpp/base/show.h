@@ -23,7 +23,6 @@
 #include <texpp/parser.h>
 
 namespace texpp {
-
 namespace base {
 
 class Show: public Command

@@ -27,13 +27,20 @@
 namespace texpp {
 namespace base {
 
-class IntegerVariable: public Variable
+class InternalInteger: public Variable
 {
 public:
-    IntegerVariable(const string& name, const any& initValue = any(0))
+    InternalInteger(const string& name, const any& initValue = any(0))
         : Variable(name, initValue) {}
     bool parseArgs(Parser& parser, Node::ptr node);
     bool execute(Parser& parser, Node::ptr node);
+};
+
+class IntegerVariable: public InternalInteger
+{
+public:
+    IntegerVariable(const string& name, const any& initValue = any(0))
+        : InternalInteger(name, initValue) {}
 };
 
 class EndlinecharVariable: public IntegerVariable
@@ -44,24 +51,32 @@ public:
     bool set(Parser& parser, const any& value, bool global = false);
 };
 
-class CharcodeVariable: public IntegerVariable
+class CharcodeVariable: public InternalInteger
 {
 public:
-    CharcodeVariable(const string& name, const any& initValue = any())
-        : IntegerVariable(name, initValue) {}
+    CharcodeVariable(const string& name,
+        const any& initValue = any(), int min=0, int max=0)
+        : InternalInteger(name, initValue), m_min(min), m_max(max) {}
+
     bool check(Parser& parser, Node::ptr node);
+    int min() const { return m_min; }
+    int max() const { return m_max; }
+
+protected:
+    int m_min;
+    int m_max;
 };
 
 class CatcodeVariable: public CharcodeVariable
 {
 public:
-    CatcodeVariable(const string& name, const any& initValue = any())
-        : CharcodeVariable(name, initValue) {}
+    CatcodeVariable(const string& name,
+        const any& initValue = any(), int min=0, int max=0)
+        : CharcodeVariable(name, initValue, min, max) {}
     bool set(Parser& parser, const any& value, bool global = false);
-    bool check(Parser& parser, Node::ptr node);
 };
 
-template<class Cmd>
+template<class Cmd, int MIN, int MAX>
 class CharcodeVariableGroup: public FixedVariableGroup<Cmd>
 {
 public:
@@ -69,6 +84,9 @@ public:
                 size_t maxCount, const any& initValue)
         : FixedVariableGroup<Cmd>(name, maxCount, initValue) {}
 
+    Command::ptr createCommand(const string& name) {
+        return Command::ptr(new Cmd(name, int(0), MIN, MAX));
+    }
     string groupType() const { return "character"; }
 };
 
