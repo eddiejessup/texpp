@@ -1,0 +1,25 @@
+#summary Summary of implemented TeX features.
+
+|| *Command*     || *Implemented?* ||
+|| \end          || yes ||
+|| \relax        || yes ||
+|| \par          || yes ||
+|| \let          || yes ||
+|| \show         || yes ||
+|| \showthe      || *partly* ||
+|| \message      || yes ||
+|| \catcode      || yes ||
+|| \endlinechar  || yes ||
+|| \newlinechar  || yes ||
+|| \escapechar   || yes ||
+|| integer parameters || yes ||
+|| dimen parameters || *no* ||
+|| glue parameters || *no* ||
+|| muglue parameters || *no* ||
+|| boxes         || *no* ||
+|| arithmetic    || *no* ||
+|| token lists   || *no* ||
+|| expansion     || *no* ||
+|| macros        || *no* ||
+|| file i/o      || *no* ||
+|| ... (TODO)    || *no* ||
