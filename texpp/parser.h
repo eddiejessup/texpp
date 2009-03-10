@@ -24,6 +24,7 @@
 
 #include <deque>
 #include <cassert>
+#include <climits>
 
 #include <boost/any.hpp>
 

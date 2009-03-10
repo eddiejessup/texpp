@@ -20,7 +20,7 @@
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
-#include <sstream>
+#include <boost/lexical_cast.hpp>
 
 namespace texpp {
 namespace base {
@@ -32,15 +32,9 @@ Command::ptr CommandGroupBase::parseCommand(Parser& parser, Node::ptr node)
 
     Command::ptr cmd = item(number->value(int(0)));
     if(!cmd) {
-        Node::ptr node1 = number;
-        while(node1->childrenCount() > 0)
-            node1 = node1->child(node1->childrenCount()-1);
-
-        std::ostringstream msg;
-        msg << "Bad " << groupType() << " code ("
-            << number->value(int(0)) << ")";
-        parser.logger()->log(Logger::ERROR, msg.str(), parser,
-            node1->tokens().size() > 0 ? node1->tokens().back() : Token::ptr());
+        parser.logger()->log(Logger::ERROR, "Bad " + groupType() +
+           " code (" + boost::lexical_cast<string>(number->value(int(0))) +
+           ")", parser, number->lastToken());
         
         cmd = item(0);
     }
@@ -58,6 +52,7 @@ bool CommandGroupBase::parseArgs(Parser& parser, Node::ptr node)
 bool CommandGroupBase::execute(Parser& parser, Node::ptr node)
 {
     Command::ptr cmd = item(node->child("command_number")->value(int(0)));
+    if(!cmd) cmd = item(0);
     if(cmd) return cmd->execute(parser, node);
     else return false;
 }

@@ -58,6 +58,7 @@ public:
     CatcodeVariable(const string& name, const any& initValue = any())
         : CharcodeVariable(name, initValue) {}
     bool set(Parser& parser, const any& value, bool global = false);
+    bool check(Parser& parser, Node::ptr node);
 };
 
 template<class Cmd>

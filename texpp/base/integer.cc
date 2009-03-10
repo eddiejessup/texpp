@@ -21,7 +21,7 @@
 #include <texpp/logger.h>
 #include <texpp/lexer.h>
 
-#include <iostream>
+#include <boost/lexical_cast.hpp>
 
 namespace texpp {
 namespace base {
@@ -54,14 +54,25 @@ bool CharcodeVariable::check(Parser& parser, Node::ptr node)
     assert(node->valueAny().type() == typeid(int));
     int n = node->value(int(0));
     if(n < 0 || n > 255) {
-        Node::ptr node1 = node;
-        while(node1->childrenCount() > 0)
-            node1 = node1->child(node1->childrenCount()-1);
+        parser.logger()->log(Logger::ERROR, "Invalid code (" +
+                                boost::lexical_cast<string>(n) +
+                                "), should be in the range 0..255",
+                                parser, node->lastToken());
 
-        std::ostringstream msg;
-        msg << "Invalid code (" << n << "), should be in the range 0..255";
-        parser.logger()->log(Logger::ERROR, msg.str(), parser,
-            node1->tokens().size() > 0 ? node1->tokens().back() : Token::ptr());
+        return false;
+    }
+    return true;
+}
+
+bool CatcodeVariable::check(Parser& parser, Node::ptr node)
+{
+    assert(node->valueAny().type() == typeid(int));
+    int n = node->value(int(0));
+    if(n < 0 || n > 15) {
+        parser.logger()->log(Logger::ERROR, "Invalid code (" +
+                                boost::lexical_cast<string>(n) +
+                                "), should be in the range 0..15",
+                                parser, node->lastToken());
 
         node->setValue(int(0));
     }
@@ -74,7 +85,7 @@ bool CatcodeVariable::set(Parser& parser, const any& value, bool global)
         assert(value.type() == typeid(int));
         assert(name().substr(0, 8) == "\\catcode");
         std::istringstream str(name().substr(8));
-        int n; str >> n;
+        int n = boost::lexical_cast<int>(name().substr(8));
         assert(n >= 0 && n < 256);
         parser.lexer()->setCatcode(n, *unsafe_any_cast<int>(&value));
         return true;
