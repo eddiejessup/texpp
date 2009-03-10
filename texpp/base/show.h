@@ -35,6 +35,16 @@ public:
     bool execute(Parser& parser, Node::ptr node);
 };
 
+class ShowThe: public Command
+{
+public:
+    explicit ShowThe(const string& name): Command(name) {}
+
+    bool parseArgs(Parser& parser, Node::ptr node);
+    bool execute(Parser& parser, Node::ptr node);
+};
+
+
 } // namespace base
 } // namespace texpp
 

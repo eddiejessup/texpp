@@ -77,7 +77,6 @@ public:
     bool set(Parser& parser, const any& value, bool global = false);
 };
 
-
 template<class Cmd>
 class FixedVariableGroup: public FixedCommandGroup<Cmd>
 {

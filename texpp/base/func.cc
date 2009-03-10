@@ -32,13 +32,17 @@ bool Let::parseArgs(Parser& parser, Node::ptr node)
 
 bool Let::execute(Parser& parser, Node::ptr node)
 {
-    parser.setSymbol(
-        node->child(1)->value(Token::ptr()),
-        parser.symbol(
-            node->child(3)->value(Token::ptr()),
-            Command::ptr()
-        )
-    );
+    Token::ptr token = node->child("rvalue")->value(Token::ptr());
+    if(token->isControl()) {
+        parser.setSymbol(
+            node->child("lvalue")->value(Token::ptr()),
+            parser.symbol(token, Command::ptr())
+            );
+    } else {
+        parser.setSymbol(
+            node->child("lvalue")->value(Token::ptr()),
+            Command::ptr(new TokenCommand(token)));
+    }
     return true;
 }
 

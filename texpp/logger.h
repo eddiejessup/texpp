@@ -29,6 +29,8 @@ class Parser;
 class Logger
 {
 public:
+    typedef shared_ptr<Logger> ptr;
+
     enum { MESSAGE = 0, SHOW = 30,
            ERROR = 40, CRITICAL = 50 };
 
@@ -51,8 +53,12 @@ public:
 class ConsoleLogger: public Logger
 {
 public:
+    ConsoleLogger() {}
+    ~ConsoleLogger();
     bool log(int level, const string& message,
                 Parser& parser, shared_ptr<Token> token);
+protected:
+    int m_atNewline;
 };
 
 } // namespace texpp

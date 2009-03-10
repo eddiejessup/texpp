@@ -20,10 +20,12 @@
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
+#include <sstream>
+
 namespace texpp {
 namespace base {
 
-bool CommandGroupBase::parseArgs(Parser& parser, Node::ptr node)
+Command::ptr CommandGroupBase::parseCommand(Parser& parser, Node::ptr node)
 {
     Node::ptr number = parser.parseNumber();
     node->appendChild("command_number", number);
@@ -43,6 +45,12 @@ bool CommandGroupBase::parseArgs(Parser& parser, Node::ptr node)
         cmd = item(0);
     }
 
+    return cmd;
+}
+
+bool CommandGroupBase::parseArgs(Parser& parser, Node::ptr node)
+{
+    Command::ptr cmd = parseCommand(parser, node);
     if(cmd) return cmd->parseArgs(parser, node);
     else return false;
 }

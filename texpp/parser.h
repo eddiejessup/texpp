@@ -71,6 +71,8 @@ public:
         m_children.push_back(make_pair(name, node));
     }
 
+    Token::ptr lastToken();
+
     string repr() const;
     string treeRepr(size_t indent = 0) const;
 
@@ -134,6 +136,7 @@ public:
     //////// Tokens
     Token::ptr peekToken(int n=1);
     Token::ptr nextToken(vector< Token::ptr >* tokens = NULL);
+    void end() { m_end = true; }
 
     //////// Parse helpers
     bool helperIsImplicitCharacter(Token::CatCode catCode);
@@ -157,6 +160,7 @@ public:
 
     Node::ptr parseOptionalEquals(bool oneSpaceAfter);
     Node::ptr parseOptionalSigns();
+    Node::ptr tryParseInternalInteger();
     Node::ptr parseNormalInteger();
     Node::ptr parseNumber();
 
@@ -220,6 +224,7 @@ protected:
     TokenQueue      m_tokenQueue;
 
     int             m_groupLevel;
+    bool            m_end;
 
     typedef unordered_map<
         string, pair< int, any >

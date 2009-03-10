@@ -20,6 +20,9 @@
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
+#include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
+
 namespace texpp {
 namespace base {
 
@@ -31,24 +34,32 @@ bool Message::parseArgs(Parser& parser, Node::ptr node)
 
 bool Message::execute(Parser& parser, Node::ptr node)
 {
+    using boost::lexical_cast;
+
     string str;
     Token::list_ptr tokens =
         node->child("balanced_text")->value(Token::list_ptr());
 
     if(tokens) {
-        for(size_t i=0; i<tokens->size(); ++i) {
-            if((*tokens)[i]->isControl()) {
-                str += (*tokens)[i]->texRepr(
-                                parser.symbol("escapechar", int(0)));
-                if((*tokens)[i]->value().size() > 1 &&
-                        (*tokens)[i]->value()[0] == '\\' &&
-                        parser.symbol("catcode`" + 
-                            (*tokens)[i]->value()[1], int(0)) ==
-                            Token::CC_LETTER) {
-                    str += ' ';
+        char newlinechar = parser.symbol("newlinechar", int(0));
+        char escapechar = parser.symbol("escapechar", int(0));
+        BOOST_FOREACH(Token::ptr token, *tokens) {
+            Command::ptr cmd = parser.symbol(token, Command::ptr());
+            if(cmd) {
+                str += token->texRepr(escapechar);
+                if(token->value().size() > 1 &&
+                        token->value()[0] == '\\') {
+                     int ccode = parser.symbol("catcode" +
+                        lexical_cast<string>(int(token->value()[1])), int(0));
+                    if(ccode == Token::CC_LETTER) str += ' ';
                 }
-            } else if((*tokens)[i]->isCharacter()) {
-                str += (*tokens)[i]->value();
+            } else if(token->isControl()) {
+                parser.logger()->log(Logger::ERROR,
+                    "Undefined control sequence", parser, token);
+            } else if(token->isCharacter(newlinechar)) {
+                str += '\n';
+            } else if(token->isCharacter()) {
+                str += token->value();
             }
         }
     }

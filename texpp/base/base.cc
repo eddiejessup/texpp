@@ -25,33 +25,39 @@
 #include <texpp/base/variables.h>
 #include <texpp/base/commandgroup.h>
 
+#include <boost/lexical_cast.hpp>
+
 namespace texpp {
 namespace base {
 
 void initSymbols(Parser& parser)
 {
     #define __TEXPP_SET_COMMAND(name, T, ...) \
-        parser.setSymbol("\\" name, Command::ptr(new T(name, ##__VA_ARGS__)))
+        parser.setSymbol("\\" name, \
+            Command::ptr(new T("\\" name, ##__VA_ARGS__)))
     
     #define __TEXPP_SET_VARIABLE(name, value, T, ...) \
-        parser.setSymbol("\\" name, Command::ptr(new T(name, ##__VA_ARGS__))); \
+        parser.setSymbol("\\" name, \
+            Command::ptr(new T("\\" name, ##__VA_ARGS__))); \
         parser.setSymbol(name, value)
 
     #define __TEXPP_SET_VARIABLE_GROUP(name, value, maxcount, T) \
         parser.setSymbol("\\" name, Command::ptr( \
-            new FixedVariableGroup<T>(name, maxcount, value))); \
+            new FixedVariableGroup<T>("\\" name, maxcount, value))); \
         parser.setSymbol(name, value)
 
     #define __TEXPP_SET_CHARCODE_GROUP(name, value, maxcount, T) \
         parser.setSymbol("\\" name, Command::ptr( \
-            new CharcodeVariableGroup<T>(name, maxcount, value))); \
+            new CharcodeVariableGroup<T>("\\" name, maxcount, value))); \
         parser.setSymbol(name, value)
 
 
+    __TEXPP_SET_COMMAND("end",        End);
     __TEXPP_SET_COMMAND("relax",      Relax);
     __TEXPP_SET_COMMAND("par",        Relax);
     __TEXPP_SET_COMMAND("let",        Let);
     __TEXPP_SET_COMMAND("show",       Show);
+    __TEXPP_SET_COMMAND("showthe",    ShowThe);
     __TEXPP_SET_COMMAND("message",    Message);
 
     __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
@@ -115,8 +121,65 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("showboxdepth", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("errorcontextlines", int(0), IntegerVariable);
 
+    for(int i=0; i<256; ++i) {
+        string n = boost::lexical_cast<string>(i);
 
+        parser.lexer()->setCatcode(i, Token::CC_OTHER);
+        parser.setSymbol("catcode"+n, int(Token::CC_OTHER));
 
+        parser.setSymbol("delcode"+n, int(-1));
+        parser.setSymbol("mathcode"+n, int(i));
+    }
+
+    for(int i='a'; i<='z'; ++i) {
+        string n = boost::lexical_cast<string>(i);
+
+        parser.lexer()->setCatcode(i, Token::CC_LETTER);
+        parser.setSymbol("catcode"+n, int(Token::CC_LETTER));
+
+        parser.setSymbol("sfcode"+n, int(1000));
+        parser.setSymbol("lccode"+n, int(i));
+        parser.setSymbol("uccode"+n, int(i - 'a' + 'A'));
+        parser.setSymbol("mathcode"+n, int(0x7100 + i));
+    }
+
+    for(int i='A'; i<='Z'; ++i) {
+        string n = boost::lexical_cast<string>(i);
+
+        parser.lexer()->setCatcode(i, Token::CC_LETTER);
+        parser.setSymbol("catcode"+n, int(Token::CC_LETTER));
+
+        parser.setSymbol("sfcode"+n, int(999));
+        parser.setSymbol("lccode"+n, int(i + 'a' - 'A'));
+        parser.setSymbol("uccode"+n, int(i));
+        parser.setSymbol("mathcode"+n, int(0x7100 + i));
+    }
+
+    for(int i='0'; i<='9'; ++i) {
+        string n = boost::lexical_cast<string>(i);
+        parser.setSymbol("mathcode"+n, int(0x7000 + i));
+    }
+
+    parser.lexer()->setCatcode(0x7f,   Token::CC_INVALID);
+    parser.setSymbol("catcode127", int(Token::CC_INVALID));
+    parser.lexer()->setCatcode('\\',   Token::CC_ESCAPE);
+    parser.setSymbol("catcode92",  int(Token::CC_ESCAPE));
+    parser.lexer()->setCatcode('\r',   Token::CC_EOL);
+    parser.setSymbol("catcode13",  int(Token::CC_EOL));
+    parser.lexer()->setCatcode(' ',    Token::CC_SPACE);
+    parser.setSymbol("catcode32",  int(Token::CC_SPACE));
+    parser.lexer()->setCatcode('%',    Token::CC_COMMENT);
+    parser.setSymbol("catcode37",  int(Token::CC_COMMENT));
+
+    parser.setSymbol("delcode96", int(0));
+
+    parser.lexer()->setEndlinechar('\r');
+    parser.setSymbol("endlinechar", int('\r'));
+
+    parser.setSymbol("escapechar", int('\\'));
+    parser.setSymbol("tolerance", int(10000));
+    parser.setSymbol("mag", int(1000));
+    parser.setSymbol("maxdeadcycles", int(25));
 }
 
 } // namespace base

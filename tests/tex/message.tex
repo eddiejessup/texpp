@@ -1,0 +1,52 @@
+\catcode`{=1
+\catcode`}=2
+
+\show\relax
+
+%message
+\message{~ msg}
+\show\relax
+
+%filler
+\message{~ msg}
+\message    {~ msg}
+\message \relax   \relax {~ msg}
+\message
+\relax
+{~ msg}
+
+%implicit braces
+\let\bgroup{
+\let\egroup}
+
+\message \bgroup ~ msg!}
+\message \bgroup ~ msg! \egroup !}
+
+%newline
+%\newlinechar=`! %XXX
+\newlinechar=`@
+\message{~aa@~bb@~cc@}
+
+%various tokens
+\message{~a12b 34c \relax bb \relax2 @}
+
+%par
+\message{~aa
+
+bb
+
+@}
+
+%undefined token
+\message{~\z@}
+
+%missing {
+\message aa@ }
+
+% XXX
+%\message
+%
+%{aa@}
+
+\show\relax
+\end
