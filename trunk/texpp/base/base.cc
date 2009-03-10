@@ -28,6 +28,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <ctime>
+#include <climits>
 
 namespace texpp {
 namespace base {
@@ -48,9 +49,10 @@ void initSymbols(Parser& parser)
             new FixedVariableGroup<T>("\\" name, maxcount, value))); \
         parser.setSymbol(name, value)
 
-    #define __TEXPP_SET_CHARCODE_GROUP(name, value, maxcount, T) \
+    #define __TEXPP_SET_CHARCODE_GROUP(name, value, maxcount, T, MIN, MAX) \
         parser.setSymbol("\\" name, Command::ptr( \
-            new CharcodeVariableGroup<T>("\\" name, maxcount, value))); \
+            new CharcodeVariableGroup< T, MIN, MAX >( \
+                "\\" name, maxcount, value))); \
         parser.setSymbol(name, value)
 
 
@@ -64,7 +66,18 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
 
-    __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256, CatcodeVariable);
+    __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256,
+                                CatcodeVariable, 0, 15);
+    __TEXPP_SET_CHARCODE_GROUP("lccode", int(0), 256,
+                                CharcodeVariable, 0, 255);
+    __TEXPP_SET_CHARCODE_GROUP("uccode", int(0), 256,
+                                CharcodeVariable, 0, 255);
+    __TEXPP_SET_CHARCODE_GROUP("sfcode", int(0), 256,
+                                CharcodeVariable, 0, 32767);
+    __TEXPP_SET_CHARCODE_GROUP("mathcode", int(0), 256,
+                                CharcodeVariable, 0, 32768);
+    __TEXPP_SET_CHARCODE_GROUP("delcode", int(0), 256,
+                                CharcodeVariable, INT_MIN, 16777215);
 
     __TEXPP_SET_VARIABLE("endlinechar", int(0), EndlinecharVariable);
 

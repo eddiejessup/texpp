@@ -415,21 +415,21 @@ Node::ptr Parser::parseOptionalSigns()
 Node::ptr Parser::tryParseInternalInteger()
 {
     Command::ptr cmd = symbol(peekToken(), Command::ptr());
-    if(dynamic_pointer_cast<base::IntegerVariable>(cmd)) {
+    if(dynamic_pointer_cast<base::InternalInteger>(cmd)) {
         Node::ptr node = parseToken();
         node->setType("internal_integer");
         node->setValue(
-            static_pointer_cast<base::IntegerVariable>(cmd)->get(*this));
+            static_pointer_cast<base::InternalInteger>(cmd)->get(*this));
         return node;
     } else if(dynamic_pointer_cast<base::CommandGroupBase>(cmd) &&
-              dynamic_pointer_cast<base::IntegerVariable>(
+              dynamic_pointer_cast<base::InternalInteger>(
                 static_pointer_cast<base::CommandGroupBase>(cmd)->item(0))) {
         Node::ptr node = parseToken();
         node->setType("internal_integer");
         Command::ptr cmd1 = static_pointer_cast<base::CommandGroupBase>(cmd)
                                 ->parseCommand(*this, node);
         node->setValue(
-            static_pointer_cast<base::IntegerVariable>(cmd1)->get(*this));
+            static_pointer_cast<base::InternalInteger>(cmd1)->get(*this));
         return node;
     } else {
         return Node::ptr();
@@ -559,8 +559,8 @@ Node::ptr Parser::parseNumber()
         
     }*/
 
-    shared_ptr<base::IntegerVariable> integer = 
-        dynamic_pointer_cast<base::IntegerVariable>(c);
+    shared_ptr<base::InternalInteger> integer = 
+        dynamic_pointer_cast<base::InternalInteger>(c);
     if(integer) {
         Node::ptr child(new Node("internal_integer"));
         node->appendChild("unsigned_integer", child);
