@@ -56,7 +56,6 @@ bool IntegerVariable::parseArgs(Parser& parser, Node::ptr node)
 
 bool IntegerVariable::execute(Parser& parser, Node::ptr node)
 {
-    std::cout << "IntegerVariable:" << node->child("rvalue")->value(int(0)) << std::endl;
     return set(parser, node->child("rvalue")->value(int(0)));
 }
 
@@ -94,8 +93,8 @@ bool CatcodeVariable::set(Parser& parser, const any& value, bool global)
 {
     if(CharcodeVariable::set(parser, value, global)) {
         assert(value.type() == typeid(int));
-        assert(name().substr(0, 7) == "catcode");
-        std::istringstream str(name().substr(7));
+        assert(name().substr(0, 8) == "\\catcode");
+        std::istringstream str(name().substr(8));
         int n; str >> n;
         assert(n >= 0 && n < 256);
         parser.lexer()->setCatcode(n, *unsafe_any_cast<int>(&value));

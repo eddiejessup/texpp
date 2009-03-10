@@ -22,7 +22,7 @@
 #include <texpp/common.h>
 #include <texpp/parser.h>
 
-#include <sstream>
+#include <boost/lexical_cast.hpp>
 
 namespace texpp {
 namespace base {
@@ -35,6 +35,8 @@ public:
     virtual Command::ptr createCommand(const string& name) = 0;
 
     virtual string groupType() const { return "group"; }
+
+    virtual Command::ptr parseCommand(Parser& parser, Node::ptr node);
 
     bool parseArgs(Parser& parser, Node::ptr node);
     bool execute(Parser& parser, Node::ptr node);
@@ -63,9 +65,8 @@ Command::ptr FixedCommandGroup<Cmd>::item(size_t n)
     if(n >= m_maxCount) return Command::ptr();
     if(n >= m_items.size()) m_items.resize(n+1);
     if(!m_items[n]) {
-        std::ostringstream newname;
-        newname << name() << n;
-        m_items[n] = createCommand(newname.str());
+        m_items[n] = createCommand(
+            name() + boost::lexical_cast<string>(n));
     }
     return m_items[n];
 }

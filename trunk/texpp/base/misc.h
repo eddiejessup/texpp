@@ -34,6 +34,15 @@ public:
     bool execute(Parser&, Node::ptr) { return true; }
 };
 
+class End: public Command
+{
+public:
+    explicit End(const string& name): Command(name) {}
+
+    bool parseArgs(Parser&, Node::ptr) { return true; }
+    bool execute(Parser& parser, Node::ptr) { parser.end(); return true; }
+};
+
 } // namespace base
 } // namespace texpp
 

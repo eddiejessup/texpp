@@ -21,6 +21,7 @@
 #include <string>
 
 #include <texpp/parser.h>
+#include <texpp/logger.h>
 
 const char banner[] = "This is TeXpp, Version 0.0";
 
@@ -45,11 +46,14 @@ int main(int argc, char** argv)
         file = &std::cin;
     }
 
-    texpp::Parser parser(fileName, file, interactive);
+    texpp::Parser parser(fileName, file, interactive,
+                    texpp::Logger::ptr(new texpp::ConsoleLogger));
     texpp::Node::ptr document = parser.parse();
 
-    std::cout << "Parsed document: " << std::endl;
-    std::cout << document->treeRepr();
+    if(file == &std::cin) {
+        std::cout << "Parsed document: " << std::endl;
+        std::cout << document->treeRepr();
+    }
     
     if(file != &std::cin) {
         static_cast<std::ifstream*>(file)->close();

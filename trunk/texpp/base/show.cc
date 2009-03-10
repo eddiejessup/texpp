@@ -19,7 +19,7 @@
 #include <texpp/base/show.h>
 #include <texpp/logger.h>
 
-#include <sstream>
+#include <boost/lexical_cast.hpp>
 
 namespace texpp {
 namespace base {
@@ -33,18 +33,49 @@ bool Show::parseArgs(Parser& parser, Node::ptr node)
 bool Show::execute(Parser& parser, Node::ptr node)
 {
     string str;
-    Token::ptr token = node->child(1)->value(Token::ptr());
+    Token::ptr token = node->child("token")->value(Token::ptr());
     if(token->isCharacter()) {
         str = token->meaning();
     } else {
-        char escape = parser.symbol("escapechar", char(0));
+        char escape = parser.symbol("escapechar", int(0));
         str = token->texRepr(escape) + '=';
 
         Command::ptr c = parser.symbol(token, Command::ptr());
-        if(c) str += c->texRepr();
+        if(c) str += c->texRepr(escape);
         else str += "undefined";
     }
     parser.logger()->log(Logger::SHOW, str, parser, token);
+    return true;
+}
+
+bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
+{
+    Node::ptr integer = parser.tryParseInternalInteger();
+    if(integer) {
+        node->appendChild("internal_quantity", integer);
+        return true;
+    }
+
+    parser.logger()->log(Logger::ERROR,
+        string("You can't use `") + parser.peekToken()->texRepr() +
+        string("' after \\the"),
+        parser, parser.peekToken()); //TODO: escapechar
+    node->setValue(int(0));
+
+    node->appendChild("internal_quantity", parser.parseToken());
+    node->child("internal_quantity")->setValue(int(0));
+
+    return true;
+}
+
+bool ShowThe::execute(Parser& parser, Node::ptr node)
+{
+    const any& value = node->child("internal_quantity")->valueAny();
+    if(value.type() == typeid(int)) {
+        parser.logger()->log(Logger::SHOW,
+            boost::lexical_cast<string>(*unsafe_any_cast<int>(&value)),
+            parser, node->lastToken());
+    }
     return true;
 }
 

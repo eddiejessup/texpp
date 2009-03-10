@@ -39,6 +39,24 @@ Node::ptr Node::child(const string& name)
     return Node::ptr();
 }
 
+Token::ptr Node::lastToken()
+{
+    ChildrenList::reverse_iterator rend = m_children.rend();
+    for(ChildrenList::reverse_iterator it = m_children.rbegin();
+                                            it != rend; ++it) {
+        Token::ptr token = it->second->lastToken();
+        if(token) return token;
+    }
+
+    Token::list::reverse_iterator rend1 = m_tokens.rend();
+    for(Token::list::reverse_iterator it1 = m_tokens.rbegin();
+                                            it1 != rend1; ++it1) {
+        if(!(*it1)->isSkipped()) return *it1;
+    }
+
+    return Token::ptr();
+}
+
 string Node::repr() const
 {
     return "Node(" + reprString(m_type)
@@ -98,7 +116,7 @@ bool TokenCommand::execute(Parser&, Node::ptr)
 
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0)
+    : m_logger(logger), m_groupLevel(0), m_end(false)
 {
     if(!m_logger)
         m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
@@ -110,7 +128,7 @@ Parser::Parser(const string& fileName, std::istream* file,
 
 Parser::Parser(const string& fileName, std::auto_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0)
+    : m_logger(logger), m_groupLevel(0), m_end(false)
 {
     if(!m_logger)
         m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
@@ -210,6 +228,8 @@ inline Token::ptr Parser::rawNextToken()
 
 Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
 {
+    if(m_end) return Token::ptr();
+
     m_token.reset();
 
     // skip ignored tokens
@@ -258,6 +278,8 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
 
 Token::ptr Parser::peekToken(int n)
 {
+    if(m_end) return Token::ptr();
+
     if(m_token && n==1) return m_token; // cached token
     m_token.reset();
 
@@ -387,6 +409,30 @@ Node::ptr Parser::parseOptionalSigns()
     }
 
     return node;
+}
+
+Node::ptr Parser::tryParseInternalInteger()
+{
+    Command::ptr cmd = symbol(peekToken(), Command::ptr());
+    if(dynamic_pointer_cast<base::IntegerVariable>(cmd)) {
+        Node::ptr node = parseToken();
+        node->setType("internal_integer");
+        node->setValue(
+            static_pointer_cast<base::IntegerVariable>(cmd)->get(*this));
+        return node;
+    } else if(dynamic_pointer_cast<base::CommandGroupBase>(cmd) &&
+              dynamic_pointer_cast<base::IntegerVariable>(
+                static_pointer_cast<base::CommandGroupBase>(cmd)->item(0))) {
+        Node::ptr node = parseToken();
+        node->setType("internal_integer");
+        Command::ptr cmd1 = static_pointer_cast<base::CommandGroupBase>(cmd)
+                                ->parseCommand(*this, node);
+        node->setValue(
+            static_pointer_cast<base::IntegerVariable>(cmd1)->get(*this));
+        return node;
+    } else {
+        return Node::ptr();
+    }
 }
 
 Node::ptr Parser::parseNormalInteger()
@@ -531,7 +577,7 @@ Node::ptr Parser::parseBalancedText()
     while(peekToken()) {
         if(peekToken()->isCharacterCat(Token::CC_BGROUP)) {
             ++level;
-        } else if(peekToken()->isCharacterCat(Token::CC_ESCAPE)) {
+        } else if(peekToken()->isCharacterCat(Token::CC_EGROUP)) {
             if(--level < 0) break;
         }
         tokens->push_back(nextToken(&node->tokens()));
@@ -577,9 +623,10 @@ Node::ptr Parser::parseGeneralText(Node::ptr node)
     // parse right_brace
     Node::ptr right_brace(new Node("right_brace"));
     node->appendChild("right_brace", right_brace);
-    if(peekToken() && peekToken()->isCharacterCat(Token::CC_BGROUP)) {
+    if(peekToken() && peekToken()->isCharacterCat(Token::CC_EGROUP)) {
         right_brace->setValue(nextToken(&right_brace->tokens()));
     } else {
+        // TODO: error
         right_brace->setValue(Token::ptr(new Token(
                     Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
     }

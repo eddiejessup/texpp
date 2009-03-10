@@ -23,11 +23,13 @@
 
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 namespace {
 texpp::string loggerLevelNames[] = {
     "message", "show", "error", "critical"
 };
+const int MAX_LINE_CHARS = 1000;
 } // namespace
 
 namespace texpp {
@@ -50,28 +52,54 @@ string Logger::tokenLines(Parser& parser, Token::ptr token) const
 
     const string& line = parser.lexer()->line(token->lineNo());
     if(!line.empty()) {
-        r << line.substr(0, token->charEnd()) << '\n';
+        string line1 = line.substr(0, token->charEnd());
+        if(!line1.empty() && line1[line1.size()-1] == '\n')
+            line1 = line1.substr(0, line1.size()-1);
+        r << line1 << '\n';
         r << string(r.str().size()-1, ' ');
         r << line.substr(token->charEnd(),
                     line.find_last_not_of(" \r\n") + 1 - token->charEnd());
+        r << '\n';
     }
 
     return r.str();
 }
 
+ConsoleLogger::~ConsoleLogger()
+{
+    if(!m_atNewline) std::cout << std::endl;
+}
+
 bool ConsoleLogger::log(int level, const string& message,
                             Parser& parser, Token::ptr token)
 {
+    std::ostringstream r;
+    
     if(level <= MESSAGE) {
-        std::cout << message << "\n";
+        if(!m_atNewline) std::cout << ' '; 
+        r << message;
     } else {
-        if(level <= SHOW)
-            std::cout << "> " << message << ".\n";
-        else
-            std::cout << "! " << message << ".\n";
+        if(!m_atNewline) std::cout << std::endl;
+        if(level <= SHOW) r << "> " << message << ".\n";
+        else r << "! " << message << ".\n";
         if(token && token->lineNo())
-            std::cout << tokenLines(parser, token) << "\n";
+            r << tokenLines(parser, token) << "\n";
     }
+
+    string msg(r.str());
+    int newlinechar = parser.symbol("newlinechar", int(0));
+    if(newlinechar >= 0 && newlinechar < 256)
+        std::replace(msg.begin(), msg.end(), char(newlinechar), '\n');
+
+    std::cout << msg;
+
+    if(!msg.empty()) m_atNewline = msg[msg.size()-1] == '\n';
+
+    if(parser.lexer()->interactive() && !m_atNewline) {
+        std::cout << std::endl;
+        m_atNewline = true;
+    }
+
     return true;
 }
 

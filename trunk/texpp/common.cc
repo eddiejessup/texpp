@@ -70,6 +70,10 @@ string reprAny(const boost::any& value)
         r << (*unsafe_any_cast<Token::ptr>(&value))->repr();
     else if(value.type() == typeid(Command::ptr))
         r << (*unsafe_any_cast<Command::ptr>(&value))->repr();
+    else if(value.type() == typeid(Token::list_ptr))
+        r << "TokenList("
+          << (*unsafe_any_cast<Token::list_ptr>(&value))->size()
+          << " tokens)";
     else
         r << "any(" << value.type().name() << "())";
     return r.str();

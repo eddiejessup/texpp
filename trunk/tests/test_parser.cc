@@ -200,6 +200,6 @@ BOOST_AUTO_TEST_CASE( parser_parse )
     parser->lexer()->setCatcode('}', Token::CC_EGROUP);
     
     Node::ptr document = parser->parse();
-    std::cout << document->treeRepr();
+    //std::cout << document->treeRepr();
 }
 
