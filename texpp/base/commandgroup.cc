@@ -34,7 +34,7 @@ Command::ptr CommandGroupBase::parseCommand(Parser& parser, Node::ptr node)
     if(!cmd) {
         parser.logger()->log(Logger::ERROR, "Bad " + groupType() +
            " code (" + boost::lexical_cast<string>(number->value(int(0))) +
-           ")", parser, number->lastToken());
+           ")", parser, parser.lastToken());
         
         cmd = item(0);
     }

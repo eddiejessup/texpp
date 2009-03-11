@@ -59,7 +59,7 @@ bool CharcodeVariable::check(Parser& parser, Node::ptr node)
             "), should be in the range " +
             boost::lexical_cast<string>(m_min) + ".." +
             boost::lexical_cast<string>(m_max),
-            parser, node->lastToken());
+            parser, parser.lastToken());
 
         node->setValue(int(0));
         return false;
