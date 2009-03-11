@@ -42,6 +42,8 @@ namespace texpp {
     using boost::static_pointer_cast;
 
     using boost::any;
+    using boost::any_cast;
+    using boost::unsafe_any_cast;
 
     string reprString(const string& s);
     string reprAny(const any& value);

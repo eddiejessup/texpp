@@ -34,9 +34,17 @@ public:
     const any& initValue() const { return m_initValue; }
     void setInitValue(const any& initValue) { m_initValue = initValue; }
 
-    virtual const any& getAny(Parser& parser, bool global = false);
-    virtual bool set(Parser& parser, const any& value, bool global = false);
     virtual bool check(Parser&, shared_ptr<Node>) { return true; }
+    virtual bool set(Parser& parser, const any& value, bool global = false);
+
+    virtual const any& getAny(Parser& parser, bool global = false);
+
+    template<typename T>
+    T get(Parser& parser, T def, bool global = false) {
+        const any& value = getAny(parser, global);
+        if(value.type() != typeid(T)) return def;
+        else return *unsafe_any_cast<T>(&value);
+    }
 
 protected:
     any m_initValue;
