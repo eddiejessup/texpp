@@ -17,6 +17,7 @@
 */
 
 #include <texpp/base/show.h>
+#include <texpp/parser.h>
 #include <texpp/logger.h>
 
 #include <boost/lexical_cast.hpp>

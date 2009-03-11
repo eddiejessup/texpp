@@ -9,13 +9,13 @@ set(libtexpp_SOURCES
     lexer.cc
     logger.cc
     parser.cc
+    command.cc
     base/misc.cc
     base/show.cc
     base/func.cc
     base/files.cc
     base/variable.cc
     base/integer.cc
-    base/commandgroup.cc
     base/base.cc
 )
 

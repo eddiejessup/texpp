@@ -20,9 +20,7 @@
 #define __TEXPP_BASE_VARIABLES_H
 
 #include <texpp/common.h>
-#include <texpp/parser.h>
-
-#include <texpp/base/commandgroup.h>
+#include <texpp/command.h>
 
 namespace texpp {
 namespace base {
@@ -36,9 +34,9 @@ public:
     const any& initValue() const { return m_initValue; }
     void setInitValue(const any& initValue) { m_initValue = initValue; }
 
-    virtual const any& get(Parser& parser, bool global = false);
+    virtual const any& getAny(Parser& parser, bool global = false);
     virtual bool set(Parser& parser, const any& value, bool global = false);
-    virtual bool check(Parser&, Node::ptr) { return true; }
+    virtual bool check(Parser&, shared_ptr<Node>) { return true; }
 
 protected:
     any m_initValue;
@@ -60,8 +58,8 @@ public:
         return Command::ptr(new Cmd(name, m_initValue));
     }
 
-    /*Node::ptr parse(Parser& parser);
-    bool execute(Parser& parser, Node::ptr node);
+    /*shared_ptr<Node> parse(Parser& parser);
+    bool execute(Parser& parser, shared_ptr<Node> node);
     */
 
 protected:

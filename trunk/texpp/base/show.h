@@ -20,7 +20,7 @@
 #define __TEXPP_BASE_SHOW_H
 
 #include <texpp/common.h>
-#include <texpp/parser.h>
+#include <texpp/command.h>
 
 namespace texpp {
 namespace base {
@@ -30,8 +30,8 @@ class Show: public Command
 public:
     explicit Show(const string& name): Command(name) {}
 
-    bool parseArgs(Parser& parser, Node::ptr node);
-    bool execute(Parser& parser, Node::ptr node);
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser& parser, shared_ptr<Node> node);
 };
 
 class ShowThe: public Command
@@ -39,8 +39,8 @@ class ShowThe: public Command
 public:
     explicit ShowThe(const string& name): Command(name) {}
 
-    bool parseArgs(Parser& parser, Node::ptr node);
-    bool execute(Parser& parser, Node::ptr node);
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser& parser, shared_ptr<Node> node);
 };
 
 

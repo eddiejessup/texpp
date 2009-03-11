@@ -21,6 +21,7 @@
 
 #include <texpp/common.h>
 #include <texpp/lexer.h>
+#include <texpp/command.h>
 
 #include <deque>
 #include <cassert>
@@ -85,42 +86,6 @@ protected:
     ChildrenList            m_children;
 };
 
-class Command
-{
-public:
-    typedef shared_ptr<Command> ptr;
-
-    Command(const string& name = string()): m_name(name) {}
-    virtual ~Command() {}
-
-    const string& name() const { return m_name; }
-
-    virtual string repr() const;
-    virtual string texRepr(char escape = '\\') const;
-
-    virtual bool parseArgs(Parser&, Node::ptr) { return false; }
-    virtual bool execute(Parser&, Node::ptr) { return false; }
-
-protected:
-    string m_name;
-};
-
-class TokenCommand: public Command
-{
-public:
-    TokenCommand(Token::ptr token)
-        : Command("token_command"), m_token(token) {}
-
-    const Token::ptr& token() const { return m_token; }
-
-    string texRepr(char escape = '\\') const;
-    bool parseArgs(Parser&, Node::ptr);
-    bool execute(Parser&, Node::ptr);
-
-protected:
-    Token::ptr m_token;
-};
-
 class Parser
 {
 public:
@@ -171,6 +136,9 @@ public:
             Node::ptr node = Node::ptr());
 
     Node::ptr parseTextWord();
+
+    template<class Cmd>
+    shared_ptr<Cmd> parseCommandOrGroup(Node::ptr node);
 
     //////// Symbols
     void setSymbol(const string& name, const any& value, bool global = false);
@@ -245,6 +213,23 @@ protected:
     static any EMPTY_ANY;
 };
 
+template<class Cmd>
+shared_ptr<Cmd> Parser::parseCommandOrGroup(Node::ptr node)
+{
+    Command::ptr cmd = symbol(peekToken(), Command::ptr());
+    if(dynamic_pointer_cast<Cmd>(cmd)) {
+        node->appendChild("command", parseControlSequence());
+        return node;
+    }
+    shared_ptr<CommandGroupBase> gr =
+        dynamic_pointer_cast<CommandGroupBase>(cmd);
+    if(gr && dynamic_pointer_cast<Cmd>(gr->item(0))) {
+        node->appendChild("command", parseControlSequence());
+        gr->parseCommand(*this, node);
+        return node;
+    }
+    return Node::ptr();
+}
 
 } // namespace texpp
 

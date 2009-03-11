@@ -20,7 +20,7 @@
 #define __TEXPP_BASE_MISC_H
 
 #include <texpp/common.h>
-#include <texpp/parser.h>
+#include <texpp/command.h>
 
 namespace texpp {
 namespace base {
@@ -30,8 +30,8 @@ class Relax: public Command
 public:
     explicit Relax(const string& name): Command(name) {}
 
-    bool parseArgs(Parser&, Node::ptr) { return true; }
-    bool execute(Parser&, Node::ptr) { return true; }
+    bool parseArgs(Parser&, shared_ptr<Node>) { return true; }
+    bool execute(Parser&, shared_ptr<Node>) { return true; }
 };
 
 class End: public Command
@@ -39,8 +39,8 @@ class End: public Command
 public:
     explicit End(const string& name): Command(name) {}
 
-    bool parseArgs(Parser&, Node::ptr) { return true; }
-    bool execute(Parser& parser, Node::ptr) { parser.end(); return true; }
+    bool parseArgs(Parser&, shared_ptr<Node>) { return true; }
+    bool execute(Parser& parser, shared_ptr<Node>);
 };
 
 } // namespace base

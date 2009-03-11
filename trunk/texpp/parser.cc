@@ -82,39 +82,6 @@ string Node::treeRepr(size_t indent) const
     return str;
 }
 
-string Command::texRepr(char escape) const
-{
-    if(!m_name.empty() && m_name[0] == '\\') {
-        string ret = m_name;
-        ret[0] = escape;
-        return ret;
-    }
-    return m_name;
-}
-
-string Command::repr() const
-{
-    return "Command(" + reprString(name())
-            + ", " + reprString(texRepr()) + ")";
-}
-
-string TokenCommand::texRepr(char) const
-{
-    return m_token->meaning();
-}
-
-bool TokenCommand::parseArgs(Parser&, Node::ptr node)
-{
-    node->setValue(m_token);
-    return true;
-}
-
-bool TokenCommand::execute(Parser&, Node::ptr)
-{
-    // XXX: TODO
-    return true;
-}
-
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false)
@@ -430,17 +397,17 @@ Node::ptr Parser::tryParseInternalInteger()
         Node::ptr node = parseToken();
         node->setType("internal_integer");
         node->setValue(
-            static_pointer_cast<base::InternalInteger>(cmd)->get(*this));
+            static_pointer_cast<base::InternalInteger>(cmd)->getAny(*this));
         return node;
-    } else if(dynamic_pointer_cast<base::CommandGroupBase>(cmd) &&
+    } else if(dynamic_pointer_cast<CommandGroupBase>(cmd) &&
               dynamic_pointer_cast<base::InternalInteger>(
-                static_pointer_cast<base::CommandGroupBase>(cmd)->item(0))) {
+                static_pointer_cast<CommandGroupBase>(cmd)->item(0))) {
         Node::ptr node = parseToken();
         node->setType("internal_integer");
-        Command::ptr cmd1 = static_pointer_cast<base::CommandGroupBase>(cmd)
+        Command::ptr cmd1 = static_pointer_cast<CommandGroupBase>(cmd)
                                 ->parseCommand(*this, node);
         node->setValue(
-            static_pointer_cast<base::InternalInteger>(cmd1)->get(*this));
+            static_pointer_cast<base::InternalInteger>(cmd1)->getAny(*this));
         return node;
     } else {
         return Node::ptr();
@@ -456,7 +423,17 @@ Node::ptr Parser::parseNormalInteger()
             "Missing number, treated as zero", *this, peekToken());
         node->setValue(int(0));
 
-    } else if(peekToken()->isCharacter('`', Token::CC_OTHER)) {
+    }
+
+    /*
+    shared_ptr<base::InternalInteger> integer = 
+        parseCommandOrGroup<base::InternalInteger>(node);
+    if(integer) {
+        node->setValue(integer->get
+        return node;
+    }*/
+
+    if(peekToken()->isCharacter('`', Token::CC_OTHER)) {
         nextToken(&node->tokens());
         if(peekToken() && peekToken()->isCharacter()) {
             node->setValue(int(peekToken()->value()[0]));
@@ -568,7 +545,7 @@ Node::ptr Parser::parseNumber()
         dynamic_pointer_cast< shared_ptr<DimenVariable> >(c);
     if(dimen) {
         
-    }*/
+    }
 
     shared_ptr<base::InternalInteger> integer = 
         dynamic_pointer_cast<base::InternalInteger>(c);
@@ -578,9 +555,9 @@ Node::ptr Parser::parseNumber()
         child->setValue(integer->get(*this));
         nextToken(&child->tokens());
         return node;
-    }
+    }*/
 
-    node->appendChild("unsigned_integer", parseNormalInteger());
+    node->appendChild("normal_integer", parseNormalInteger());
     node->setValue(node->child(0)->value(int(0)) *
                         node->child(1)->value(int(0)));
     return node;

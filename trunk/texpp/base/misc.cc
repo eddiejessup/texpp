@@ -17,9 +17,14 @@
 */
 
 #include <texpp/base/misc.h>
+#include <texpp/parser.h>
 
 namespace texpp {
 namespace base {
+
+bool End::execute(Parser& parser, Node::ptr) {
+    parser.end(); return true;
+}
 
 } // namespace base
 } // namespace texpp
