@@ -219,16 +219,15 @@ shared_ptr<Cmd> Parser::parseCommandOrGroup(Node::ptr node)
     Command::ptr cmd = symbol(peekToken(), Command::ptr());
     if(dynamic_pointer_cast<Cmd>(cmd)) {
         node->appendChild("command", parseControlSequence());
-        return node;
+        return static_pointer_cast<Cmd>(cmd);
     }
     shared_ptr<CommandGroupBase> gr =
         dynamic_pointer_cast<CommandGroupBase>(cmd);
     if(gr && dynamic_pointer_cast<Cmd>(gr->item(0))) {
         node->appendChild("command", parseControlSequence());
-        gr->parseCommand(*this, node);
-        return node;
+        return static_pointer_cast<Cmd>(gr->parseCommand(*this, node));
     }
-    return Node::ptr();
+    return shared_ptr<Cmd>();
 }
 
 } // namespace texpp

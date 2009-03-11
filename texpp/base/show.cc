@@ -17,6 +17,7 @@
 */
 
 #include <texpp/base/show.h>
+#include <texpp/base/integer.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
@@ -51,9 +52,13 @@ bool Show::execute(Parser& parser, Node::ptr node)
 
 bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
 {
-    Node::ptr integer = parser.tryParseInternalInteger();
+    Node::ptr arg(new Node("internal_quantity"));
+    shared_ptr<InternalInteger> integer =
+        parser.parseCommandOrGroup<InternalInteger>(arg);
     if(integer) {
-        node->appendChild("internal_quantity", integer);
+        arg->setType("internal_integer");
+        arg->setValue(integer->getAny(parser));
+        node->appendChild("internal_quantity", arg);
         return true;
     }
 
@@ -71,10 +76,10 @@ bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
 
 bool ShowThe::execute(Parser& parser, Node::ptr node)
 {
-    const any& value = node->child("internal_quantity")->valueAny();
-    if(value.type() == typeid(int)) {
+    Node::ptr arg = node->child("internal_quantity");
+    if(arg->type() == "internal_integer") {
         parser.logger()->log(Logger::SHOW,
-            boost::lexical_cast<string>(*unsafe_any_cast<int>(&value)),
+            boost::lexical_cast<string>(arg->value(int(0))),
             parser, parser.lastToken());
     }
     return true;

@@ -425,13 +425,12 @@ Node::ptr Parser::parseNormalInteger()
 
     }
 
-    /*
     shared_ptr<base::InternalInteger> integer = 
         parseCommandOrGroup<base::InternalInteger>(node);
     if(integer) {
-        node->setValue(integer->get
+        node->setValue(integer->getAny(*this));
         return node;
-    }*/
+    }
 
     if(peekToken()->isCharacter('`', Token::CC_OTHER)) {
         nextToken(&node->tokens());
