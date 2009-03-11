@@ -248,6 +248,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
     // real token
     if(tokens && token) tokens->push_back(token);
     Token::ptr ret = token;
+    m_lastToken = token;
 
     // skip ignored tokens until EOL
     if(token && !token->isLastInLine()) {
@@ -256,7 +257,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
             if(!token) {
                 break;
             } else if(!token->isSkipped()) {
-                m_token = token;
+                //m_token = token;
                 m_tokenQueue.push_front(token);
                 break;
             }
@@ -277,20 +278,28 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
     return ret;
 }
 
-Token::ptr Parser::peekToken(int n)
+Token::ptr Parser::lastToken()
 {
+    return m_lastToken;
+}
+
+Token::ptr Parser::peekToken()
+{
+    //int n = 1; // XXX
     if(m_end) return Token::ptr();
 
-    if(m_token && n==1) return m_token; // cached token
-    m_token.reset();
+    if(m_token/* && n==1*/) return m_token; // cached token
+   // m_token.reset();
 
     // check the queue
     std::deque<Token::ptr >::iterator end = m_tokenQueue.end();
     for(std::deque<Token::ptr >::iterator it = m_tokenQueue.begin();
                                                  it != end; ++it) {
         if(!(*it)->isSkipped()) {
-            if(!m_token) m_token = *it;
-            if(!--n) return *it;
+            m_lastToken = m_token = *it;
+            return m_token;
+            /*if(!m_token) m_token = *it;
+            if(!--n) return *it;*/
         }
     }
 
@@ -301,8 +310,10 @@ Token::ptr Parser::peekToken(int n)
 
         m_tokenQueue.push_back(token);
         if(!token->isSkipped()) {
-            if(!m_token) m_token = token;
-            if(!--n) return token;
+            m_lastToken = m_token = token;
+            return m_token;
+            /*if(!m_token) m_token = token;
+            if(!--n) return token;*/
         }
     }
 

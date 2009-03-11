@@ -44,7 +44,7 @@ bool Show::execute(Parser& parser, Node::ptr node)
         if(c) str += c->texRepr(escape);
         else str += "undefined";
     }
-    parser.logger()->log(Logger::SHOW, str, parser, token);
+    parser.logger()->log(Logger::SHOW, str, parser, parser.lastToken());
     return true;
 }
 
@@ -59,7 +59,7 @@ bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
     parser.logger()->log(Logger::ERROR,
         string("You can't use `") + parser.peekToken()->texRepr() +
         string("' after \\the"),
-        parser, parser.peekToken()); //TODO: escapechar
+        parser, parser.lastToken()); //TODO: escapechar
     node->setValue(int(0));
 
     node->appendChild("internal_quantity", parser.parseToken());
@@ -74,7 +74,7 @@ bool ShowThe::execute(Parser& parser, Node::ptr node)
     if(value.type() == typeid(int)) {
         parser.logger()->log(Logger::SHOW,
             boost::lexical_cast<string>(*unsafe_any_cast<int>(&value)),
-            parser, node->lastToken());
+            parser, parser.lastToken());
     }
     return true;
 }

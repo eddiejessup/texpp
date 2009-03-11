@@ -135,7 +135,8 @@ public:
     Node::ptr parse();
 
     //////// Tokens
-    Token::ptr peekToken(int n=1);
+    Token::ptr lastToken();
+    Token::ptr peekToken();
     Token::ptr nextToken(vector< Token::ptr >* tokens = NULL);
     void end() { m_end = true; }
 
@@ -222,6 +223,7 @@ protected:
     shared_ptr<Logger>  m_logger;
 
     Token::ptr      m_token;
+    Token::ptr      m_lastToken;
     TokenQueue      m_tokenQueue;
 
     int             m_groupLevel;
