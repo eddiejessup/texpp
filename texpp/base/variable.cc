@@ -26,7 +26,7 @@
 namespace texpp {
 namespace base {
 
-const any& Variable::get(Parser& parser, bool global)
+const any& Variable::getAny(Parser& parser, bool global)
 {
     const any& ret = parser.symbolAny(name().substr(1), global);
     return !ret.empty() ? ret : m_initValue;

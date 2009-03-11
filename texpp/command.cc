@@ -16,14 +16,44 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <texpp/base/commandgroup.h>
+#include <texpp/command.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
-#include <boost/lexical_cast.hpp>
-
 namespace texpp {
-namespace base {
+
+string Command::texRepr(char escape) const
+{
+    if(!m_name.empty() && m_name[0] == '\\') {
+        string ret = m_name;
+        ret[0] = escape;
+        return ret;
+    }
+    return m_name;
+}
+
+string Command::repr() const
+{
+    return "Command(" + reprString(name())
+            + ", " + reprString(texRepr()) + ")";
+}
+
+string TokenCommand::texRepr(char) const
+{
+    return m_token->meaning();
+}
+
+bool TokenCommand::parseArgs(Parser&, Node::ptr node)
+{
+    node->setValue(m_token);
+    return true;
+}
+
+bool TokenCommand::execute(Parser&, Node::ptr)
+{
+    // XXX: TODO
+    return true;
+}
 
 Command::ptr CommandGroupBase::parseCommand(Parser& parser, Node::ptr node)
 {
@@ -57,6 +87,5 @@ bool CommandGroupBase::execute(Parser& parser, Node::ptr node)
     else return false;
 }
 
-} // namespace base
 } // namespace texpp
 

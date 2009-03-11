@@ -24,7 +24,8 @@
 #include <texpp/base/files.h>
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
-#include <texpp/base/commandgroup.h>
+
+#include <texpp/parser.h>
 
 #include <boost/lexical_cast.hpp>
 #include <ctime>

@@ -16,16 +16,54 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef __TEXPP_BASE_COMMANDGROUP_H
-#define __TEXPP_BASE_COMMANDGROUP_H
+#ifndef __TEXPP_COMMAND_H
+#define __TEXPP_COMMAND_H
 
 #include <texpp/common.h>
-#include <texpp/parser.h>
 
 #include <boost/lexical_cast.hpp>
 
 namespace texpp {
-namespace base {
+
+class Token;
+class Node;
+class Parser;
+
+class Command
+{
+public:
+    typedef shared_ptr<Command> ptr;
+
+    Command(const string& name = string()): m_name(name) {}
+    virtual ~Command() {}
+
+    const string& name() const { return m_name; }
+
+    virtual string repr() const;
+    virtual string texRepr(char escape = '\\') const;
+
+    virtual bool parseArgs(Parser&, shared_ptr<Node>) { return false; }
+    virtual bool execute(Parser&, shared_ptr<Node>) { return false; }
+
+protected:
+    string m_name;
+};
+
+class TokenCommand: public Command
+{
+public:
+    TokenCommand(shared_ptr<Token> token)
+        : Command("token_command"), m_token(token) {}
+
+    const shared_ptr<Token>& token() const { return m_token; }
+
+    string texRepr(char escape = '\\') const;
+    bool parseArgs(Parser&, shared_ptr<Node>);
+    bool execute(Parser&, shared_ptr<Node>);
+
+protected:
+    shared_ptr<Token> m_token;
+};
 
 class CommandGroupBase: public Command
 {
@@ -36,10 +74,10 @@ public:
 
     virtual string groupType() const { return "group"; }
 
-    virtual Command::ptr parseCommand(Parser& parser, Node::ptr node);
+    virtual Command::ptr parseCommand(Parser& parser, shared_ptr<Node> node);
 
-    bool parseArgs(Parser& parser, Node::ptr node);
-    bool execute(Parser& parser, Node::ptr node);
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser& parser, shared_ptr<Node> node);
 };
 
 template<class Cmd>
@@ -71,9 +109,7 @@ Command::ptr FixedCommandGroup<Cmd>::item(size_t n)
     return m_items[n];
 }
 
-} // namespace base
 } // namespace texpp
-
 
 #endif
 

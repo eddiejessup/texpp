@@ -20,7 +20,7 @@
 #define __TEXPP_BASE_INTEGER_H
 
 #include <texpp/common.h>
-#include <texpp/parser.h>
+#include <texpp/command.h>
 
 #include <texpp/base/variable.h>
 
@@ -32,8 +32,8 @@ class InternalInteger: public Variable
 public:
     InternalInteger(const string& name, const any& initValue = any(0))
         : Variable(name, initValue) {}
-    bool parseArgs(Parser& parser, Node::ptr node);
-    bool execute(Parser& parser, Node::ptr node);
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser& parser, shared_ptr<Node> node);
 };
 
 class IntegerVariable: public InternalInteger
@@ -58,7 +58,7 @@ public:
         const any& initValue = any(), int min=0, int max=0)
         : InternalInteger(name, initValue), m_min(min), m_max(max) {}
 
-    bool check(Parser& parser, Node::ptr node);
+    bool check(Parser& parser, shared_ptr<Node> node);
     int min() const { return m_min; }
     int max() const { return m_max; }
 

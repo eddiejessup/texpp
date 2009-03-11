@@ -20,9 +20,11 @@
 #define __TEXPP_BASE_BASE_H
 
 #include <texpp/common.h>
-#include <texpp/parser.h>
 
 namespace texpp {
+
+class Parser;
+
 namespace base {
 
 void initSymbols(Parser& parser);

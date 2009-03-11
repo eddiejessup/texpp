@@ -20,7 +20,7 @@
 #define __TEXPP_BASE_FUNC_H
 
 #include <texpp/common.h>
-#include <texpp/parser.h>
+#include <texpp/command.h>
 
 namespace texpp {
 namespace base {
@@ -30,8 +30,8 @@ class Let: public Command
 public:
     explicit Let(const string& name): Command(name) {}
 
-    bool parseArgs(Parser& parser, Node::ptr node);
-    bool execute(Parser&, Node::ptr);
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser&, shared_ptr<Node>);
 };
 
 class FutureLet: public Command
@@ -39,8 +39,8 @@ class FutureLet: public Command
 public:
     explicit FutureLet(const string& name): Command(name) {}
 
-    bool parseArgs(Parser& parser, Node::ptr node);
-    bool execute(Parser&, Node::ptr);
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser&, shared_ptr<Node>);
 };
 
 } // namespace base
