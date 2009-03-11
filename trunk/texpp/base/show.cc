@@ -63,9 +63,9 @@ bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
     }
 
     parser.logger()->log(Logger::ERROR,
-        string("You can't use `") + parser.peekToken()->texRepr() +
-        string("' after \\the"),
-        parser, parser.lastToken()); //TODO: escapechar
+        "You can't use `" + parser.peekToken()->texRepr() +
+        "' after " + char(parser.symbol("escapechar", int(0))) + "the",
+        parser, parser.lastToken());
     node->setValue(int(0));
 
     node->appendChild("internal_quantity", parser.parseToken());

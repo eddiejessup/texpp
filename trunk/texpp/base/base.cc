@@ -24,6 +24,7 @@
 #include <texpp/base/files.h>
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
+#include <texpp/base/arithmetic.h>
 
 #include <texpp/parser.h>
 
@@ -64,6 +65,13 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("show",       Show);
     __TEXPP_SET_COMMAND("showthe",    ShowThe);
     __TEXPP_SET_COMMAND("message",    Message);
+
+    __TEXPP_SET_COMMAND("advance",
+        ArithmeticCommand, ArithmeticCommand::ADVANCE);
+    __TEXPP_SET_COMMAND("multiply",
+        ArithmeticCommand, ArithmeticCommand::MULTIPLY);
+    __TEXPP_SET_COMMAND("divide",
+        ArithmeticCommand, ArithmeticCommand::DIVIDE);
 
     __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
 
