@@ -3,7 +3,58 @@
 \multiply\count10 30
 \showthe\count10
 
+% spaces and by
+\count10=20
+\multiply  \count  10  20
+\showthe\count10
+
+\multiply  \count  10  by 20
+\showthe\count10
+
+\multiply  \count  10by20
+\showthe\count10
+
+% dimen
+\dimen0=10.5pt
+\multiply\dimen0by0.4pt
+\showthe\dimen0
+
+\multiply\dimen0by0.1pt
+\showthe\dimen0
+
+\multiply\dimen0by0.3cc
+\showthe\dimen0
+
+\multiply\dimen0by"3FFFFFFFsp
+\showthe\dimen0
+
+\count1="7FFFFFFF
+\multiply\count1by2
+\dimen1=1\count1
+\showthe\dimen1
+
+% overflow
+\count1=214748364
+\multiply\count1by11
+\showthe\count1
+
+\count1=107374182
+\multiply\count1by11
+\showthe\count1
+
+\dimen1=214748364sp
+\multiply\dimen1by11sp
+\showthe\dimen1
+
+\dimen1=107374182sp
+\multiply\dimen1by11sp
+\showthe\dimen1
+
 % errors
 \multiply\par\relax
+
+\count0=10
+\multiply\count0by\relax
+\showthe\count0
 
 \end

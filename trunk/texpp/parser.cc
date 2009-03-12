@@ -22,12 +22,14 @@
 #include <texpp/base/base.h>
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
+#include <texpp/base/dimen.h>
 
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <climits>
 #include <cassert>
+#include <iterator>
 
 namespace texpp {
 
@@ -287,6 +289,14 @@ Token::ptr Parser::peekToken()
     return Token::ptr();
 }
 
+void Parser::pushBack(vector< Token::ptr >* tokens)
+{
+    std::copy(tokens->rbegin(), tokens->rend(),
+            std::front_inserter(m_tokenQueue));
+    m_token.reset();
+    // NOTE: lastToken is NOT changed
+}
+
 bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
 {
     if(peekToken()) {
@@ -356,6 +366,48 @@ Node::ptr Parser::parseCharacter()
     return node;
 }
 
+Node::ptr Parser::parseKeyword(const vector<string>& keywords)
+{
+    Node::ptr node(new Node("keyword"));
+
+    while(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&node->tokens());
+
+    string value;
+    vector<string>::const_iterator kwEnd = keywords.end();
+    for(size_t n=1; peekToken() && peekToken()->isCharacter(); ++n) {
+        value += std::tolower(peekToken()->value()[0]);
+        nextToken(&node->tokens());
+
+        vector<string>::const_iterator kw = keywords.begin();
+        for(; kw != kwEnd; ++kw) {
+            if(kw->substr(0, n) == value) break;
+        }
+
+        if(kw == kwEnd) {
+            pushBack(&node->tokens());
+            break;
+        } else if(kw->size() == n) {
+            node->setValue(value);
+            return node;
+        }
+    }
+
+    return Node::ptr();
+}
+
+Node::ptr Parser::parseOptionalKeyword(const vector<string>& keywords)
+{
+    Node::ptr node = parseKeyword(keywords);
+    if(!node) {
+        node = Node::ptr(new Node("keyword"));
+        while(helperIsImplicitCharacter(Token::CC_SPACE))
+            nextToken(&node->tokens());
+        node->setValue(string());
+    }
+    return node;
+}
+
 Node::ptr Parser::parseOptionalEquals(bool oneSpaceAfter)
 {
     Node::ptr node(new Node("optional_equals"));
@@ -390,30 +442,6 @@ Node::ptr Parser::parseOptionalSigns()
     return node;
 }
 
-Node::ptr Parser::tryParseInternalInteger()
-{
-    Command::ptr cmd = symbol(peekToken(), Command::ptr());
-    if(dynamic_pointer_cast<base::InternalInteger>(cmd)) {
-        Node::ptr node = parseToken();
-        node->setType("internal_integer");
-        node->setValue(
-            static_pointer_cast<base::InternalInteger>(cmd)->getAny(*this));
-        return node;
-    } else if(dynamic_pointer_cast<CommandGroupBase>(cmd) &&
-              dynamic_pointer_cast<base::InternalInteger>(
-                static_pointer_cast<CommandGroupBase>(cmd)->item(0))) {
-        Node::ptr node = parseToken();
-        node->setType("internal_integer");
-        Command::ptr cmd1 = static_pointer_cast<CommandGroupBase>(cmd)
-                                ->parseCommand(*this, node);
-        node->setValue(
-            static_pointer_cast<base::InternalInteger>(cmd1)->getAny(*this));
-        return node;
-    } else {
-        return Node::ptr();
-    }
-}
-
 Node::ptr Parser::parseNormalInteger()
 {
 
@@ -444,7 +472,7 @@ Node::ptr Parser::parseNormalInteger()
         } else {
             logger()->log(Logger::ERROR,
                 "Improper alphabetic constant", *this, peekToken());
-            node->setValue(int(0));
+            node->setValue(int(48)); // XXX: why 48 ?
         }
         if(helperIsImplicitCharacter(Token::CC_SPACE))
             nextToken(&node->tokens());
@@ -452,9 +480,8 @@ Node::ptr Parser::parseNormalInteger()
         return node;
     }
     
-    std::stringstream digits;
-    bool toobig = false;
-    int result;
+    int result = 0;
+    int digits = 0;
 
     if(peekToken()->isCharacter('\"', Token::CC_OTHER)) {
         nextToken(&node->tokens());
@@ -467,16 +494,19 @@ Node::ptr Parser::parseNormalInteger()
                         std::isxdigit(peekToken()->value()[0]) &&
                         !std::islower(peekToken()->value()[0]) &&
                         !std::isdigit(peekToken()->value()[0])))) {
-            digits << peekToken()->value()[0];
-            digits.seekg(0, std::ios_base::beg);
-            digits >> std::hex >> result;
-            if(digits.fail()) {
-                logger()->log(Logger::ERROR, "Number too big",
-                                    *this, peekToken());
-                toobig = true;
+            if(result != TEXPP_INT_INV) {
+                int v = isdigit(peekToken()->value()[0]) ?
+                            peekToken()->value()[0]-'0' :
+                            peekToken()->value()[0]-'A'+10;
+                if(result<=TEXPP_INT_MAX/16 && result*16<=TEXPP_INT_MAX-v) {
+                    result = result*16 + v;
+                } else {
+                    logger()->log(Logger::ERROR, "Number too big",
+                                        *this, peekToken());
+                    result = TEXPP_INT_INV;
+                }
             }
-            digits.clear();
-            nextToken(&node->tokens());
+            nextToken(&node->tokens()); ++digits;
         }
 
     } else if(peekToken()->isCharacter('\'', Token::CC_OTHER)) {
@@ -485,42 +515,44 @@ Node::ptr Parser::parseNormalInteger()
                 peekToken()->isCharacterCat(Token::CC_OTHER) &&
                         std::isdigit(peekToken()->value()[0]) &&
                 peekToken()->value()[0] < '8') {
-            digits << peekToken()->value()[0];
-            digits.seekg(0, std::ios_base::beg);
-            digits >> std::oct >> result;
-            if(digits.fail()) {
-                logger()->log(Logger::ERROR, "Number too big",
+            if(result != TEXPP_INT_INV) {
+                int v = peekToken()->value()[0] - '0';
+                if(result<=TEXPP_INT_MAX/8 && result*8<=TEXPP_INT_MAX-v) {
+                    result = result*8 + v;
+                } else {
+                    logger()->log(Logger::ERROR, "Number too big",
                                         *this, peekToken());
-                toobig = true;
+                    result = TEXPP_INT_INV;
+                }
             }
-            digits.clear();
-            nextToken(&node->tokens());
+            nextToken(&node->tokens()); ++digits;
         }
 
     } else {
         while(peekToken() && 
                 peekToken()->isCharacterCat(Token::CC_OTHER) &&
                         std::isdigit(peekToken()->value()[0])) {
-            digits << peekToken()->value()[0];
-            digits.seekg(0, std::ios_base::beg);
-            digits >> result;
-            if(digits.fail()) {
-                logger()->log(Logger::ERROR, "Number too big",
+            if(result != TEXPP_INT_INV) {
+                int v = peekToken()->value()[0] - '0';
+                if(result<=TEXPP_INT_MAX/10 && result*10<=TEXPP_INT_MAX-v) {
+                    result = result*10 + v;
+                } else {
+                    logger()->log(Logger::ERROR, "Number too big",
                                         *this, peekToken());
-                toobig = true;
+                    result = TEXPP_INT_INV;
+                }
             }
-            digits.clear();
-            nextToken(&node->tokens());
+            nextToken(&node->tokens()); ++digits;
         }
     }
 
-    if(digits.str().size() == 0) {
+    if(result == TEXPP_INT_INV)
+        result = TEXPP_INT_MAX;
+
+    if(!digits) {
         logger()->log(Logger::ERROR,
             "Missing number, treated as zero",
                                         *this, peekToken());
-        result = 0;
-    } else if(toobig) {
-        result = INT_MAX;
     }
 
     node->setValue(result);
@@ -531,32 +563,258 @@ Node::ptr Parser::parseNormalInteger()
     return node;
 }
 
+Node::ptr Parser::parseNormalDimen()
+{
+    Node::ptr node(new Node("normal_dimen"));
+    if(!peekToken()) {
+        logger()->log(Logger::ERROR,
+            "Missing number, treated as zero", *this, peekToken());
+        node->setValue(int(0));
+        return node;
+    }
+
+    shared_ptr<base::InternalDimen> dimen = 
+        parseCommandOrGroup<base::InternalDimen>(node);
+    if(dimen) {
+        node->setValue(dimen->getAny(*this));
+        return node;
+    }
+
+    // Factor
+    Node::ptr factor = parseDimenFactor();
+    node->appendChild("factor", factor);
+    pair<int, int> val = factor->value(std::make_pair(int(0), int(0)));
+    bool overflow = false;
+
+    // <optional_spaces>
+    if(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&factor->tokens());
+
+    // <internal unit>
+    Node::ptr i_node(new Node("unternal_unit"));
+    int i_unit = 0;
+
+    shared_ptr<base::InternalInteger> i_int = 
+        parseCommandOrGroup<base::InternalInteger>(i_node);
+    if(i_int) {
+        node->appendChild("internal_unit", i_node);
+        i_unit = i_int->get(*this, int(0));
+
+    } else {
+        static vector<string> kw_internal_units;
+        if(kw_internal_units.empty()) {
+            kw_internal_units.push_back("em");
+            kw_internal_units.push_back("ex");
+        }
+
+        i_node = parseKeyword(kw_internal_units);
+        if(i_node) {
+            node->appendChild("internal_unit", i_node);
+            i_unit = 0; // TODO: fontdimen
+        }
+    }
+
+    if(i_int || i_node) {
+        if(i_unit != 0) {
+            int v = TEXPP_SCALED_MAX;
+            tuple<int,int,int> p = base::InternalDimen::multiplyIntFrac(
+                        i_unit, val.second, 0x10000);
+            if(i_unit < 0) { i_unit=-i_unit; val.first=-val.first; }
+            if(!p.get<2>() && val.first <= TEXPP_SCALED_MAX/i_unit &&
+                        val.first*i_unit <= TEXPP_SCALED_MAX-p.get<0>()) {
+                v = val.first*i_unit + p.get<0>();
+            } else {
+                logger()->log(Logger::ERROR,
+                    "Dimension too large", *this, lastToken());
+                overflow = true;
+                v = TEXPP_SCALED_MAX;
+            }
+            node->setValue(v);
+        } else {
+            node->setValue(int(0));
+        }
+        return node;
+    }
+
+    // <optional true>
+    static vector<string> kw_optional_true;
+    if(kw_optional_true.empty()) {
+        kw_optional_true.push_back("true");
+    }
+
+    Node::ptr optional_true = parseKeyword(kw_optional_true);
+    if(optional_true) {
+        node->appendChild("optional_true", optional_true);
+        int mag = symbol("mag", int(0));
+        if(mag != 1000) {
+            tuple<int, int, bool> p =
+                base::InternalDimen::multiplyIntFrac(val.first, 1000, mag);
+            if(!p.get<2>()) {
+                val.first = p.get<0>();
+                val.second = (1000*val.second + 0x10000*p.get<1>()) / mag;
+                val.first = val.first + (val.second / 0x10000);
+                val.second = val.second % 0x10000;
+            } else {
+                overflow = true;
+            }
+        }
+    }
+
+    // <physical units>
+    static int u_scale[][2] = {
+        {1,1},          // pt
+        {1,1},          // sp
+        {7227,100},     // in
+        {12,1},         // pc
+        {7227,254},     // cm
+        {7227,2540},    // mm
+        {7227,7200},    // bp
+        {1238,1157},    // dd
+        {14856,1157},   // cc
+    };
+    static vector<string> kw_physical_units;
+    if(kw_physical_units.empty()) {
+        kw_physical_units.push_back("pt");
+        kw_physical_units.push_back("sp");
+        kw_physical_units.push_back("in");
+        kw_physical_units.push_back("pc");
+        kw_physical_units.push_back("cm");
+        kw_physical_units.push_back("mm");
+        kw_physical_units.push_back("bp");
+        kw_physical_units.push_back("dd");
+        kw_physical_units.push_back("cc");
+    }
+
+    Node::ptr units = parseKeyword(kw_physical_units);
+    if(units) {
+        node->appendChild("physical_units", units);
+        vector<string>::iterator it = std::find(kw_physical_units.begin(),
+                    kw_physical_units.end(), units->value(string()));
+        assert(it != kw_physical_units.end());
+        int n = it - kw_physical_units.begin();
+        if(n == 0) {
+            // do nothing
+        } else if(n == 1) { // sp
+            val.second = val.first % 0x10000;
+            val.first  = val.first / 0x10000;
+        } else { // not pt
+            tuple<int,int,bool> p = base::InternalDimen::multiplyIntFrac(
+                        val.first,u_scale[n][0],u_scale[n][1]);
+            overflow = p.get<2>();
+            val.first = p.get<0>();
+            val.second = (val.second * u_scale[n][0] +
+                        p.get<1>() * 0x10000) / u_scale[n][1];
+            val.first = val.first + (val.second / 0x10000);
+            val.second = val.second % 0x10000;
+        }
+    } else {
+        logger()->log(Logger::ERROR,
+            "Illegal unit of measure (pt inserted)", *this, lastToken());
+    }
+
+    int v = val.first * 0x10000 + val.second;
+    if(overflow || v >= 0x40000000) {
+        logger()->log(Logger::ERROR,
+            "Dimension too large", *this, lastToken());
+        v = TEXPP_SCALED_MAX;
+    }
+
+    node->setValue(v);
+
+    return node;
+}
+
+Node::ptr Parser::parseDimenFactor()
+{
+    if(peekToken() && peekToken()->isCharacterCat(Token::CC_OTHER) &&
+            (std::isdigit(peekToken()->value()[0]) ||
+             peekToken()->value()[0] == '.' ||
+             peekToken()->value()[0] == ',')) {
+
+        Node::ptr node(new Node("decimal_constant"));
+
+        int result = 0;
+        int frac = 0;
+        int digits = 0;
+
+        while(peekToken() && 
+                peekToken()->isCharacterCat(Token::CC_OTHER) &&
+                        std::isdigit(peekToken()->value()[0])) {
+            if(result != TEXPP_INT_INV) {
+                int v = peekToken()->value()[0] - '0';
+                if(result<=TEXPP_INT_MAX/10 && result*10<=TEXPP_INT_MAX-v) {
+                    result = result*10 + v;
+                } else {
+                    logger()->log(Logger::ERROR, "Number too big",
+                                        *this, peekToken());
+                    result = TEXPP_INT_INV;
+                }
+            }
+            nextToken(&node->tokens()); ++digits;
+        }
+
+        if(result == TEXPP_INT_INV)
+            result = TEXPP_INT_MAX;
+
+        if(peekToken() && (peekToken()->isCharacter('.', Token::CC_OTHER) ||
+                           peekToken()->isCharacter(',', Token::CC_OTHER))) {
+            nextToken(&node->tokens()); ++digits;
+            
+            int fracDigits = 0;
+            while(peekToken() && 
+                    peekToken()->isCharacterCat(Token::CC_OTHER) &&
+                            std::isdigit(peekToken()->value()[0])) {
+                if(fracDigits < 17)
+                    frac = (frac + (peekToken()->value()[0]-'0')*0x20000)/10;
+                nextToken(&node->tokens()); ++fracDigits;
+            }
+            frac = (frac+1)/2;
+        }
+
+        if(!digits) {
+            logger()->log(Logger::ERROR,
+                "Missing number, treated as zero",
+                                            *this, peekToken());
+        }
+        
+        node->setValue(std::make_pair(int(result), frac));
+        return node;
+
+    } else {
+        Node::ptr node = parseNormalInteger();
+        node->setValue(std::make_pair(node->value(int(0)), 0));
+        return node;
+    }
+}
+
 Node::ptr Parser::parseNumber()
 {
     Node::ptr node(new Node("number"));
-
     node->appendChild("sign", parseOptionalSigns());
 
-    Command::ptr c = symbol(peekToken(), Command::ptr());
-
-    /*
-    shared_ptr<DimenVariable> dimen =
-        dynamic_pointer_cast< shared_ptr<DimenVariable> >(c);
+    Node::ptr internal(new Node("internal"));
+    shared_ptr<base::InternalDimen> dimen = 
+        parseCommandOrGroup<base::InternalDimen>(internal);
     if(dimen) {
-        
+        internal->setType("internal_dimen");
+        node->appendChild("coerced_dimen", internal);
+        node->setValue(dimen->getAny(*this));
+        return node;
     }
 
-    shared_ptr<base::InternalInteger> integer = 
-        dynamic_pointer_cast<base::InternalInteger>(c);
-    if(integer) {
-        Node::ptr child(new Node("internal_integer"));
-        node->appendChild("unsigned_integer", child);
-        child->setValue(integer->get(*this));
-        nextToken(&child->tokens());
-        return node;
-    }*/
-
     node->appendChild("normal_integer", parseNormalInteger());
+
+    node->setValue(node->child(0)->value(int(0)) *
+                        node->child(1)->value(int(0)));
+    return node;
+}
+
+Node::ptr Parser::parseDimen()
+{
+    Node::ptr node(new Node("dimen"));
+    node->appendChild("sign", parseOptionalSigns());
+    node->appendChild("normal_dimen", parseNormalDimen());
+
     node->setValue(node->child(0)->value(int(0)) *
                         node->child(1)->value(int(0)));
     return node;

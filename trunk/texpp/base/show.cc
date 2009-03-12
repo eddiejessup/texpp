@@ -18,6 +18,7 @@
 
 #include <texpp/base/show.h>
 #include <texpp/base/integer.h>
+#include <texpp/base/dimen.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
@@ -62,6 +63,15 @@ bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
         return true;
     }
 
+    shared_ptr<InternalDimen> dimen =
+        parser.parseCommandOrGroup<InternalDimen>(arg);
+    if(dimen) {
+        arg->setType("internal_dimen");
+        arg->setValue(dimen->getAny(parser));
+        node->appendChild("internal_quantity", arg);
+        return true;
+    }
+
     parser.logger()->log(Logger::ERROR,
         "You can't use `" + parser.peekToken()->texRepr() +
         "' after " + char(parser.symbol("escapechar", int(0))) + "the",
@@ -80,6 +90,10 @@ bool ShowThe::execute(Parser& parser, Node::ptr node)
     if(arg->type() == "internal_integer") {
         parser.logger()->log(Logger::SHOW,
             boost::lexical_cast<string>(arg->value(int(0))),
+            parser, parser.lastToken());
+    } else if(arg->type() == "internal_dimen") {
+        parser.logger()->log(Logger::SHOW,
+            InternalDimen::scaledToString(arg->value(int(0))),
             parser, parser.lastToken());
     }
     return true;

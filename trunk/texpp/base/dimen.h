@@ -16,41 +16,41 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef __TEXPP_COMMON_H
-#define __TEXPP_COMMON_H
+#ifndef __TEXPP_BASE_DIMEN_H
+#define __TEXPP_BASE_DIMEN_H
 
-#include <string>
-#include <vector>
+#include <texpp/common.h>
+#include <texpp/command.h>
 
-//#include <tr1/memory>
-#include <boost/shared_ptr.hpp>
-#include <boost/any.hpp>
-
-#include <tr1/unordered_map>
-
-#define TEXPP_INT_INV    (int(-0x80000000))
-#define TEXPP_INT_MAX    (int( 0x7fffffff))
-#define TEXPP_SCALED_MAX (int( 0x3fffffff))
+#include <texpp/base/variable.h>
+#include <boost/tuple/tuple.hpp>
 
 namespace texpp {
-    using std::string;
-    using std::vector;
-    using std::pair;
-    using std::tr1::unordered_map;
-    //using std::tr1::shared_ptr;
-    //using std::tr1::weak_ptr;
 
-    using boost::shared_ptr;
-    using boost::weak_ptr;
-    using boost::dynamic_pointer_cast;
-    using boost::static_pointer_cast;
+using boost::tuple;
 
-    using boost::any;
-    using boost::any_cast;
-    using boost::unsafe_any_cast;
+namespace base {
 
-    string reprString(const string& s);
-    string reprAny(const any& value);
+class InternalDimen: public Variable
+{
+public:
+    InternalDimen(const string& name, const any& initValue = any(0))
+        : Variable(name, initValue) {}
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser& parser, shared_ptr<Node> node);
+
+    static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
+    static string scaledToString(int n);
+};
+
+class DimenVariable: public InternalDimen
+{
+public:
+    DimenVariable(const string& name, const any& initValue = any(0))
+        : InternalDimen(name, initValue) {}
+};
+
+} // namespace base
 } // namespace texpp
 
 #endif
