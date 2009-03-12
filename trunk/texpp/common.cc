@@ -29,6 +29,23 @@
 
 namespace texpp {
 
+pair<int,bool> safeMultiply(int v1, int v2, int max)
+{
+    if(v1 < 0) { v1=-v1; v2=-v2; }
+    if(v1 != 0) {
+        if(v2 > max/v1 || -v2 > max/v1)
+            return std::make_pair(v1, true);
+        v1 *= v2;
+    }
+    return std::make_pair(v1, false);
+}
+
+pair<int,bool> safeDivide(int v1, int v2)
+{
+    if(v2==0) return std::make_pair(v1, true);
+    return std::make_pair(v1/v2, false);
+}
+
 string reprString(const string& s)
 {
     std::ostringstream r;

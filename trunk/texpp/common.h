@@ -49,6 +49,9 @@ namespace texpp {
     using boost::any_cast;
     using boost::unsafe_any_cast;
 
+    pair<int,bool> safeMultiply(int v1, int v2, int max);
+    pair<int,bool> safeDivide(int v1, int v2);
+
     string reprString(const string& s);
     string reprAny(const any& value);
 } // namespace texpp

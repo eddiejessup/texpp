@@ -16,42 +16,42 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef __TEXPP_BASE_DIMEN_H
-#define __TEXPP_BASE_DIMEN_H
+#include <texpp/base/glue.h>
+#include <texpp/base/dimen.h>
+#include <texpp/parser.h>
 
-#include <texpp/common.h>
-#include <texpp/command.h>
-
-#include <texpp/base/variable.h>
-#include <boost/tuple/tuple.hpp>
+#include <sstream>
 
 namespace texpp {
-
-using boost::tuple;
-
 namespace base {
 
-class InternalDimen: public Variable
+bool InternalGlue::parseArgs(Parser& parser, Node::ptr node)
 {
-public:
-    InternalDimen(const string& name, const any& initValue = any(0))
-        : Variable(name, initValue) {}
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser& parser, shared_ptr<Node> node);
+    node->appendChild("equals", parser.parseOptionalEquals(false));
+    node->appendChild("rvalue", parser.parseGlue());
+    return check(parser, node->child("rvalue"));
+}
 
-    static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
-    static string dimenToString(int n, int o=0);
-};
-
-class DimenVariable: public InternalDimen
+bool InternalGlue::execute(Parser& parser, Node::ptr node)
 {
-public:
-    DimenVariable(const string& name, const any& initValue = any(0))
-        : InternalDimen(name, initValue) {}
-};
+    return set(parser, node->child("rvalue")->value(Glue(0)));
+}
+
+string InternalGlue::glueToString(const Glue& g)
+{
+    string s = InternalDimen::dimenToString(g.width);
+    if(g.stretch) {
+        s = s + " plus " +
+            InternalDimen::dimenToString(g.stretch, g.stretchOrder);
+    }
+    if(g.shrink) {
+        s = s + " minus " +
+            InternalDimen::dimenToString(g.shrink, g.shrinkOrder);
+    }
+    return s;
+}
 
 } // namespace base
 } // namespace texpp
 
-#endif
 
