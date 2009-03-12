@@ -16,8 +16,8 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef __TEXPP_BASE_DIMEN_H
-#define __TEXPP_BASE_DIMEN_H
+#ifndef __TEXPP_BASE_GLUE_H
+#define __TEXPP_BASE_GLUE_H
 
 #include <texpp/common.h>
 #include <texpp/command.h>
@@ -27,31 +27,50 @@
 
 namespace texpp {
 
-using boost::tuple;
-
 namespace base {
 
-class InternalDimen: public Variable
+struct Glue
+{
+    int width;
+    int stretch, stretchOrder;
+    int shrink, shrinkOrder;
+
+    Glue() {}
+    explicit Glue(int w, int st = 0, int sto = 0, int sh = 0, int sho = 0)
+        : width(w), stretch(st), stretchOrder(sto),
+          shrink(sh), shrinkOrder(sho) {}
+
+    Glue(const Glue& g): width(g.width), stretch(g.stretch),
+        stretchOrder(g.stretchOrder),
+        shrink(g.shrink), shrinkOrder(g.shrinkOrder) {}
+
+    const Glue& operator=(const Glue& g) {
+        width = g.width; stretch = g.stretch; stretchOrder = g.stretchOrder;
+        shrink = g.shrink; shrinkOrder = g.shrinkOrder; return *this;
+    }
+};
+
+class InternalGlue: public Variable
 {
 public:
-    InternalDimen(const string& name, const any& initValue = any(0))
+    InternalGlue(const string& name, const any& initValue = any(Glue(0)))
         : Variable(name, initValue) {}
     bool parseArgs(Parser& parser, shared_ptr<Node> node);
     bool execute(Parser& parser, shared_ptr<Node> node);
 
-    static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
-    static string dimenToString(int n, int o=0);
+    static string glueToString(const Glue& g);
 };
 
-class DimenVariable: public InternalDimen
+class GlueVariable: public InternalGlue
 {
 public:
-    DimenVariable(const string& name, const any& initValue = any(0))
-        : InternalDimen(name, initValue) {}
+    GlueVariable(const string& name, const any& initValue = any(Glue(0)))
+        : InternalGlue(name, initValue) {}
 };
 
 } // namespace base
 } // namespace texpp
 
 #endif
+
 

@@ -23,6 +23,7 @@
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
 #include <texpp/base/dimen.h>
+#include <texpp/base/glue.h>
 
 #include <iostream>
 #include <sstream>
@@ -771,13 +772,18 @@ Node::ptr Parser::parseDimenFactor()
                            peekToken()->isCharacter(',', Token::CC_OTHER))) {
             nextToken(&node->tokens()); ++digits;
             
-            int fracDigits = 0;
+            string fracDigits;
             while(peekToken() && 
                     peekToken()->isCharacterCat(Token::CC_OTHER) &&
                             std::isdigit(peekToken()->value()[0])) {
-                if(fracDigits < 17)
-                    frac = (frac + (peekToken()->value()[0]-'0')*0x20000)/10;
-                nextToken(&node->tokens()); ++fracDigits;
+                if(fracDigits.size() < 17)
+                    fracDigits += peekToken()->value()[0];
+                nextToken(&node->tokens());
+            }
+            string::reverse_iterator rend = fracDigits.rend();
+            for(string::reverse_iterator it = fracDigits.rbegin();
+                                    it != rend; ++it) {
+                frac = (frac + (*it-'0')*0x20000)/10;
             }
             frac = (frac+1)/2;
         }
@@ -808,12 +814,19 @@ Node::ptr Parser::parseNumber()
         parseCommandOrGroup<base::InternalDimen>(internal);
     if(dimen) {
         internal->setType("internal_dimen");
+        internal->setValue(dimen->get(*this, int(0)));
         node->appendChild("coerced_dimen", internal);
-        node->setValue(dimen->getAny(*this));
-        return node;
+    } else {
+        shared_ptr<base::InternalGlue> glue = 
+            parseCommandOrGroup<base::InternalGlue>(internal);
+        if(glue) {
+            internal->setType("internal_glue");
+            internal->setValue(glue->get(*this, base::Glue(0)).width);
+            node->appendChild("coerced_glue", internal);
+        } else {
+            node->appendChild("normal_integer", parseNormalInteger());
+        }
     }
-
-    node->appendChild("normal_integer", parseNormalInteger());
 
     node->setValue(node->child(0)->value(int(0)) *
                         node->child(1)->value(int(0)));
@@ -824,12 +837,82 @@ Node::ptr Parser::parseDimen()
 {
     Node::ptr node(new Node("dimen"));
     node->appendChild("sign", parseOptionalSigns());
-    node->appendChild("normal_dimen", parseNormalDimen());
+
+    Node::ptr internal(new Node("internal"));
+    shared_ptr<base::InternalGlue> glue = 
+        parseCommandOrGroup<base::InternalGlue>(internal);
+    if(glue) {
+        internal->setType("internal_glue");
+        internal->setValue(glue->get(*this, base::Glue(0)).width);
+        node->appendChild("coerced_glue", internal);
+    } else {
+        node->appendChild("normal_dimen", parseNormalDimen());
+    }
 
     node->setValue(node->child(0)->value(int(0)) *
                         node->child(1)->value(int(0)));
     return node;
 }
+
+Node::ptr Parser::parseGlue()
+{
+    Node::ptr node(new Node("glue"));
+    node->appendChild("sign", parseOptionalSigns());
+
+    base::Glue glue;
+
+    Node::ptr internal(new Node("internal"));
+    shared_ptr<base::InternalGlue> iglue = 
+        parseCommandOrGroup<base::InternalGlue>(internal);
+    if(iglue) {
+        internal->setType("internal_glue");
+        glue = iglue->get(*this, base::Glue(0));
+        internal->setValue(glue);
+        node->appendChild("internal_glue", internal);
+    } else {
+        Node::ptr width = parseDimen();
+        node->appendChild("width", width);
+        glue.width = width->value(int(0));
+
+        Node::ptr dimenStretch;
+        static vector<string> kw_plus(1, "plus");
+        Node::ptr stretch = parseOptionalKeyword(kw_plus);
+        if(stretch->value(string()) == "plus") {
+            dimenStretch = parseDimen();
+            stretch->appendChild("dimen", dimenStretch);
+            stretch->setValue(dimenStretch->valueAny());
+            glue.stretch = stretch->value(int(0));
+            glue.stretchOrder = 0;
+        } else {
+            glue.stretch = 0;
+            glue.stretchOrder = 0;
+        }
+        node->appendChild("stretch", stretch);
+
+        Node::ptr dimenShrink;
+        static vector<string> kw_minus(1, "minus");
+        Node::ptr shrink = parseOptionalKeyword(kw_minus);
+        if(shrink->value(string()) == "minus") {
+            dimenShrink = parseDimen();
+            shrink->appendChild("dimen", dimenShrink);
+            shrink->setValue(dimenShrink->valueAny());
+            glue.shrink = shrink->value(int(0));
+            glue.shrinkOrder = 0;
+        } else {
+            glue.shrink = 0;
+            glue.shrinkOrder = 0;
+        }
+        node->appendChild("shrink", shrink);
+    }
+
+    int sign = node->child(0)->value(int(0));
+    glue.width *= sign;
+    glue.stretch *= sign;
+    glue.shrink *= sign;
+    node->setValue(glue);
+    return node;
+}
+
 
 Node::ptr Parser::parseBalancedText()
 {

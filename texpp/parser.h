@@ -137,6 +137,7 @@ public:
     Node::ptr parseDimenFactor();
     Node::ptr parseNumber();
     Node::ptr parseDimen();
+    Node::ptr parseGlue();
 
     Node::ptr parseBalancedText();
     Node::ptr parseGeneralText(

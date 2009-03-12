@@ -25,6 +25,7 @@
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
 #include <texpp/base/dimen.h>
+#include <texpp/base/glue.h>
 #include <texpp/base/arithmetic.h>
 
 #include <texpp/parser.h>
@@ -75,6 +76,7 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
     __TEXPP_SET_VARIABLE_GROUP("dimen", int(0), 256, DimenVariable);
+    __TEXPP_SET_VARIABLE_GROUP("skip", int(0), 256, GlueVariable);
 
     __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256,
                                 CatcodeVariable, 0, 15);
@@ -90,7 +92,7 @@ void initSymbols(Parser& parser)
                                 CharcodeVariable, INT_MIN, 16777215);
 
     __TEXPP_SET_VARIABLE("endlinechar", int(0), EndlinecharVariable);
-    __TEXPP_SET_VARIABLE("mag", int(0), IntegerVariable); // TODO
+    __TEXPP_SET_VARIABLE("mag", int(0), IntegerVariable);
 
     __TEXPP_SET_VARIABLE("pretolerance", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("tolerance", int(0), IntegerVariable);

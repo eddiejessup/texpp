@@ -17,6 +17,7 @@ set(libtexpp_SOURCES
     base/variable.cc
     base/integer.cc
     base/dimen.cc
+    base/glue.cc
     base/arithmetic.cc
     base/base.cc
 )
