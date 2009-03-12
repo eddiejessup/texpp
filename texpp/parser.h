@@ -103,6 +103,8 @@ public:
     Token::ptr lastToken();
     Token::ptr peekToken();
     Token::ptr nextToken(vector< Token::ptr >* tokens = NULL);
+    void pushBack(vector< Token::ptr >* tokens);
+
     void end() { m_end = true; }
 
     //////// Parse helpers
@@ -125,11 +127,16 @@ public:
     Node::ptr parseControlSequence();
     Node::ptr parseCharacter();
 
+    Node::ptr parseKeyword(const vector<string>& keywords);
+    Node::ptr parseOptionalKeyword(const vector<string>& keywords);
+
     Node::ptr parseOptionalEquals(bool oneSpaceAfter);
     Node::ptr parseOptionalSigns();
-    Node::ptr tryParseInternalInteger();
     Node::ptr parseNormalInteger();
+    Node::ptr parseNormalDimen();
+    Node::ptr parseDimenFactor();
     Node::ptr parseNumber();
+    Node::ptr parseDimen();
 
     Node::ptr parseBalancedText();
     Node::ptr parseGeneralText(

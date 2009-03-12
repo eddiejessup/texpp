@@ -24,6 +24,7 @@
 #include <texpp/base/files.h>
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
+#include <texpp/base/dimen.h>
 #include <texpp/base/arithmetic.h>
 
 #include <texpp/parser.h>
@@ -57,7 +58,6 @@ void initSymbols(Parser& parser)
                 "\\" name, maxcount, value))); \
         parser.setSymbol(name, value)
 
-
     __TEXPP_SET_COMMAND("end",        End);
     __TEXPP_SET_COMMAND("relax",      Relax);
     __TEXPP_SET_COMMAND("par",        Relax);
@@ -74,6 +74,7 @@ void initSymbols(Parser& parser)
         ArithmeticCommand, ArithmeticCommand::DIVIDE);
 
     __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
+    __TEXPP_SET_VARIABLE_GROUP("dimen", int(0), 256, DimenVariable);
 
     __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256,
                                 CatcodeVariable, 0, 15);

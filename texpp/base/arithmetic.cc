@@ -18,23 +18,41 @@
 
 #include <texpp/base/arithmetic.h>
 #include <texpp/base/integer.h>
+#include <texpp/base/dimen.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
+#include <texpp/lexer.h>
 
 namespace texpp {
 namespace base {
 
 bool ArithmeticCommand::parseArgs(Parser& parser, Node::ptr node)
 {
+    static vector<string> kw_by(1, "by");
+
     Node::ptr arg(new Node("lvalue"));
     shared_ptr<IntegerVariable> integer =
         parser.parseCommandOrGroup<IntegerVariable>(arg);
     if(integer) {
         // TODO: optional by
         arg->setType("integer_variable");
-        arg->setValue(integer);
+        arg->setValue(integer->name());
         node->appendChild("lvalue", arg);
+        node->appendChild("optional_by", parser.parseOptionalKeyword(kw_by));
         node->appendChild("rvalue", parser.parseNumber());
+        return true;
+    }
+
+    shared_ptr<DimenVariable> dimen =
+        parser.parseCommandOrGroup<DimenVariable>(arg);
+    if(dimen) {
+        // TODO: optional by
+        arg->setType("dimen_variable");
+        arg->setValue(dimen->name());
+        node->appendChild("lvalue", arg);
+        node->appendChild("optional_by", parser.parseOptionalKeyword(kw_by));
+        node->appendChild("rvalue", m_type == ADVANCE ?
+                parser.parseDimen() : parser.parseNumber());
         return true;
     }
 
@@ -44,8 +62,8 @@ bool ArithmeticCommand::parseArgs(Parser& parser, Node::ptr node)
         parser, parser.lastToken());
     node->setValue(int(0));
 
-    node->appendChild("internal_quantity", parser.parseToken());
-    node->child("internal_quantity")->setValue(int(0));
+    node->appendChild("lvalue", Node::ptr(new Node("error_missing")));
+    node->appendChild("rvalue", Node::ptr(new Node("error_missing")));
 
     return true;
 }
@@ -53,15 +71,43 @@ bool ArithmeticCommand::parseArgs(Parser& parser, Node::ptr node)
 bool ArithmeticCommand::execute(Parser& parser, Node::ptr node)
 {
     Node::ptr arg = node->child("lvalue");
-    if(arg->type() == "integer_variable") {
-        shared_ptr<IntegerVariable> integer =
-            arg->value(shared_ptr<IntegerVariable>());
-        int v1 = integer->get(parser, int(0));
+    enum { INTEGER, DIMEN, GLUE } type;
+    if(arg->type() == "integer_variable") type = INTEGER;
+    else if(arg->type() == "dimen_variable") type = DIMEN;
+
+    if(type == INTEGER || type == DIMEN) {
+        string name = arg->value(string());
+        if(name.empty()) return true;
+        name = name.substr(1);
+
+        int v1 = parser.symbol(name, int(0));
         int v2 = node->child("rvalue")->value(int(0));
-        if(m_type == ADVANCE) v1 += v2;
-        else if(m_type == MULTIPLY) v1 *= v2;
-        else if(m_type == DIVIDE) v1 /= v2;
-        integer->set(parser, v1);
+        if(m_type == ADVANCE) {
+            v1 += v2;
+        } else {
+            bool overflow = false;
+            if(m_type == MULTIPLY) {
+                int max = type==INTEGER ? TEXPP_INT_MAX : TEXPP_SCALED_MAX;
+                if(v1<0) { v1=-v1; v2=-v2; } 
+                if(v1 != 0) {
+                    if(v2 <= max/v1 && -v2 <= max/v1) v1 *= v2;
+                    else overflow=true;
+                }
+            } else if(m_type == DIVIDE) {
+                if(v2 != 0) v1 /= v2;
+                else overflow=true;
+            }
+            if(overflow) {
+                parser.logger()->log(Logger::ERROR,
+                    "Arithmetic overflow",
+                    parser, parser.lastToken());
+                return true;
+            }
+        }
+
+        parser.setSymbol(name, v1);
+        if(name == "endlinechar") // XXX: better solution?
+            parser.lexer()->setEndlinechar(v1);
     }
 
     return true;

@@ -2,7 +2,46 @@
 \advance\count10 30
 \showthe\count10
 
+% spaces and by
+\count10=20
+\advance  \count  10  20
+\showthe\count10
+
+\advance  \count  10  by 20
+\showthe\count10
+
+\advance  \count  10by20
+\showthe\count10
+
+% dimen
+\dimen0=10.5pt
+\advance\dimen0by0.4pt
+\showthe\dimen0
+
+\advance\dimen0by0.1pt
+\showthe\dimen0
+
+\advance\dimen0by"3FFFFFFFsp
+\showthe\dimen0
+
+\count1="7FFFFFFF
+\advance\count1by1
+\dimen1=1\count1
+\showthe\dimen1
+
+% overflow (TeX do not checks for it!)
+\count0="7FFFFFFE
+\showthe\count0
+\advance\count0 2
+\showthe\count0
+\advance\count0 2
+\showthe\count0
+
 % errors
 \advance\par\relax
+
+\count0=10
+\advance\count0by\relax
+\showthe\count0
 
 \end
