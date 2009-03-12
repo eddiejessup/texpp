@@ -646,12 +646,23 @@ Node::ptr Parser::parseNormalDimen()
     if(optional_true) {
         node->appendChild("optional_true", optional_true);
         int mag = symbol("mag", int(0));
-        if(mag != 1000) {
+        int activemag = symbol("activemag", mag);
+        setSymbol("activemag", activemag);
+        if(activemag != mag) {
+            logger()->log(Logger::ERROR,
+                "Incompatible magnification (" +
+                boost::lexical_cast<string>(mag) + ");\n" +
+                " the previous value will be retained (" +
+                boost::lexical_cast<string>(activemag) + ")",
+                *this, lastToken());
+        }
+        if(activemag != 1000) {
             tuple<int, int, bool> p =
-                base::InternalDimen::multiplyIntFrac(val.first, 1000, mag);
+                base::InternalDimen::multiplyIntFrac(
+                            val.first, 1000, activemag);
             if(!p.get<2>()) {
                 val.first = p.get<0>();
-                val.second = (1000*val.second + 0x10000*p.get<1>()) / mag;
+                val.second = (1000*val.second + 0x10000*p.get<1>())/activemag;
                 val.first = val.first + (val.second / 0x10000);
                 val.second = val.second % 0x10000;
             } else {

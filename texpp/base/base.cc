@@ -90,6 +90,7 @@ void initSymbols(Parser& parser)
                                 CharcodeVariable, INT_MIN, 16777215);
 
     __TEXPP_SET_VARIABLE("endlinechar", int(0), EndlinecharVariable);
+    __TEXPP_SET_VARIABLE("mag", int(0), IntegerVariable); // TODO
 
     __TEXPP_SET_VARIABLE("pretolerance", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("tolerance", int(0), IntegerVariable);
@@ -136,7 +137,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("maxdeadcycles", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("hangafter", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("fam", int(0), IntegerVariable);
-    __TEXPP_SET_VARIABLE("mag", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("delimiterfactor", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("time", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("day", int(0), IntegerVariable);
