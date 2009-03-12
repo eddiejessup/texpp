@@ -13,7 +13,7 @@
 || \newlinechar  || yes ||
 || \escapechar   || yes ||
 || integer parameters || yes ||
-|| dimen parameters || *no* ||
+|| dimen parameters || yes ||
 || glue parameters || *no* ||
 || muglue parameters || *no* ||
 || boxes         || *no* ||
