@@ -146,6 +146,28 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("showboxdepth", int(0), IntegerVariable);
     __TEXPP_SET_VARIABLE("errorcontextlines", int(0), IntegerVariable);
 
+    __TEXPP_SET_VARIABLE("hfuzz", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("vfuzz", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("overfullrule", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("emergencystretch", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("hsize", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("vsize", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("maxdepth", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("splitmaxdepth", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("boxmaxdepth", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("lineskiplimit", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("delimitershortfall", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("nulldelimiterspace", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("scriptspace", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("mathsurround", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("predisplaysize", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("displaywidth", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("displayindent", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("parindent", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("hangindent", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("hoffset", int(0), DimenVariable);
+    __TEXPP_SET_VARIABLE("voffset", int(0), DimenVariable);
+
     for(int i=0; i<256; ++i) {
         string n = boost::lexical_cast<string>(i);
 
