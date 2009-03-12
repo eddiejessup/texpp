@@ -17,7 +17,7 @@
 || glue parameters || *no* ||
 || muglue parameters || *no* ||
 || boxes         || *no* ||
-|| arithmetic    || *no* ||
+|| arithmetic    || *partly* ||
 || token lists   || *no* ||
 || expansion     || *no* ||
 || macros        || *no* ||
