@@ -20,6 +20,7 @@
 #include <texpp/base/integer.h>
 #include <texpp/base/dimen.h>
 #include <texpp/base/glue.h>
+#include <texpp/base/toks.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
@@ -91,6 +92,15 @@ bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
         return true;
     }
 
+    shared_ptr<InternalToks> toks =
+        parser.parseCommandOrGroup<InternalToks>(arg);
+    if(toks) {
+        arg->setType("internal_toks");
+        arg->setValue(toks->getAny(parser));
+        node->appendChild("internal_quantity", arg);
+        return true;
+    }
+
     parser.logger()->log(Logger::ERROR,
         "You can't use `" + parser.peekToken()->texRepr() +
         "' after " + char(parser.symbol("escapechar", int(0))) + "the",
@@ -121,6 +131,10 @@ bool ShowThe::execute(Parser& parser, Node::ptr node)
     } else if(arg->type() == "internal_muglue") {
         parser.logger()->log(Logger::SHOW,
             InternalMuGlue::muGlueToString(arg->value(Glue(0))),
+            parser, parser.lastToken());
+    } else if(arg->type() == "internal_toks") {
+        parser.logger()->log(Logger::SHOW,
+            InternalToks::toksToString(parser, arg->value(Token::list())),
             parser, parser.lastToken());
     }
     return true;

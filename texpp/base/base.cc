@@ -26,6 +26,7 @@
 #include <texpp/base/integer.h>
 #include <texpp/base/dimen.h>
 #include <texpp/base/glue.h>
+#include <texpp/base/toks.h>
 #include <texpp/base/arithmetic.h>
 
 #include <texpp/parser.h>
@@ -78,6 +79,7 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE_GROUP("dimen", int(0), 256, DimenVariable);
     __TEXPP_SET_VARIABLE_GROUP("skip", int(0), 256, GlueVariable);
     __TEXPP_SET_VARIABLE_GROUP("muskip", int(0), 256, MuGlueVariable);
+    __TEXPP_SET_VARIABLE_GROUP("toks", int(0), 256, ToksVariable);
 
     __TEXPP_SET_COMMAND("countdef", RegisterGroupDef,
                 static_pointer_cast<CommandGroupBase>(
@@ -91,6 +93,9 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("muskipdef", RegisterGroupDef,
                 static_pointer_cast<CommandGroupBase>(
                     parser.symbol("\\muskip", Command::ptr())));
+    __TEXPP_SET_COMMAND("toksdef", RegisterGroupDef,
+                static_pointer_cast<CommandGroupBase>(
+                    parser.symbol("\\toks", Command::ptr())));
 
     __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256,
                                 CatcodeVariable, 0, 15);

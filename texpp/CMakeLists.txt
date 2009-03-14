@@ -18,6 +18,7 @@ set(libtexpp_SOURCES
     base/integer.cc
     base/dimen.cc
     base/glue.cc
+    base/toks.cc
     base/arithmetic.cc
     base/base.cc
 )
