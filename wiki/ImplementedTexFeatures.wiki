@@ -16,6 +16,7 @@
 || dimen parameters || yes ||
 || glue parameters || yes ||
 || muglue parameters || yes ||
+|| registerdef   || yes ||
 || boxes         || *no* ||
 || arithmetic    || yes ||
 || token lists   || *no* ||
