@@ -137,7 +137,7 @@ public:
     Node::ptr parseDimenFactor();
     Node::ptr parseNormalDimen(bool fil = false, bool mu = false);
     Node::ptr parseDimen(bool fil = false, bool mu = false);
-    Node::ptr parseGlue();
+    Node::ptr parseGlue(bool mu = false);
 
     Node::ptr parseBalancedText();
     Node::ptr parseGeneralText(

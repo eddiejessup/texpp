@@ -82,6 +82,15 @@ bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
         return true;
     }
 
+    shared_ptr<InternalMuGlue> muglue =
+        parser.parseCommandOrGroup<InternalMuGlue>(arg);
+    if(muglue) {
+        arg->setType("internal_muglue");
+        arg->setValue(muglue->getAny(parser));
+        node->appendChild("internal_quantity", arg);
+        return true;
+    }
+
     parser.logger()->log(Logger::ERROR,
         "You can't use `" + parser.peekToken()->texRepr() +
         "' after " + char(parser.symbol("escapechar", int(0))) + "the",
@@ -108,6 +117,10 @@ bool ShowThe::execute(Parser& parser, Node::ptr node)
     } else if(arg->type() == "internal_glue") {
         parser.logger()->log(Logger::SHOW,
             InternalGlue::glueToString(arg->value(Glue(0))),
+            parser, parser.lastToken());
+    } else if(arg->type() == "internal_muglue") {
+        parser.logger()->log(Logger::SHOW,
+            InternalMuGlue::muGlueToString(arg->value(Glue(0))),
             parser, parser.lastToken());
     }
     return true;

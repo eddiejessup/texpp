@@ -361,7 +361,7 @@ Node::ptr Parser::parseCharacter()
         nextToken(&node->tokens());
     } else {
         logger()->log(Logger::ERROR,
-            "Missing character inserted", *this, peekToken());
+            "Missing character inserted", *this, lastToken());
         node->setValue(string(""));
     }
     return node;
@@ -449,7 +449,7 @@ Node::ptr Parser::parseNormalInteger()
     Node::ptr node(new Node("normal_integer"));
     if(!peekToken()) {
         logger()->log(Logger::ERROR,
-            "Missing number, treated as zero", *this, peekToken());
+            "Missing number, treated as zero", *this, Token::ptr());
         node->setValue(int(0));
 
     }
@@ -472,7 +472,7 @@ Node::ptr Parser::parseNormalInteger()
             nextToken(&node->tokens());
         } else {
             logger()->log(Logger::ERROR,
-                "Improper alphabetic constant", *this, peekToken());
+                "Improper alphabetic constant", *this, lastToken());
             node->setValue(int(48)); // XXX: why 48 ?
         }
         if(helperIsImplicitCharacter(Token::CC_SPACE))
@@ -503,7 +503,7 @@ Node::ptr Parser::parseNormalInteger()
                     result = result*16 + v;
                 } else {
                     logger()->log(Logger::ERROR, "Number too big",
-                                        *this, peekToken());
+                                        *this, lastToken());
                     result = TEXPP_INT_INV;
                 }
             }
@@ -522,7 +522,7 @@ Node::ptr Parser::parseNormalInteger()
                     result = result*8 + v;
                 } else {
                     logger()->log(Logger::ERROR, "Number too big",
-                                        *this, peekToken());
+                                        *this, lastToken());
                     result = TEXPP_INT_INV;
                 }
             }
@@ -539,7 +539,7 @@ Node::ptr Parser::parseNormalInteger()
                     result = result*10 + v;
                 } else {
                     logger()->log(Logger::ERROR, "Number too big",
-                                        *this, peekToken());
+                                        *this, lastToken());
                     result = TEXPP_INT_INV;
                 }
             }
@@ -553,7 +553,7 @@ Node::ptr Parser::parseNormalInteger()
     if(!digits) {
         logger()->log(Logger::ERROR,
             "Missing number, treated as zero",
-                                        *this, peekToken());
+                                        *this, lastToken());
     }
 
     node->setValue(result);
@@ -569,7 +569,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     Node::ptr node(new Node("normal_dimen"));
     if(!peekToken()) {
         logger()->log(Logger::ERROR,
-            "Missing number, treated as zero", *this, peekToken());
+            "Missing number, treated as zero", *this, Token::ptr());
         node->setValue(int(0));
         return node;
     }
@@ -624,53 +624,93 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         }
     }
 
-    if(!mu) {
-        // <internal unit>
-        Node::ptr i_node(new Node("unternal_unit"));
-        int i_unit = 0;
+    // <internal unit>
+    Node::ptr i_node(new Node("unternal_unit"));
+    bool i_found = false;
+    bool i_mu = false;
+    int i_unit = 0;
 
-        shared_ptr<base::InternalInteger> i_int = 
-            parseCommandOrGroup<base::InternalInteger>(i_node);
-        if(i_int) {
+    shared_ptr<base::InternalInteger> i_int = 
+        parseCommandOrGroup<base::InternalInteger>(i_node);
+    if(i_int) {
+        node->appendChild("internal_unit", i_node);
+        i_unit = i_int->get(*this, int(0));
+        i_found = true;
+    }
+
+    if(!i_found) {
+        shared_ptr<base::InternalDimen> i_dimen = 
+            parseCommandOrGroup<base::InternalDimen>(i_node);
+        if(i_dimen) {
             node->appendChild("internal_unit", i_node);
-            i_unit = i_int->get(*this, int(0));
+            i_unit = i_dimen->get(*this, int(0));
+            i_found = true;
+        }
+    }
 
-        } else {
-            static vector<string> kw_internal_units;
-            if(kw_internal_units.empty()) {
-                kw_internal_units.push_back("em");
-                kw_internal_units.push_back("ex");
-            }
+    if(!i_found) {
+        shared_ptr<base::InternalGlue> i_glue = 
+            parseCommandOrGroup<base::InternalGlue>(i_node);
+        if(i_glue) {
+            node->appendChild("internal_unit", i_node);
+            i_unit = i_glue->get(*this, base::Glue(0)).width;
+            i_found = true;
+        }
+    }
 
-            i_node = parseKeyword(kw_internal_units);
-            if(i_node) {
-                node->appendChild("internal_unit", i_node);
-                i_unit = 0; // TODO: fontdimen
-            }
+    if(!i_found) {
+        shared_ptr<base::InternalMuGlue> i_muglue = 
+            parseCommandOrGroup<base::InternalMuGlue>(i_node);
+        if(i_muglue) {
+            node->appendChild("internal_unit", i_node);
+            i_unit = i_muglue->get(*this, base::Glue(0)).width;
+            i_found = true;
+            i_mu = true;
+        }
+    }
+        
+    if(!i_found && !mu) {
+        static vector<string> kw_internal_units;
+        if(kw_internal_units.empty()) {
+            kw_internal_units.push_back("em");
+            kw_internal_units.push_back("ex");
         }
 
-        if(i_int || i_node) {
-            if(i_unit != 0) {
-                int v = TEXPP_SCALED_MAX;
-                tuple<int,int,bool> p = base::InternalDimen::multiplyIntFrac(
-                            i_unit, val.second, 0x10000);
-                if(i_unit < 0) { i_unit=-i_unit; val.first=-val.first; }
-                if(!p.get<2>() && val.first <= TEXPP_SCALED_MAX/i_unit &&
-                            val.first*i_unit <= TEXPP_SCALED_MAX-p.get<0>()) {
-                    v = val.first*i_unit + p.get<0>();
-                } else {
-                    logger()->log(Logger::ERROR,
-                        "Dimension too large", *this, lastToken());
-                    overflow = true;
-                    v = TEXPP_SCALED_MAX;
-                }
-                node->setValue(v);
+        i_node = parseKeyword(kw_internal_units);
+        if(i_node) {
+            node->appendChild("internal_unit", i_node);
+            i_unit = 0; // TODO: fontdimen
+            i_found = true;
+        }
+    }
+
+    if(i_found) {
+        if(mu != i_mu) {
+            logger()->log(Logger::ERROR,
+                "Incompatible glue units", *this, lastToken());
+        }
+        if(i_unit != 0) {
+            int v = TEXPP_SCALED_MAX;
+            tuple<int,int,bool> p = base::InternalDimen::multiplyIntFrac(
+                        i_unit, val.second, 0x10000);
+            if(i_unit < 0) { i_unit=-i_unit; val.first=-val.first; }
+            if(!p.get<2>() && val.first <= TEXPP_SCALED_MAX/i_unit &&
+                        val.first*i_unit <= TEXPP_SCALED_MAX-p.get<0>()) {
+                v = val.first*i_unit + p.get<0>();
             } else {
-                node->setValue(int(0));
+                logger()->log(Logger::ERROR,
+                    "Dimension too large", *this, lastToken());
+                overflow = true;
+                v = TEXPP_SCALED_MAX;
             }
-            return node;
+            node->setValue(v);
+        } else {
+            node->setValue(int(0));
         }
+        return node;
+    }
 
+    if(!mu) {
         // <optional true>
         static vector<string> kw_optional_true;
         if(kw_optional_true.empty()) {
@@ -739,12 +779,14 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                         kw_physical_units.end(), units->value(string()));
             assert(it != kw_physical_units.end());
             int n = it - kw_physical_units.begin();
-            if(n == 0) {
+            if(n == 0) { // pt
                 // do nothing
+                if(val.first > TEXPP_SCALED_MAX/0x10000)
+                    overflow = true;
             } else if(n == 1) { // sp
                 val.second = val.first % 0x10000;
                 val.first  = val.first / 0x10000;
-            } else { // not pt
+            } else { // neither pt not sp
                 tuple<int,int,bool> p = base::InternalDimen::multiplyIntFrac(
                             val.first,u_scale[n][0],u_scale[n][1]);
                 overflow = p.get<2>();
@@ -757,6 +799,8 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         } else {
             logger()->log(Logger::ERROR,
                 "Illegal unit of measure (pt inserted)", *this, lastToken());
+            if(val.first > TEXPP_SCALED_MAX/0x10000)
+                overflow = true;
         }
 
     } else {
@@ -798,6 +842,9 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             logger()->log(Logger::ERROR,
                 "Illegal unit of measure (mu inserted)", *this, lastToken());
         }
+
+        if(val.first > TEXPP_SCALED_MAX/0x10000)
+            overflow = true;
     }
 
     int v = val.first * 0x10000 + val.second;
@@ -834,7 +881,7 @@ Node::ptr Parser::parseDimenFactor()
                     result = result*10 + v;
                 } else {
                     logger()->log(Logger::ERROR, "Number too big",
-                                        *this, peekToken());
+                                        *this, lastToken());
                     result = TEXPP_INT_INV;
                 }
             }
@@ -867,7 +914,7 @@ Node::ptr Parser::parseDimenFactor()
         if(!digits) {
             logger()->log(Logger::ERROR,
                 "Missing number, treated as zero",
-                                            *this, peekToken());
+                                            *this, lastToken());
         }
         
         node->setValue(std::make_pair(int(result), frac));
@@ -900,7 +947,17 @@ Node::ptr Parser::parseNumber()
             internal->setValue(glue->get(*this, base::Glue(0)).width);
             node->appendChild("coerced_glue", internal);
         } else {
-            node->appendChild("normal_integer", parseNormalInteger());
+            shared_ptr<base::InternalMuGlue> muglue = 
+                parseCommandOrGroup<base::InternalMuGlue>(internal);
+            if(muglue) {
+                internal->setType("internal_muglue");
+                internal->setValue(muglue->get(*this, base::Glue(0)).width);
+                node->appendChild("coerced_muglue", internal);
+                logger()->log(Logger::ERROR,
+                    "Incompatible glue units", *this, lastToken());
+            } else {
+                node->appendChild("normal_integer", parseNormalInteger());
+            }
         }
     }
 
@@ -915,17 +972,16 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
     node->appendChild("sign", parseOptionalSigns());
 
     bool intern = false;
+    bool intern_mu = false;
 
-    if(!mu) {
-        Node::ptr internal(new Node("internal"));
-        shared_ptr<base::InternalGlue> glue = 
-            parseCommandOrGroup<base::InternalGlue>(internal);
-        if(glue) {
-            internal->setType("internal_glue");
-            internal->setValue(glue->get(*this, base::Glue(0)).width);
-            node->appendChild("coerced_glue", internal);
-            intern = true;
-        }
+    Node::ptr internal(new Node("internal"));
+    shared_ptr<base::InternalGlue> glue = 
+        parseCommandOrGroup<base::InternalGlue>(internal);
+    if(glue) {
+        internal->setType("internal_glue");
+        internal->setValue(glue->get(*this, base::Glue(0)).width);
+        node->appendChild("coerced_glue", internal);
+        intern = true;
     } else {
         Node::ptr internal(new Node("internal"));
         shared_ptr<base::InternalMuGlue> muglue = 
@@ -935,25 +991,34 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
             internal->setValue(muglue->get(*this, base::Glue(0)).width);
             node->appendChild("coerced_muglue", internal);
             intern = true;
+            intern_mu = true;
         }
     }
 
-    if(!intern)
+    if(intern) {
+        if(intern_mu != mu) {
+            logger()->log(Logger::ERROR,
+                "Incompatible glue units", *this, lastToken());
+        }
+    } else {
         node->appendChild(mu ? "normal_mudimen" : "normal_dimen",
                             parseNormalDimen(fil, mu));
+    }
 
     node->setValue(node->child(0)->value(int(0)) *
                         node->child(1)->value(int(0)));
     return node;
 }
 
-Node::ptr Parser::parseGlue()
+Node::ptr Parser::parseGlue(bool mu)
 {
-    Node::ptr node(new Node("glue"));
+    Node::ptr node(new Node(mu ? "muglue" : "glue"));
     node->appendChild("sign", parseOptionalSigns());
     int sign = node->child(0)->value(int(0));
 
     base::Glue glue(0);
+    bool intern = false;
+    bool intern_mu = false;
 
     Node::ptr internal(new Node("internal"));
     shared_ptr<base::InternalGlue> iglue = 
@@ -963,56 +1028,80 @@ Node::ptr Parser::parseGlue()
         glue = iglue->get(*this, base::Glue(0));
         internal->setValue(glue);
         node->appendChild("internal_glue", internal);
+        intern = true;
+    } else {
+        Node::ptr internal(new Node("internal"));
+        shared_ptr<base::InternalMuGlue> iglue = 
+            parseCommandOrGroup<base::InternalMuGlue>(internal);
+        if(iglue) {
+            internal->setType("internal_muglue");
+            glue = iglue->get(*this, base::Glue(0));
+            internal->setValue(glue);
+            node->appendChild("internal_muglue", internal);
+            intern = true;
+            intern_mu = true;
+        }
+    }
+
+    if(intern) {
+        if(intern_mu != mu) {
+            logger()->log(Logger::ERROR,
+                "Incompatible glue units", *this, lastToken());
+        }
 
         glue.width *= sign;
         glue.stretch *= sign;
         glue.shrink *= sign;
 
-    } else {
-        Node::ptr width = parseDimen();
-        node->appendChild("width", width);
-        glue.width = sign * width->value(int(0));
-
-        Node::ptr dimenStretch;
-        static vector<string> kw_plus(1, "plus");
-        Node::ptr stretch = parseOptionalKeyword(kw_plus);
-        if(stretch->value(string()) == "plus") {
-            dimenStretch = parseDimen(true);
-            stretch->appendChild("dimen", dimenStretch);
-            stretch->setValue(dimenStretch->valueAny());
-            stretch->setType("stretch");
-
-            glue.stretch = stretch->value(int(0));
-
-            Node::ptr fil = dimenStretch->child("normal_dimen");
-            if(fil) fil = fil->child("fil_unit");
-            if(fil) {
-                string v = fil->value(string());
-                glue.stretchOrder = std::count(v.begin(), v.end(), 'l');
-            }
-        }
-        node->appendChild("stretch", stretch);
-
-        Node::ptr dimenShrink;
-        static vector<string> kw_minus(1, "minus");
-        Node::ptr shrink = parseOptionalKeyword(kw_minus);
-        if(shrink->value(string()) == "minus") {
-            dimenShrink = parseDimen(true);
-            shrink->appendChild("dimen", dimenShrink);
-            shrink->setValue(dimenShrink->valueAny());
-            shrink->setType("shrink");
-
-            glue.shrink = shrink->value(int(0));
-
-            Node::ptr fil = dimenShrink->child("normal_dimen");
-            if(fil) fil = fil->child("fil_unit");
-            if(fil) {
-                string v = fil->value(string());
-                glue.shrinkOrder = std::count(v.begin(), v.end(), 'l');
-            }
-        }
-        node->appendChild("shrink", shrink);
+        node->setValue(glue);
+        return node;
     }
+
+    Node::ptr width = parseDimen(false, mu);
+    node->appendChild("width", width);
+    glue.width = sign * width->value(int(0));
+
+    Node::ptr dimenStretch;
+    static vector<string> kw_plus(1, "plus");
+    Node::ptr stretch = parseOptionalKeyword(kw_plus);
+    if(stretch->value(string()) == "plus") {
+        dimenStretch = parseDimen(true, mu);
+        stretch->appendChild("dimen", dimenStretch);
+        stretch->setValue(dimenStretch->valueAny());
+        stretch->setType("stretch");
+
+        glue.stretch = stretch->value(int(0));
+
+        Node::ptr fil = dimenStretch->child(!mu ? "normal_dimen":
+                                                  "normal_mudimen");
+        if(fil) fil = fil->child("fil_unit");
+        if(fil) {
+            string v = fil->value(string());
+            glue.stretchOrder = std::count(v.begin(), v.end(), 'l');
+        }
+    }
+    node->appendChild("stretch", stretch);
+
+    Node::ptr dimenShrink;
+    static vector<string> kw_minus(1, "minus");
+    Node::ptr shrink = parseOptionalKeyword(kw_minus);
+    if(shrink->value(string()) == "minus") {
+        dimenShrink = parseDimen(true, mu);
+        shrink->appendChild("dimen", dimenShrink);
+        shrink->setValue(dimenShrink->valueAny());
+        shrink->setType("shrink");
+
+        glue.shrink = shrink->value(int(0));
+
+        Node::ptr fil = dimenShrink->child(!mu ? "normal_dimen":
+                                                 "normal_mudimen");
+        if(fil) fil = fil->child("fil_unit");
+        if(fil) {
+            string v = fil->value(string());
+            glue.shrinkOrder = std::count(v.begin(), v.end(), 'l');
+        }
+    }
+    node->appendChild("shrink", shrink);
 
     node->setValue(glue);
     return node;
@@ -1064,7 +1153,7 @@ Node::ptr Parser::parseGeneralText(Node::ptr node)
     if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
         left_brace->setValue(nextToken(&left_brace->tokens()));
     } else {
-        logger()->log(Logger::ERROR, "Missing { inserted", *this,peekToken());
+        logger()->log(Logger::ERROR, "Missing { inserted", *this,lastToken());
         left_brace->setValue(Token::ptr(new Token(
                     Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
     }
@@ -1130,7 +1219,7 @@ Node::ptr Parser::parseGroup(Command::ptr endCmd, bool parseBeginEnd)
                                         node->childrenCount()-1));
             } else {
                 m_logger->log(Logger::ERROR, "Undefined control sequence",
-                                                *this, peekToken());
+                                                *this, lastToken());
                 node->appendChild("error_unknown_control",
                                                 parseToken());
             }
@@ -1150,7 +1239,7 @@ Node::ptr Parser::parseGroup(Command::ptr endCmd, bool parseBeginEnd)
             
         } else if(peekToken()->isCharacterCat(Token::CC_EGROUP)) {
             m_logger->log(Logger::ERROR, "Too many }'s",
-                                            *this, peekToken());
+                                            *this, lastToken());
             node->appendChild("error_extra_group_end",
                                             parseToken());
 
