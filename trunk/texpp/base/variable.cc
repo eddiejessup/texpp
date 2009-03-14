@@ -21,7 +21,7 @@
 #include <texpp/logger.h>
 #include <texpp/lexer.h>
 
-#include <iostream>
+#include <boost/lexical_cast.hpp>
 
 namespace texpp {
 namespace base {
@@ -45,6 +45,30 @@ bool Variable::set(Parser& parser, const any& value, bool global)
     } else {
         return false;
     }*/
+}
+
+bool RegisterGroupDef::parseArgs(Parser& parser, shared_ptr<Node> node)
+{
+    node->appendChild("lvalue", parser.parseControlSequence());
+    node->appendChild("equals", parser.parseOptionalEquals(false));
+    node->appendChild("rvalue", parser.parseNumber());
+    return true;
+}
+
+bool RegisterGroupDef::execute(Parser& parser, shared_ptr<Node> node)
+{
+    int item = node->child("rvalue")->value(int(0));
+    Command::ptr cmd = m_group->item(item);
+    if(!cmd) {
+        parser.logger()->log(Logger::ERROR,
+            "Bad register code (" + boost::lexical_cast<string>(item) + ")",
+            parser, parser.lastToken());
+        cmd = m_group->item(0);
+    }
+    parser.setSymbol(
+        node->child("lvalue")->value(Token::ptr()),
+        cmd);
+    return true;
 }
 
 } // namespace base

@@ -74,6 +74,20 @@ protected:
     any m_initValue;
 };
 
+class RegisterGroupDef: public Command
+{
+public:
+    RegisterGroupDef(const string& name, shared_ptr<CommandGroupBase> group)
+        : Command(name), m_group(group) {}
+
+    shared_ptr<CommandGroupBase> group() { return m_group; }
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser& parser, shared_ptr<Node> node);
+
+protected:
+    shared_ptr<CommandGroupBase> m_group;
+};
+
 } // namespace base
 } // namespace texpp
 
