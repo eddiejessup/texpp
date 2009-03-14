@@ -49,7 +49,7 @@ tuple<int,int,bool> InternalDimen::multiplyIntFrac(int x, int n, int d)
                     sign * (v % d), false);
 }
 
-string InternalDimen::dimenToString(int n, int o)
+string InternalDimen::dimenToString(int n, int o, bool mu)
 {
     std::ostringstream s;
     if(n<0) { s << '-'; n=-n; }
@@ -65,7 +65,8 @@ string InternalDimen::dimenToString(int n, int o)
         delta *= 10;
     } while(n > delta);
 
-    if(o == 0) s << "pt";
+    if(o == 0 && !mu) s << "pt";
+    else if(o == 0 && mu) s << "mu";
     else if(o == 1) s << "fil";
     else if(o == 2) s << "fill";
     else if(o == 3) s << "filll";

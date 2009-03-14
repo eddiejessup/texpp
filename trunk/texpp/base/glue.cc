@@ -37,16 +37,28 @@ bool InternalGlue::execute(Parser& parser, Node::ptr node)
     return set(parser, node->child("rvalue")->value(Glue(0)));
 }
 
-string InternalGlue::glueToString(const Glue& g)
+bool InternalMuGlue::parseArgs(Parser& parser, Node::ptr node)
 {
-    string s = InternalDimen::dimenToString(g.width);
+    node->appendChild("equals", parser.parseOptionalEquals(false));
+    //node->appendChild("rvalue", parser.parseGlue());
+    return check(parser, node->child("rvalue"));
+}
+
+bool InternalMuGlue::execute(Parser& parser, Node::ptr node)
+{
+    return set(parser, node->child("rvalue")->value(Glue(0)));
+}
+
+string InternalGlue::glueToString(const Glue& g, bool mu)
+{
+    string s = InternalDimen::dimenToString(g.width, mu);
     if(g.stretch) {
         s = s + " plus " +
-            InternalDimen::dimenToString(g.stretch, g.stretchOrder);
+            InternalDimen::dimenToString(g.stretch, g.stretchOrder, mu);
     }
     if(g.shrink) {
         s = s + " minus " +
-            InternalDimen::dimenToString(g.shrink, g.shrinkOrder);
+            InternalDimen::dimenToString(g.shrink, g.shrinkOrder, mu);
     }
     return s;
 }

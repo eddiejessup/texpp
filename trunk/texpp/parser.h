@@ -133,10 +133,10 @@ public:
     Node::ptr parseOptionalEquals(bool oneSpaceAfter);
     Node::ptr parseOptionalSigns();
     Node::ptr parseNormalInteger();
-    Node::ptr parseNormalDimen();
-    Node::ptr parseDimenFactor();
     Node::ptr parseNumber();
-    Node::ptr parseDimen();
+    Node::ptr parseDimenFactor();
+    Node::ptr parseNormalDimen(bool fil = false, bool mu = false);
+    Node::ptr parseDimen(bool fil = false, bool mu = false);
     Node::ptr parseGlue();
 
     Node::ptr parseBalancedText();
