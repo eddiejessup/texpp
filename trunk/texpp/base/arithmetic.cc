@@ -67,6 +67,18 @@ bool ArithmeticCommand::parseArgs(Parser& parser, Node::ptr node)
         return true;
     }
 
+    shared_ptr<MuGlueVariable> muglue =
+        parser.parseCommandOrGroup<MuGlueVariable>(arg);
+    if(muglue) {
+        arg->setType("muglue_variable");
+        arg->setValue(muglue->name());
+        node->appendChild("lvalue", arg);
+        node->appendChild("optional_by", parser.parseOptionalKeyword(kw_by));
+        node->appendChild("rvalue", m_type == ADVANCE ?
+                parser.parseGlue(true) : parser.parseNumber());
+        return true;
+    }
+
     parser.logger()->log(Logger::ERROR,
         string("You can't use `") + parser.peekToken()->texRepr() +
         string("' after ") + texRepr(),
@@ -82,10 +94,11 @@ bool ArithmeticCommand::parseArgs(Parser& parser, Node::ptr node)
 bool ArithmeticCommand::execute(Parser& parser, Node::ptr node)
 {
     Node::ptr arg = node->child("lvalue");
-    enum { INTEGER, DIMEN, GLUE } type;
+    enum { INTEGER, DIMEN, GLUE, MUGLUE } type;
     if(arg->type() == "integer_variable") type = INTEGER;
     else if(arg->type() == "dimen_variable") type = DIMEN;
     else if(arg->type() == "glue_variable") type = GLUE;
+    else if(arg->type() == "muglue_variable") type = MUGLUE;
 
     if(type == INTEGER || type == DIMEN) {
         string name = arg->value(string());
@@ -120,16 +133,16 @@ bool ArithmeticCommand::execute(Parser& parser, Node::ptr node)
         if(name == "endlinechar") // XXX: better solution?
             parser.lexer()->setEndlinechar(v1);
 
-    } else if(type == GLUE) {
+    } else if(type == GLUE || type == MUGLUE) {
         string name = arg->value(string());
         if(name.empty()) return true;
         name = name.substr(1);
 
         Glue v1 = parser.symbol(name, Glue(0));
-        Glue v2 = node->child("rvalue")->value(Glue(0));
         bool overflow = false;
 
         if(m_type == ADVANCE) {
+            Glue v2 = node->child("rvalue")->value(Glue(0));
             v1.width += v2.width;
 
             if(v1.stretch == 0) v1.stretchOrder = 0;
@@ -146,23 +159,25 @@ bool ArithmeticCommand::execute(Parser& parser, Node::ptr node)
                 v1.shrink = v2.shrink; v1.shrinkOrder = v2.shrinkOrder;
             }
         } else if(m_type == MULTIPLY) {
+            int v2 = node->child("rvalue")->value(int(0));
             pair<int, bool> p = safeMultiply(
-                        v1.width, v2.width, TEXPP_SCALED_MAX);
+                        v1.width, v2, TEXPP_SCALED_MAX);
             v1.width = p.first; overflow |= p.second;
 
-            p = safeMultiply(v1.stretch, v2.stretch, TEXPP_SCALED_MAX);
+            p = safeMultiply(v1.stretch, v2, TEXPP_SCALED_MAX);
             v1.stretch = p.first; overflow |= p.second;
 
-            p = safeMultiply(v1.shrink, v2.shrink, TEXPP_SCALED_MAX);
+            p = safeMultiply(v1.shrink, v2, TEXPP_SCALED_MAX);
             v1.shrink = p.first; overflow |= p.second;
         } else if(m_type == DIVIDE) {
-            pair<int, bool> p = safeDivide(v1.width, v2.width);
+            int v2 = node->child("rvalue")->value(int(0));
+            pair<int, bool> p = safeDivide(v1.width, v2);
             v1.width = p.first; overflow |= p.second;
 
-            p = safeDivide(v1.stretch, v2.stretch);
+            p = safeDivide(v1.stretch, v2);
             v1.stretch = p.first; overflow |= p.second;
 
-            p = safeDivide(v1.shrink, v2.shrink);
+            p = safeDivide(v1.shrink, v2);
             v1.shrink = p.first; overflow |= p.second;
         }
         if(overflow) {

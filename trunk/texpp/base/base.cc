@@ -77,6 +77,7 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
     __TEXPP_SET_VARIABLE_GROUP("dimen", int(0), 256, DimenVariable);
     __TEXPP_SET_VARIABLE_GROUP("skip", int(0), 256, GlueVariable);
+    __TEXPP_SET_VARIABLE_GROUP("muskip", int(0), 256, MuGlueVariable);
 
     __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256,
                                 CatcodeVariable, 0, 15);

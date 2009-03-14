@@ -40,7 +40,7 @@ bool InternalGlue::execute(Parser& parser, Node::ptr node)
 bool InternalMuGlue::parseArgs(Parser& parser, Node::ptr node)
 {
     node->appendChild("equals", parser.parseOptionalEquals(false));
-    //node->appendChild("rvalue", parser.parseGlue());
+    node->appendChild("rvalue", parser.parseGlue(true));
     return check(parser, node->child("rvalue"));
 }
 
@@ -51,7 +51,7 @@ bool InternalMuGlue::execute(Parser& parser, Node::ptr node)
 
 string InternalGlue::glueToString(const Glue& g, bool mu)
 {
-    string s = InternalDimen::dimenToString(g.width, mu);
+    string s = InternalDimen::dimenToString(g.width, 0, mu);
     if(g.stretch) {
         s = s + " plus " +
             InternalDimen::dimenToString(g.stretch, g.stretchOrder, mu);
