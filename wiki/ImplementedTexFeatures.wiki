@@ -14,10 +14,10 @@
 || \escapechar   || yes ||
 || integer parameters || yes ||
 || dimen parameters || yes ||
-|| glue parameters || *no* ||
-|| muglue parameters || *no* ||
+|| glue parameters || yes ||
+|| muglue parameters || yes ||
 || boxes         || *no* ||
-|| arithmetic    || *partly* ||
+|| arithmetic    || yes ||
 || token lists   || *no* ||
 || expansion     || *no* ||
 || macros        || *no* ||
