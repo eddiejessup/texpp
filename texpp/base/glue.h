@@ -40,6 +40,7 @@ struct Glue
         : width(w), stretch(st), stretchOrder(sto),
           shrink(sh), shrinkOrder(sho) {}
 
+    /*
     Glue(const Glue& g): width(g.width), stretch(g.stretch),
         stretchOrder(g.stretchOrder),
         shrink(g.shrink), shrinkOrder(g.shrinkOrder) {}
@@ -47,7 +48,7 @@ struct Glue
     const Glue& operator=(const Glue& g) {
         width = g.width; stretch = g.stretch; stretchOrder = g.stretchOrder;
         shrink = g.shrink; shrinkOrder = g.shrinkOrder; return *this;
-    }
+    }*/
 };
 
 class InternalGlue: public Variable
@@ -58,7 +59,7 @@ public:
     bool parseArgs(Parser& parser, shared_ptr<Node> node);
     bool execute(Parser& parser, shared_ptr<Node> node);
 
-    static string glueToString(const Glue& g);
+    static string glueToString(const Glue& g, bool mu = false);
 };
 
 class GlueVariable: public InternalGlue
@@ -67,6 +68,27 @@ public:
     GlueVariable(const string& name, const any& initValue = any(Glue(0)))
         : InternalGlue(name, initValue) {}
 };
+
+class InternalMuGlue: public Variable
+{
+public:
+    InternalMuGlue(const string& name, const any& initValue = any(Glue(0)))
+        : Variable(name, initValue) {}
+    bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool execute(Parser& parser, shared_ptr<Node> node);
+
+    static string muGlueToString(const Glue& g) {
+        return InternalGlue::glueToString(g, true);
+    }
+};
+
+class MuGlueVariable: public InternalMuGlue
+{
+public:
+    MuGlueVariable(const string& name, const any& initValue = any(Glue(0)))
+        : InternalMuGlue(name, initValue) {}
+};
+
 
 } // namespace base
 } // namespace texpp

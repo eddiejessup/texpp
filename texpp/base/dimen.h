@@ -40,7 +40,7 @@ public:
     bool execute(Parser& parser, shared_ptr<Node> node);
 
     static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
-    static string dimenToString(int n, int o=0);
+    static string dimenToString(int n, int o=0, bool mu=false);
 };
 
 class DimenVariable: public InternalDimen

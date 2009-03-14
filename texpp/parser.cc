@@ -564,7 +564,7 @@ Node::ptr Parser::parseNormalInteger()
     return node;
 }
 
-Node::ptr Parser::parseNormalDimen()
+Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
 {
     Node::ptr node(new Node("normal_dimen"));
     if(!peekToken()) {
@@ -591,137 +591,213 @@ Node::ptr Parser::parseNormalDimen()
     if(helperIsImplicitCharacter(Token::CC_SPACE))
         nextToken(&factor->tokens());
 
-    // <internal unit>
-    Node::ptr i_node(new Node("unternal_unit"));
-    int i_unit = 0;
-
-    shared_ptr<base::InternalInteger> i_int = 
-        parseCommandOrGroup<base::InternalInteger>(i_node);
-    if(i_int) {
-        node->appendChild("internal_unit", i_node);
-        i_unit = i_int->get(*this, int(0));
-
-    } else {
-        static vector<string> kw_internal_units;
-        if(kw_internal_units.empty()) {
-            kw_internal_units.push_back("em");
-            kw_internal_units.push_back("ex");
-        }
-
-        i_node = parseKeyword(kw_internal_units);
-        if(i_node) {
-            node->appendChild("internal_unit", i_node);
-            i_unit = 0; // TODO: fontdimen
-        }
-    }
-
-    if(i_int || i_node) {
-        if(i_unit != 0) {
-            int v = TEXPP_SCALED_MAX;
-            tuple<int,int,int> p = base::InternalDimen::multiplyIntFrac(
-                        i_unit, val.second, 0x10000);
-            if(i_unit < 0) { i_unit=-i_unit; val.first=-val.first; }
-            if(!p.get<2>() && val.first <= TEXPP_SCALED_MAX/i_unit &&
-                        val.first*i_unit <= TEXPP_SCALED_MAX-p.get<0>()) {
-                v = val.first*i_unit + p.get<0>();
-            } else {
+    if(fil) {
+        // <fil unit>
+        static vector<string> kw_fil(1, "fil");
+        static vector<string> kw_l(1, "l");
+        Node::ptr fil = parseKeyword(kw_fil);
+        if(fil) {
+            int level = 1;
+            node->appendChild("fil_unit", fil);
+            while(true) {
+                Node::ptr l = parseKeyword(kw_l);
+                if(!l) break;
+                std::copy(l->tokens().begin(), l->tokens().end(),
+                            std::back_inserter(fil->tokens()));
+                if(level<3) {
+                    ++level;
+                } else {
+                    logger()->log(Logger::ERROR,
+                        "Illegal unit of measure (replaced by filll)",
+                        *this, lastToken());
+                }
+            }
+            fil->setValue("fi" + string(level, 'l'));
+            int v = val.first * 0x10000 + val.second;
+            if(v >= 0x40000000) {
                 logger()->log(Logger::ERROR,
                     "Dimension too large", *this, lastToken());
-                overflow = true;
                 v = TEXPP_SCALED_MAX;
             }
             node->setValue(v);
+            return node;
+        }
+    }
+
+    if(!mu) {
+        // <internal unit>
+        Node::ptr i_node(new Node("unternal_unit"));
+        int i_unit = 0;
+
+        shared_ptr<base::InternalInteger> i_int = 
+            parseCommandOrGroup<base::InternalInteger>(i_node);
+        if(i_int) {
+            node->appendChild("internal_unit", i_node);
+            i_unit = i_int->get(*this, int(0));
+
         } else {
-            node->setValue(int(0));
-        }
-        return node;
-    }
+            static vector<string> kw_internal_units;
+            if(kw_internal_units.empty()) {
+                kw_internal_units.push_back("em");
+                kw_internal_units.push_back("ex");
+            }
 
-    // <optional true>
-    static vector<string> kw_optional_true;
-    if(kw_optional_true.empty()) {
-        kw_optional_true.push_back("true");
-    }
-
-    Node::ptr optional_true = parseKeyword(kw_optional_true);
-    if(optional_true) {
-        node->appendChild("optional_true", optional_true);
-        int mag = symbol("mag", int(0));
-        int activemag = symbol("activemag", mag);
-        setSymbol("activemag", activemag);
-        if(activemag != mag) {
-            logger()->log(Logger::ERROR,
-                "Incompatible magnification (" +
-                boost::lexical_cast<string>(mag) + ");\n" +
-                " the previous value will be retained (" +
-                boost::lexical_cast<string>(activemag) + ")",
-                *this, lastToken());
-        }
-        if(activemag != 1000) {
-            tuple<int, int, bool> p =
-                base::InternalDimen::multiplyIntFrac(
-                            val.first, 1000, activemag);
-            if(!p.get<2>()) {
-                val.first = p.get<0>();
-                val.second = (1000*val.second + 0x10000*p.get<1>())/activemag;
-                val.first = val.first + (val.second / 0x10000);
-                val.second = val.second % 0x10000;
-            } else {
-                overflow = true;
+            i_node = parseKeyword(kw_internal_units);
+            if(i_node) {
+                node->appendChild("internal_unit", i_node);
+                i_unit = 0; // TODO: fontdimen
             }
         }
-    }
 
-    // <physical units>
-    static int u_scale[][2] = {
-        {1,1},          // pt
-        {1,1},          // sp
-        {7227,100},     // in
-        {12,1},         // pc
-        {7227,254},     // cm
-        {7227,2540},    // mm
-        {7227,7200},    // bp
-        {1238,1157},    // dd
-        {14856,1157},   // cc
-    };
-    static vector<string> kw_physical_units;
-    if(kw_physical_units.empty()) {
-        kw_physical_units.push_back("pt");
-        kw_physical_units.push_back("sp");
-        kw_physical_units.push_back("in");
-        kw_physical_units.push_back("pc");
-        kw_physical_units.push_back("cm");
-        kw_physical_units.push_back("mm");
-        kw_physical_units.push_back("bp");
-        kw_physical_units.push_back("dd");
-        kw_physical_units.push_back("cc");
-    }
-
-    Node::ptr units = parseKeyword(kw_physical_units);
-    if(units) {
-        node->appendChild("physical_units", units);
-        vector<string>::iterator it = std::find(kw_physical_units.begin(),
-                    kw_physical_units.end(), units->value(string()));
-        assert(it != kw_physical_units.end());
-        int n = it - kw_physical_units.begin();
-        if(n == 0) {
-            // do nothing
-        } else if(n == 1) { // sp
-            val.second = val.first % 0x10000;
-            val.first  = val.first / 0x10000;
-        } else { // not pt
-            tuple<int,int,bool> p = base::InternalDimen::multiplyIntFrac(
-                        val.first,u_scale[n][0],u_scale[n][1]);
-            overflow = p.get<2>();
-            val.first = p.get<0>();
-            val.second = (val.second * u_scale[n][0] +
-                        p.get<1>() * 0x10000) / u_scale[n][1];
-            val.first = val.first + (val.second / 0x10000);
-            val.second = val.second % 0x10000;
+        if(i_int || i_node) {
+            if(i_unit != 0) {
+                int v = TEXPP_SCALED_MAX;
+                tuple<int,int,bool> p = base::InternalDimen::multiplyIntFrac(
+                            i_unit, val.second, 0x10000);
+                if(i_unit < 0) { i_unit=-i_unit; val.first=-val.first; }
+                if(!p.get<2>() && val.first <= TEXPP_SCALED_MAX/i_unit &&
+                            val.first*i_unit <= TEXPP_SCALED_MAX-p.get<0>()) {
+                    v = val.first*i_unit + p.get<0>();
+                } else {
+                    logger()->log(Logger::ERROR,
+                        "Dimension too large", *this, lastToken());
+                    overflow = true;
+                    v = TEXPP_SCALED_MAX;
+                }
+                node->setValue(v);
+            } else {
+                node->setValue(int(0));
+            }
+            return node;
         }
+
+        // <optional true>
+        static vector<string> kw_optional_true;
+        if(kw_optional_true.empty()) {
+            kw_optional_true.push_back("true");
+        }
+
+        Node::ptr optional_true = parseKeyword(kw_optional_true);
+        if(optional_true) {
+            node->appendChild("optional_true", optional_true);
+            int mag = symbol("mag", int(0));
+            int activemag = symbol("activemag", mag);
+            setSymbol("activemag", activemag);
+            if(activemag != mag) {
+                logger()->log(Logger::ERROR,
+                    "Incompatible magnification (" +
+                    boost::lexical_cast<string>(mag) + ");\n" +
+                    " the previous value will be retained (" +
+                    boost::lexical_cast<string>(activemag) + ")",
+                    *this, lastToken());
+            }
+            if(activemag != 1000) {
+                tuple<int, int, bool> p =
+                    base::InternalDimen::multiplyIntFrac(
+                                val.first, 1000, activemag);
+                if(!p.get<2>()) {
+                    val.first = p.get<0>();
+                    val.second = (1000*val.second +
+                                    0x10000*p.get<1>()) / activemag;
+                    val.first = val.first + (val.second / 0x10000);
+                    val.second = val.second % 0x10000;
+                } else {
+                    overflow = true;
+                }
+            }
+        }
+
+        // <physical units>
+        static int u_scale[][2] = {
+            {1,1},          // pt
+            {1,1},          // sp
+            {7227,100},     // in
+            {12,1},         // pc
+            {7227,254},     // cm
+            {7227,2540},    // mm
+            {7227,7200},    // bp
+            {1238,1157},    // dd
+            {14856,1157},   // cc
+        };
+        static vector<string> kw_physical_units;
+        if(kw_physical_units.empty()) {
+            kw_physical_units.push_back("pt");
+            kw_physical_units.push_back("sp");
+            kw_physical_units.push_back("in");
+            kw_physical_units.push_back("pc");
+            kw_physical_units.push_back("cm");
+            kw_physical_units.push_back("mm");
+            kw_physical_units.push_back("bp");
+            kw_physical_units.push_back("dd");
+            kw_physical_units.push_back("cc");
+        }
+
+        Node::ptr units = parseKeyword(kw_physical_units);
+        if(units) {
+            node->appendChild("physical_unit", units);
+            vector<string>::iterator it = std::find(kw_physical_units.begin(),
+                        kw_physical_units.end(), units->value(string()));
+            assert(it != kw_physical_units.end());
+            int n = it - kw_physical_units.begin();
+            if(n == 0) {
+                // do nothing
+            } else if(n == 1) { // sp
+                val.second = val.first % 0x10000;
+                val.first  = val.first / 0x10000;
+            } else { // not pt
+                tuple<int,int,bool> p = base::InternalDimen::multiplyIntFrac(
+                            val.first,u_scale[n][0],u_scale[n][1]);
+                overflow = p.get<2>();
+                val.first = p.get<0>();
+                val.second = (val.second * u_scale[n][0] +
+                            p.get<1>() * 0x10000) / u_scale[n][1];
+                val.first = val.first + (val.second / 0x10000);
+                val.second = val.second % 0x10000;
+            }
+        } else {
+            logger()->log(Logger::ERROR,
+                "Illegal unit of measure (pt inserted)", *this, lastToken());
+        }
+
     } else {
-        logger()->log(Logger::ERROR,
-            "Illegal unit of measure (pt inserted)", *this, lastToken());
+        Node::ptr i_node(new Node("internal_muunit"));
+
+        shared_ptr<base::InternalMuGlue> i_muglue = 
+            parseCommandOrGroup<base::InternalMuGlue>(i_node);
+        if(i_muglue) {
+            node->appendChild("internal_muunit", i_node);
+            int i_unit = i_muglue->get(*this, base::Glue(0)).width;
+
+            if(i_unit != 0) {
+                int v = TEXPP_SCALED_MAX;
+                tuple<int,int,bool> p = base::InternalDimen::multiplyIntFrac(
+                            i_unit, val.second, 0x10000);
+                if(i_unit < 0) { i_unit=-i_unit; val.first=-val.first; }
+                if(!p.get<2>() && val.first <= TEXPP_SCALED_MAX/i_unit &&
+                            val.first*i_unit <= TEXPP_SCALED_MAX-p.get<0>()) {
+                    v = val.first*i_unit + p.get<0>();
+                } else {
+                    logger()->log(Logger::ERROR,
+                        "Dimension too large", *this, lastToken());
+                    overflow = true;
+                    v = TEXPP_SCALED_MAX;
+                }
+                node->setValue(v);
+            } else {
+                node->setValue(int(0));
+            }
+            return node;
+        }
+
+        // <mu units >
+        static vector<string> kw_mu(1, "mu");
+        Node::ptr units = parseKeyword(kw_mu);
+        if(units) {
+            node->appendChild("muunit", units);
+        } else {
+            logger()->log(Logger::ERROR,
+                "Illegal unit of measure (mu inserted)", *this, lastToken());
+        }
     }
 
     int v = val.first * 0x10000 + val.second;
@@ -833,21 +909,38 @@ Node::ptr Parser::parseNumber()
     return node;
 }
 
-Node::ptr Parser::parseDimen()
+Node::ptr Parser::parseDimen(bool fil, bool mu)
 {
-    Node::ptr node(new Node("dimen"));
+    Node::ptr node(new Node(mu ? "mudimen" : "dimen"));
     node->appendChild("sign", parseOptionalSigns());
 
-    Node::ptr internal(new Node("internal"));
-    shared_ptr<base::InternalGlue> glue = 
-        parseCommandOrGroup<base::InternalGlue>(internal);
-    if(glue) {
-        internal->setType("internal_glue");
-        internal->setValue(glue->get(*this, base::Glue(0)).width);
-        node->appendChild("coerced_glue", internal);
+    bool intern = false;
+
+    if(!mu) {
+        Node::ptr internal(new Node("internal"));
+        shared_ptr<base::InternalGlue> glue = 
+            parseCommandOrGroup<base::InternalGlue>(internal);
+        if(glue) {
+            internal->setType("internal_glue");
+            internal->setValue(glue->get(*this, base::Glue(0)).width);
+            node->appendChild("coerced_glue", internal);
+            intern = true;
+        }
     } else {
-        node->appendChild("normal_dimen", parseNormalDimen());
+        Node::ptr internal(new Node("internal"));
+        shared_ptr<base::InternalMuGlue> muglue = 
+            parseCommandOrGroup<base::InternalMuGlue>(internal);
+        if(muglue) {
+            internal->setType("internal_muglue");
+            internal->setValue(muglue->get(*this, base::Glue(0)).width);
+            node->appendChild("coerced_muglue", internal);
+            intern = true;
+        }
     }
+
+    if(!intern)
+        node->appendChild(mu ? "normal_mudimen" : "normal_dimen",
+                            parseNormalDimen(fil, mu));
 
     node->setValue(node->child(0)->value(int(0)) *
                         node->child(1)->value(int(0)));
@@ -858,8 +951,9 @@ Node::ptr Parser::parseGlue()
 {
     Node::ptr node(new Node("glue"));
     node->appendChild("sign", parseOptionalSigns());
+    int sign = node->child(0)->value(int(0));
 
-    base::Glue glue;
+    base::Glue glue(0);
 
     Node::ptr internal(new Node("internal"));
     shared_ptr<base::InternalGlue> iglue = 
@@ -869,23 +963,33 @@ Node::ptr Parser::parseGlue()
         glue = iglue->get(*this, base::Glue(0));
         internal->setValue(glue);
         node->appendChild("internal_glue", internal);
+
+        glue.width *= sign;
+        glue.stretch *= sign;
+        glue.shrink *= sign;
+
     } else {
         Node::ptr width = parseDimen();
         node->appendChild("width", width);
-        glue.width = width->value(int(0));
+        glue.width = sign * width->value(int(0));
 
         Node::ptr dimenStretch;
         static vector<string> kw_plus(1, "plus");
         Node::ptr stretch = parseOptionalKeyword(kw_plus);
         if(stretch->value(string()) == "plus") {
-            dimenStretch = parseDimen();
+            dimenStretch = parseDimen(true);
             stretch->appendChild("dimen", dimenStretch);
             stretch->setValue(dimenStretch->valueAny());
+            stretch->setType("stretch");
+
             glue.stretch = stretch->value(int(0));
-            glue.stretchOrder = 0;
-        } else {
-            glue.stretch = 0;
-            glue.stretchOrder = 0;
+
+            Node::ptr fil = dimenStretch->child("normal_dimen");
+            if(fil) fil = fil->child("fil_unit");
+            if(fil) {
+                string v = fil->value(string());
+                glue.stretchOrder = std::count(v.begin(), v.end(), 'l');
+            }
         }
         node->appendChild("stretch", stretch);
 
@@ -893,22 +997,23 @@ Node::ptr Parser::parseGlue()
         static vector<string> kw_minus(1, "minus");
         Node::ptr shrink = parseOptionalKeyword(kw_minus);
         if(shrink->value(string()) == "minus") {
-            dimenShrink = parseDimen();
+            dimenShrink = parseDimen(true);
             shrink->appendChild("dimen", dimenShrink);
             shrink->setValue(dimenShrink->valueAny());
+            shrink->setType("shrink");
+
             glue.shrink = shrink->value(int(0));
-            glue.shrinkOrder = 0;
-        } else {
-            glue.shrink = 0;
-            glue.shrinkOrder = 0;
+
+            Node::ptr fil = dimenShrink->child("normal_dimen");
+            if(fil) fil = fil->child("fil_unit");
+            if(fil) {
+                string v = fil->value(string());
+                glue.shrinkOrder = std::count(v.begin(), v.end(), 'l');
+            }
         }
         node->appendChild("shrink", shrink);
     }
 
-    int sign = node->child(0)->value(int(0));
-    glue.width *= sign;
-    glue.stretch *= sign;
-    glue.shrink *= sign;
     node->setValue(glue);
     return node;
 }
