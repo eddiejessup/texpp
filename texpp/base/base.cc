@@ -79,6 +79,19 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE_GROUP("skip", int(0), 256, GlueVariable);
     __TEXPP_SET_VARIABLE_GROUP("muskip", int(0), 256, MuGlueVariable);
 
+    __TEXPP_SET_COMMAND("countdef", RegisterGroupDef,
+                static_pointer_cast<CommandGroupBase>(
+                    parser.symbol("\\count", Command::ptr())));
+    __TEXPP_SET_COMMAND("dimendef", RegisterGroupDef,
+                static_pointer_cast<CommandGroupBase>(
+                    parser.symbol("\\dimen", Command::ptr())));
+    __TEXPP_SET_COMMAND("skipdef", RegisterGroupDef,
+                static_pointer_cast<CommandGroupBase>(
+                    parser.symbol("\\skip", Command::ptr())));
+    __TEXPP_SET_COMMAND("muskipdef", RegisterGroupDef,
+                static_pointer_cast<CommandGroupBase>(
+                    parser.symbol("\\muskip", Command::ptr())));
+
     __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256,
                                 CatcodeVariable, 0, 15);
     __TEXPP_SET_CHARCODE_GROUP("lccode", int(0), 256,
