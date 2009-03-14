@@ -28,15 +28,27 @@ namespace base {
 bool InternalToks::parseArgs(Parser& parser, Node::ptr node)
 {
     node->appendChild("equals", parser.parseOptionalEquals(false));
-    node->appendChild("rvalue", parser.parseGeneralText());
+
+    Node::ptr text(new Node("internal_toks"));
+    shared_ptr<base::InternalToks> toks = 
+        parser.parseCommandOrGroup<base::InternalToks>(text);
+    if(toks) {
+        text->setValue(toks->getAny(parser));
+
+    } else {
+        text = parser.parseGeneralText();
+        Token::list_ptr tokens = text->child("balanced_text")
+                                    ->value(Token::list_ptr());
+        text->setValue(tokens ? *tokens : Token::list());
+    }
+    node->appendChild("rvalue", text);
+
     return check(parser, node->child("rvalue"));
 }
 
 bool InternalToks::execute(Parser& parser, Node::ptr node)
 {
-    Token::list_ptr tokens = node->child("rvalue")
-            ->child("balanced_text")->value(Token::list_ptr());
-    return set(parser, tokens ? *tokens : Token::list());
+    return set(parser, node->child("rvalue")->valueAny());
 }
 
 string InternalToks::toksToString(Parser& parser, const Token::list& toks)
