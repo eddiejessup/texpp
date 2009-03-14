@@ -171,6 +171,26 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("hoffset", int(0), DimenVariable);
     __TEXPP_SET_VARIABLE("voffset", int(0), DimenVariable);
 
+    __TEXPP_SET_VARIABLE("baselineskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("lineskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("parskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("abovedisplayskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("abovedisplayshortskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("belowdisplayskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("belowdisplayshortskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("leftskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("rightskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("topskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("splittopskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("tabskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("spaceskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("xspaceskip", Glue(0), GlueVariable);
+    __TEXPP_SET_VARIABLE("parfillskip", Glue(0), GlueVariable);
+
+    __TEXPP_SET_VARIABLE("thinmuskip", Glue(0), MuGlueVariable);
+    __TEXPP_SET_VARIABLE("medmuskip", Glue(0), MuGlueVariable);
+    __TEXPP_SET_VARIABLE("thickmuskip", Glue(0), MuGlueVariable);
+
     for(int i=0; i<256; ++i) {
         string n = boost::lexical_cast<string>(i);
 
