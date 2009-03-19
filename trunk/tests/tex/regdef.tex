@@ -9,9 +9,9 @@
 \showthe\count20
 
 \countdef\x=-1
-\showthe\x
+\show\x
 \countdef\x=256
-\showthe\x
+\show\x
 
 %dimendef
 \dimendef\x=10
@@ -24,9 +24,9 @@
 \showthe\dimen20
 
 \dimendef\x=-1
-\showthe\x
+\show\x
 \dimendef\x=256
-\showthe\x
+\show\x
 
 %skipdef
 \skipdef\x=10
@@ -39,9 +39,9 @@
 \showthe\skip20
 
 \skipdef\x=-1
-\showthe\x
+\show\x
 \skipdef\x=256
-\showthe\x
+\show\x
 
 %muskipdef
 \muskipdef\x=10
@@ -54,8 +54,25 @@
 \showthe\muskip20
 
 \muskipdef\x=-1
-\showthe\x
+\show\x
 \muskipdef\x=256
+\show\x
+
+%toksdef
+\catcode`{=1
+\catcode`}=2
+
+\toksdef\x=10
+\show\x
+
+\x={\a \b \c}
 \showthe\x
+\toks20=\x
+\showthe\toks20
+
+\toksdef\x=-1
+\show\x
+\toksdef\x=256
+\show\x
 
 \end
