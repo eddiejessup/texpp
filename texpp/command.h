@@ -69,8 +69,11 @@ class CommandGroupBase: public Command
 {
 public:
     CommandGroupBase(const string& name) : Command(name) {}
-    virtual Command::ptr item(size_t n) = 0;
-    virtual Command::ptr createCommand(const string& name) = 0;
+
+    virtual Command::ptr item(size_t) { return Command::ptr(); }
+    virtual Command::ptr createCommand(const string&) {
+        return Command::ptr();
+    }
 
     virtual string groupType() const { return "group"; }
 

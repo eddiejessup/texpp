@@ -21,6 +21,7 @@
 #include <texpp/base/dimen.h>
 #include <texpp/base/glue.h>
 #include <texpp/base/toks.h>
+#include <texpp/base/font.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
@@ -101,6 +102,15 @@ bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
         return true;
     }
 
+    shared_ptr<FontSelector> font =
+        parser.parseCommandOrGroup<FontSelector>(arg);
+    if(font) {
+        arg->setType("font_selector");
+        arg->setValue(font);
+        node->appendChild("internal_quantity", arg);
+        return true;
+    }
+
     parser.logger()->log(Logger::ERROR,
         "You can't use `" + parser.peekToken()->texRepr() +
         "' after " + char(parser.symbol("escapechar", int(0))) + "the",
@@ -135,6 +145,11 @@ bool ShowThe::execute(Parser& parser, Node::ptr node)
     } else if(arg->type() == "internal_toks") {
         parser.logger()->log(Logger::SHOW,
             InternalToks::toksToString(parser, arg->value(Token::list())),
+            parser, parser.lastToken());
+    } else if(arg->type() == "font_selector") {
+        char escape = parser.symbol("escapechar", int(0));
+        parser.logger()->log(Logger::SHOW,
+            arg->value(shared_ptr<FontSelector>())->Command::texRepr(escape),
             parser, parser.lastToken());
     }
     return true;

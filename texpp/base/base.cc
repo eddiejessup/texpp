@@ -28,6 +28,7 @@
 #include <texpp/base/glue.h>
 #include <texpp/base/toks.h>
 #include <texpp/base/arithmetic.h>
+#include <texpp/base/font.h>
 
 #include <texpp/parser.h>
 
@@ -44,22 +45,6 @@ void initSymbols(Parser& parser)
         parser.setSymbol("\\" name, \
             Command::ptr(new T("\\" name, ##__VA_ARGS__)))
     
-    #define __TEXPP_SET_VARIABLE(name, value, T, ...) \
-        parser.setSymbol("\\" name, \
-            Command::ptr(new T("\\" name, ##__VA_ARGS__))); \
-        parser.setSymbol(name, value)
-
-    #define __TEXPP_SET_VARIABLE_GROUP(name, value, maxcount, T) \
-        parser.setSymbol("\\" name, Command::ptr( \
-            new FixedVariableGroup<T>("\\" name, maxcount, value))); \
-        parser.setSymbol(name, value)
-
-    #define __TEXPP_SET_CHARCODE_GROUP(name, value, maxcount, T, MIN, MAX) \
-        parser.setSymbol("\\" name, Command::ptr( \
-            new CharcodeVariableGroup< T, MIN, MAX >( \
-                "\\" name, maxcount, value))); \
-        parser.setSymbol(name, value)
-
     __TEXPP_SET_COMMAND("end",        End);
     __TEXPP_SET_COMMAND("relax",      Relax);
     __TEXPP_SET_COMMAND("par",        Relax);
@@ -74,6 +59,40 @@ void initSymbols(Parser& parser)
         ArithmeticCommand, ArithmeticCommand::MULTIPLY);
     __TEXPP_SET_COMMAND("divide",
         ArithmeticCommand, ArithmeticCommand::DIVIDE);
+
+    shared_ptr<FontSelector> nullfont(
+        new FontSelector("\\nullfont", "nullfont"));
+    parser.setSymbol("\\nullfont", nullfont);
+
+    #define __TEXPP_SET_FONT_GROUP(name, T) \
+        parser.setSymbol("\\" name, Command::ptr(new T("\\" name))); \
+        parser.setSymbol(name, nullfont)
+
+    //__TEXPP_SET_FONT_GROUP("font", Font);
+
+    #define __TEXPP_SET_CHARCODE_GROUP(name, value, maxcount, T, MIN, MAX) \
+        parser.setSymbol("\\" name, Command::ptr( \
+            new CharcodeVariableGroup< T, MIN, MAX >( \
+                "\\" name, maxcount, value))); \
+        parser.setSymbol(name, value)
+
+    __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256,
+                                CatcodeVariable, 0, 15);
+    __TEXPP_SET_CHARCODE_GROUP("lccode", int(0), 256,
+                                CharcodeVariable, 0, 255);
+    __TEXPP_SET_CHARCODE_GROUP("uccode", int(0), 256,
+                                CharcodeVariable, 0, 255);
+    __TEXPP_SET_CHARCODE_GROUP("sfcode", int(0), 256,
+                                CharcodeVariable, 0, 32767);
+    __TEXPP_SET_CHARCODE_GROUP("mathcode", int(0), 256,
+                                CharcodeVariable, 0, 32768);
+    __TEXPP_SET_CHARCODE_GROUP("delcode", int(0), 256,
+                                CharcodeVariable, INT_MIN, 16777215);
+
+    #define __TEXPP_SET_VARIABLE_GROUP(name, value, maxcount, T) \
+        parser.setSymbol("\\" name, Command::ptr( \
+            new FixedVariableGroup<T>("\\" name, maxcount, value))); \
+        parser.setSymbol(name, value)
 
     __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
     __TEXPP_SET_VARIABLE_GROUP("dimen", int(0), 256, DimenVariable);
@@ -97,18 +116,11 @@ void initSymbols(Parser& parser)
                 static_pointer_cast<CommandGroupBase>(
                     parser.symbol("\\toks", Command::ptr())));
 
-    __TEXPP_SET_CHARCODE_GROUP("catcode", int(0), 256,
-                                CatcodeVariable, 0, 15);
-    __TEXPP_SET_CHARCODE_GROUP("lccode", int(0), 256,
-                                CharcodeVariable, 0, 255);
-    __TEXPP_SET_CHARCODE_GROUP("uccode", int(0), 256,
-                                CharcodeVariable, 0, 255);
-    __TEXPP_SET_CHARCODE_GROUP("sfcode", int(0), 256,
-                                CharcodeVariable, 0, 32767);
-    __TEXPP_SET_CHARCODE_GROUP("mathcode", int(0), 256,
-                                CharcodeVariable, 0, 32768);
-    __TEXPP_SET_CHARCODE_GROUP("delcode", int(0), 256,
-                                CharcodeVariable, INT_MIN, 16777215);
+
+    #define __TEXPP_SET_VARIABLE(name, value, T, ...) \
+        parser.setSymbol("\\" name, \
+            Command::ptr(new T("\\" name, ##__VA_ARGS__))); \
+        parser.setSymbol(name, value)
 
     __TEXPP_SET_VARIABLE("endlinechar", int(0), EndlinecharVariable);
     __TEXPP_SET_VARIABLE("mag", int(0), IntegerVariable);
