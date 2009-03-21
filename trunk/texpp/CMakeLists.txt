@@ -20,6 +20,7 @@ set(libtexpp_SOURCES
     base/glue.cc
     base/toks.cc
     base/arithmetic.cc
+    base/font.cc
     base/base.cc
 )
 
