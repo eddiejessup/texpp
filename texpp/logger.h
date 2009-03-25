@@ -32,7 +32,8 @@ public:
     typedef shared_ptr<Logger> ptr;
 
     enum { MESSAGE = 0, SHOW = 30,
-           ERROR = 40, CRITICAL = 50 };
+           ERROR = 40, CRITICAL = 50,
+           UNIMPLEMENTED = 100 };
 
     Logger() {}
     virtual ~Logger() {}
