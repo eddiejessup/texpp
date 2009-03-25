@@ -1,6 +1,9 @@
 #summary Summary of implemented TeX features.
 
 || *Command*     || *Implemented?* ||
+|| lexer         || yes ||
+|| context       || yes ||
+|| grouping      || yes ||
 || \end          || yes ||
 || \relax        || yes ||
 || \par          || yes ||
