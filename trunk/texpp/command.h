@@ -45,6 +45,8 @@ public:
     virtual bool parseArgs(Parser&, shared_ptr<Node>) { return false; }
     virtual bool execute(Parser&, shared_ptr<Node>) { return false; }
 
+    virtual bool invoke(Parser&, shared_ptr<Node>) { return true; }
+
 protected:
     string m_name;
 };
@@ -60,6 +62,8 @@ public:
     string texRepr(char escape = '\\') const;
     bool parseArgs(Parser&, shared_ptr<Node>);
     bool execute(Parser&, shared_ptr<Node>);
+
+    bool invoke(Parser& parser, shared_ptr<Node> node);
 
 protected:
     shared_ptr<Token> m_token;

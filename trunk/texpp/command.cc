@@ -43,6 +43,12 @@ string TokenCommand::texRepr(char) const
     return m_token->meaning();
 }
 
+bool TokenCommand::invoke(Parser&, shared_ptr<Node> node)
+{
+    node->setValue(m_token);
+    return true;
+}
+
 bool TokenCommand::parseArgs(Parser&, Node::ptr node)
 {
     node->setValue(m_token);

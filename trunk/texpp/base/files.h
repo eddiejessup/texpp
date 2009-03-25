@@ -29,9 +29,7 @@ class Message: public Command
 {
 public:
     explicit Message(const string& name): Command(name) {}
-
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser& parser, shared_ptr<Node> node);
+    bool invoke(Parser& parser, shared_ptr<Node> node);
 };
 
 } // namespace base

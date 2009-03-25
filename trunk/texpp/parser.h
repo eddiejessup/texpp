@@ -22,6 +22,8 @@
 #include <texpp/common.h>
 #include <texpp/lexer.h>
 #include <texpp/command.h>
+#include <texpp/command.h>
+#include <texpp/base/variable.h>
 
 #include <deque>
 #include <cassert>
@@ -121,7 +123,7 @@ public:
     Node::ptr parseGroup(Command::ptr endCmd = Command::ptr(),
                          bool parseBeginEnd = true);
 
-    Node::ptr parseCommand(Command::ptr command);
+    Node::ptr invokeCommand(Command::ptr command);
 
     Node::ptr parseToken();
     Node::ptr parseControlSequence();
@@ -147,6 +149,9 @@ public:
 
     template<class Cmd>
     shared_ptr<Cmd> parseCommandOrGroup(Node::ptr node);
+
+    template<class Var>
+    Node::ptr tryParseVariableValue();
 
     //////// Symbols
     void setSymbol(const string& name, const any& value, bool global = false);
@@ -190,6 +195,7 @@ public:
 
 protected:
     Token::ptr rawNextToken();
+    void setSpecialSymbol(const string& name, const any& value);
 
     typedef std::deque<
         Token::ptr
@@ -236,6 +242,21 @@ shared_ptr<Cmd> Parser::parseCommandOrGroup(Node::ptr node)
         return static_pointer_cast<Cmd>(gr->parseCommand(*this, node));
     }
     return shared_ptr<Cmd>();
+}
+
+template<class Var>
+Node::ptr Parser::tryParseVariableValue()
+{
+    shared_ptr<Var> var = symbolCommand<Var>(peekToken());
+    if(!var) return Node::ptr();
+
+    Node::ptr node(new Node("variable"));
+    node->appendChild("control_token", parseToken());
+    if(var->invokeOperation(*this, node, base::Variable::GET))
+        return node;
+
+    pushBack(&node->tokens());
+    return Node::ptr();
 }
 
 } // namespace texpp

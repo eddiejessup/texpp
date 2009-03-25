@@ -18,22 +18,105 @@
 
 #include <texpp/base/dimen.h>
 #include <texpp/parser.h>
+#include <texpp/logger.h>
 
 #include <sstream>
 
 namespace texpp {
 namespace base {
 
-bool InternalDimen::parseArgs(Parser& parser, Node::ptr node)
+string InternalDimen::reprValue(Parser&, shared_ptr<Node> node)
 {
-    node->appendChild("equals", parser.parseOptionalEquals(false));
-    node->appendChild("rvalue", parser.parseDimen());
-    return check(parser, node->child("rvalue"));
+    return dimenToString(node->value(int(0)));
 }
 
-bool InternalDimen::execute(Parser& parser, Node::ptr node)
+bool InternalDimen::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
 {
-    return set(parser, node->child("rvalue")->value(int(0)));
+    if(op == ASSIGN) {
+        string name = parseName(parser, node);
+
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+        Node::ptr rvalue = parser.parseDimen();
+        node->appendChild("rvalue", rvalue);
+
+        node->setValue(rvalue->valueAny());
+        parser.setSymbol(name, rvalue->valueAny());
+        return true;
+    } else {
+        return Variable::invokeOperation(parser, node, op);
+    }
+}
+
+bool DimenVariable::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
+{
+    static vector<string> kw_by(1, "by");
+    if(op == ADVANCE) {
+        string name = parseName(parser, node);
+        
+        node->appendChild("by", parser.parseOptionalKeyword(kw_by));
+
+        Node::ptr rvalue = parser.parseDimen();
+        node->appendChild("rvalue", rvalue);
+
+        int v = parser.symbol(name, int(0));
+        v += rvalue->value(int(0));
+
+        node->setValue(v);
+        parser.setSymbol(name, v);
+
+    } else if(op == MULTIPLY || op == DIVIDE) {
+        string name = parseName(parser, node);
+
+        node->appendChild("by", parser.parseOptionalKeyword(kw_by));
+
+        Node::ptr rvalue = parser.parseNumber();
+        node->appendChild("rvalue", rvalue);
+
+        int v = parser.symbol(name, int(0));
+        int rv = rvalue->value(int(0));
+        bool overflow = false;
+
+        if(op == ADVANCE) {
+            v += rv;
+        } else if(op == MULTIPLY) {
+            pair<int,bool> p = safeMultiply(v, rv,  TEXPP_SCALED_MAX);
+            v = p.first; overflow = p.second;
+        } else if(op == DIVIDE) {
+            pair<int,bool> p = safeDivide(v, rv);
+            v = p.first; overflow = p.second;
+        }
+
+        if(overflow) {
+            parser.logger()->log(Logger::ERROR,
+                "Arithmetic overflow",
+                parser, parser.lastToken());
+            return false;
+        }
+
+        node->setValue(v);
+        parser.setSymbol(name, v);
+        return true;
+    }
+
+    return InternalDimen::invokeOperation(parser, node, op);
+}
+
+string DimenRegister::parseName(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("variable_number", number);
+    int n = number->value(int(0));
+
+    if(n < 0 || n > 255) {
+        parser.logger()->log(Logger::ERROR,
+            "Bad register code (" + boost::lexical_cast<string>(n) + ")",
+            parser, parser.lastToken());
+        n = 0;
+    }
+
+    return name().substr(1) + boost::lexical_cast<string>(n);
 }
 
 tuple<int,int,bool> InternalDimen::multiplyIntFrac(int x, int n, int d)

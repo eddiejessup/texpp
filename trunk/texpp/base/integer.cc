@@ -26,59 +26,123 @@
 namespace texpp {
 namespace base {
 
-bool InternalInteger::parseArgs(Parser& parser, Node::ptr node)
+bool InternalInteger::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
 {
-    node->appendChild("equals", parser.parseOptionalEquals(false));
-    node->appendChild("rvalue", parser.parseNumber());
-    return check(parser, node->child("rvalue"));
-}
+    if(op == ASSIGN) {
+        string name = parseName(parser, node);
 
-bool InternalInteger::execute(Parser& parser, Node::ptr node)
-{
-    return set(parser, node->child("rvalue")->value(int(0)));
-}
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+        Node::ptr rvalue = parser.parseNumber();
+        node->appendChild("rvalue", rvalue);
 
-bool EndlinecharVariable::set(Parser& parser, const any& value, bool global)
-{
-    if(IntegerVariable::set(parser, value, global)) {
-        assert(value.type() == typeid(int));
-        parser.lexer()->setEndlinechar(*unsafe_any_cast<int>(&value));
+        node->setValue(rvalue->valueAny());
+        parser.setSymbol(name, rvalue->valueAny());
         return true;
     } else {
-        return false;
+        return Variable::invokeOperation(parser, node, op);
     }
 }
 
-bool CharcodeVariable::check(Parser& parser, Node::ptr node)
+bool IntegerVariable::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
 {
-    assert(node->valueAny().type() == typeid(int));
-    int n = node->value(int(0));
-    if(n < m_min || n > m_max) {
-        parser.logger()->log(Logger::ERROR, "Invalid code (" +
-            boost::lexical_cast<string>(n) +
-            "), should be in the range " +
-            boost::lexical_cast<string>(m_min) + ".." +
-            boost::lexical_cast<string>(m_max),
+    if(op == ADVANCE || op == MULTIPLY || op == DIVIDE) {
+        string name = parseName(parser, node);
+
+        static vector<string> kw_by(1, "by");
+        node->appendChild("by", parser.parseOptionalKeyword(kw_by));
+
+        Node::ptr rvalue = parser.parseNumber();
+        node->appendChild("rvalue", rvalue);
+
+        int v = parser.symbol(name, int(0));
+        int rv = rvalue->value(int(0));
+        bool overflow = false;
+
+        if(op == ADVANCE) {
+            v += rv;
+        } else if(op == MULTIPLY) {
+            pair<int,bool> p = safeMultiply(v, rv,  TEXPP_INT_MAX);
+            v = p.first; overflow = p.second;
+        } else if(op == DIVIDE) {
+            pair<int,bool> p = safeDivide(v, rv);
+            v = p.first; overflow = p.second;
+        }
+
+        if(overflow) {
+            parser.logger()->log(Logger::ERROR,
+                "Arithmetic overflow",
+                parser, parser.lastToken());
+            return false;
+        }
+
+        node->setValue(v);
+        parser.setSymbol(name, v);
+        return true;
+    }
+
+    return InternalInteger::invokeOperation(parser, node, op);
+}
+
+string CountRegister::parseName(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("variable_number", number);
+    int n = number->value(int(0));
+
+    if(n < 0 || n > 255) {
+        parser.logger()->log(Logger::ERROR,
+            "Bad register code (" + boost::lexical_cast<string>(n) + ")",
             parser, parser.lastToken());
-
-        node->setValue(int(0));
-        return false;
+        n = 0;
     }
-    return true;
+
+    return name().substr(1) + boost::lexical_cast<string>(n);
 }
 
-bool CatcodeVariable::set(Parser& parser, const any& value, bool global)
+string CharcodeVariable::parseName(Parser& parser, shared_ptr<Node> node)
 {
-    if(CharcodeVariable::set(parser, value, global)) {
-        assert(value.type() == typeid(int));
-        assert(name().substr(0, 8) == "\\catcode");
-        std::istringstream str(name().substr(8));
-        int n = boost::lexical_cast<int>(name().substr(8));
-        assert(n >= 0 && n < 256);
-        parser.lexer()->setCatcode(n, *unsafe_any_cast<int>(&value));
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("variable_number", number);
+    int n = number->value(int(0));
+
+    if(n < 0 || n > 255) {
+        parser.logger()->log(Logger::ERROR,
+            "Bad character code (" + boost::lexical_cast<string>(n) + ")",
+            parser, parser.lastToken());
+        n = 0;
+    }
+
+    return name().substr(1) + boost::lexical_cast<string>(n);
+}
+
+bool CharcodeVariable::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
+{
+    if(op == ASSIGN) {
+        string name = parseName(parser, node);
+
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+        Node::ptr rvalue = parser.parseNumber();
+        node->appendChild("rvalue", rvalue);
+
+        int n = rvalue->value(int(0));
+        if(n < m_min || n > m_max) {
+            parser.logger()->log(Logger::ERROR, "Invalid code (" +
+                boost::lexical_cast<string>(n) +
+                "), should be in the range " +
+                boost::lexical_cast<string>(m_min) + ".." +
+                boost::lexical_cast<string>(m_max),
+                parser, parser.lastToken());
+            n = 0;
+        }
+
+        node->setValue(n);
+        parser.setSymbol(name, n);
         return true;
     } else {
-        return false;
+        return Variable::invokeOperation(parser, node, op);
     }
 }
 

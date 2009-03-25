@@ -26,15 +26,11 @@
 namespace texpp {
 namespace base {
 
-bool Message::parseArgs(Parser& parser, Node::ptr node)
-{
-    parser.parseGeneralText(node);
-    return true;
-}
 
-bool Message::execute(Parser& parser, Node::ptr node)
+bool Message::invoke(Parser& parser, Node::ptr node)
 {
     using boost::lexical_cast;
+    parser.parseGeneralText(node);
 
     string str;
     Token::list_ptr tokens =

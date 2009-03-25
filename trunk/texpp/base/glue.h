@@ -39,27 +39,24 @@ struct Glue
     explicit Glue(int w, int st = 0, int sto = 0, int sh = 0, int sho = 0)
         : width(w), stretch(st), stretchOrder(sto),
           shrink(sh), shrinkOrder(sho) {}
-
-    /*
-    Glue(const Glue& g): width(g.width), stretch(g.stretch),
-        stretchOrder(g.stretchOrder),
-        shrink(g.shrink), shrinkOrder(g.shrinkOrder) {}
-
-    const Glue& operator=(const Glue& g) {
-        width = g.width; stretch = g.stretch; stretchOrder = g.stretchOrder;
-        shrink = g.shrink; shrinkOrder = g.shrinkOrder; return *this;
-    }*/
 };
 
 class InternalGlue: public Variable
 {
 public:
-    InternalGlue(const string& name, const any& initValue = any(Glue(0)))
-        : Variable(name, initValue) {}
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser& parser, shared_ptr<Node> node);
+    InternalGlue(const string& name,
+            const any& initValue = any(Glue(0)), bool mu = false)
+        : Variable(name, initValue), m_mu(mu) {}
 
+    /*
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+
+    string reprValue(Parser& parser, shared_ptr<Node> node);*/
     static string glueToString(const Glue& g, bool mu = false);
+
+protected:
+    bool m_mu;
 };
 
 class GlueVariable: public InternalGlue

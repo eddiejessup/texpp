@@ -29,6 +29,7 @@
 #include <tr1/unordered_map>
 
 #define TEXPP_INT_INV    (int(-0x80000000))
+#define TEXPP_INT_MIN    (int(-0x7fffffff))
 #define TEXPP_INT_MAX    (int( 0x7fffffff))
 #define TEXPP_SCALED_MAX (int( 0x3fffffff))
 
