@@ -63,6 +63,16 @@ public:
     string parseName(Parser& parser, shared_ptr<Node> node);
 };
 
+class SpecialDimen: public InternalDimen
+{
+public:
+    SpecialDimen(const string& name, const any& initValue = any(0))
+        : InternalDimen(name, initValue) {}
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+};
+
 } // namespace base
 } // namespace texpp
 

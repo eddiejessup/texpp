@@ -75,6 +75,16 @@ protected:
     int m_max;
 };
 
+class SpecialInteger: public InternalInteger
+{
+public:
+    SpecialInteger(const string& name, const any& initValue = any(0))
+        : InternalInteger(name, initValue) {}
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+};
+
 } // namespace base
 } // namespace texpp
 

@@ -154,6 +154,24 @@ string InternalDimen::dimenToString(int n, int o, bool mu)
     return s.str();
 }
 
+bool SpecialDimen::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
+{
+    if(op == ASSIGN) {
+        string name = parseName(parser, node);
+
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+        Node::ptr rvalue = parser.parseDimen();
+        node->appendChild("rvalue", rvalue);
+
+        node->setValue(rvalue->valueAny());
+        parser.setSymbol(name, rvalue->valueAny(), true); // global
+        return true;
+    } else {
+        return InternalDimen::invokeOperation(parser, node, op);
+    }
+}
+
 } // namespace base
 } // namespace texpp
 
