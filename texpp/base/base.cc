@@ -209,6 +209,22 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("everycr", ToksVariable, Token::list());
     __TEXPP_SET_VARIABLE("errhelp", ToksVariable, Token::list());
 
+    // special
+    __TEXPP_SET_COMMAND("spacefactor", SpecialInteger, int(0));
+    __TEXPP_SET_COMMAND("prevgraf", SpecialInteger, int(0));
+    __TEXPP_SET_COMMAND("deadcycles", SpecialInteger, int(0));
+    __TEXPP_SET_COMMAND("insertpenalties", SpecialInteger, int(0));
+
+    __TEXPP_SET_COMMAND("prevdepth", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("pagegoal", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("pagetotal", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("pagestretch", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("pagefilstrerch", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("pagefillstrerch", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("pagefilllstrerch", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("pageshrink", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("pagedepth", SpecialDimen, int(0));
+
     // Ignored commands
     __TEXPP_SET_COMMAND("errorstopmode", IgnoredCommand);
     __TEXPP_SET_COMMAND("scrollmode", IgnoredCommand);
@@ -224,24 +240,11 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("hyphenchar", UnimplementedCommand);
     __TEXPP_SET_COMMAND("skewshar", UnimplementedCommand);
     __TEXPP_SET_COMMAND("badness", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("spacefactor", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("prevgraf", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("deadcycles", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("insertpenalties", UnimplementedCommand);
     __TEXPP_SET_COMMAND("textfont", UnimplementedCommand);
     __TEXPP_SET_COMMAND("scriptfont", UnimplementedCommand);
     __TEXPP_SET_COMMAND("scriptscriptfont", UnimplementedCommand);
     __TEXPP_SET_COMMAND("lastkern", UnimplementedCommand);
     __TEXPP_SET_COMMAND("fontdimen", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("prevdepth", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("pagegoal", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("pagetotal", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("pagestretch", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("pagefilstrerch", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("pagefillstrerch", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("pagefilllstrerch", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("pageshrink", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("pagedepth", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ht", UnimplementedCommand);
     __TEXPP_SET_COMMAND("wd", UnimplementedCommand);
     __TEXPP_SET_COMMAND("dp", UnimplementedCommand);

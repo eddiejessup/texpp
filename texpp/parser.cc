@@ -1212,6 +1212,7 @@ Node::ptr Parser::parseGroup(Command::ptr endCmd, bool parseBeginEnd)
                 // TODO: report error
                 Node::ptr group_end(new Node("group_end"));
                 node->appendChild("group_end", parseToken());
+                endGroup();
             }
             break;
         }
@@ -1220,6 +1221,7 @@ Node::ptr Parser::parseGroup(Command::ptr endCmd, bool parseBeginEnd)
             if((endCmd && symbol(peekToken(), Command::ptr()) == endCmd) ||
                    (!endCmd && helperIsImplicitCharacter(Token::CC_EGROUP))) {
                 node->appendChild("group_end", parseToken());
+                endGroup();
                 break;
             }
         }
