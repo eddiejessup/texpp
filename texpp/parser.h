@@ -23,7 +23,6 @@
 #include <texpp/lexer.h>
 #include <texpp/command.h>
 #include <texpp/command.h>
-#include <texpp/base/variable.h>
 
 #include <deque>
 #include <cassert>
@@ -147,9 +146,6 @@ public:
 
     Node::ptr parseTextWord();
 
-    template<class Var>
-    Node::ptr tryParseVariableValue();
-
     //////// Symbols
     void setSymbol(const string& name, const any& value, bool global = false);
     void setSymbol(Token::ptr token, const any& value, bool global = false) {
@@ -223,21 +219,6 @@ protected:
 
     static any EMPTY_ANY;
 };
-
-template<class Var>
-Node::ptr Parser::tryParseVariableValue()
-{
-    shared_ptr<Var> var = symbolCommand<Var>(peekToken());
-    if(!var) return Node::ptr();
-
-    Node::ptr node(new Node("variable"));
-    node->appendChild("control_token", parseToken());
-    if(var->invokeOperation(*this, node, base::Variable::GET))
-        return node;
-
-    pushBack(&node->tokens());
-    return Node::ptr();
-}
 
 } // namespace texpp
 

@@ -35,7 +35,7 @@ bool InternalToks::invokeOperation(Parser& parser,
         node->appendChild("equals", parser.parseOptionalEquals(false));
 
         Node::ptr internal =
-            parser.tryParseVariableValue<base::InternalToks>();
+            Variable::tryParseVariableValue<base::InternalToks>(parser);
         if(internal) {
             node->setValue(internal->valueAny());
         } else {
@@ -80,22 +80,6 @@ string InternalToks::toksToString(Parser& parser, const Token::list& toks)
         }
     }
     return str;
-}
-
-string ToksRegister::parseName(Parser& parser, shared_ptr<Node> node)
-{
-    Node::ptr number = parser.parseNumber();
-    node->appendChild("variable_number", number);
-    int n = number->value(int(0));
-
-    if(n < 0 || n > 255) {
-        parser.logger()->log(Logger::ERROR,
-            "Bad register code (" + boost::lexical_cast<string>(n) + ")",
-            parser, parser.lastToken());
-        n = 0;
-    }
-
-    return name().substr(1) + boost::lexical_cast<string>(n);
 }
 
 } // namespace base

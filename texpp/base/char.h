@@ -16,56 +16,54 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef __TEXPP_BASE_DIMEN_H
-#define __TEXPP_BASE_DIMEN_H
+#ifndef __TEXPP_BASE_CHAR_H
+#define __TEXPP_BASE_CHAR_H
 
 #include <texpp/common.h>
 #include <texpp/command.h>
 
-#include <texpp/base/variable.h>
-#include <boost/tuple/tuple.hpp>
-
 namespace texpp {
-
-using boost::tuple;
-
 namespace base {
 
-class InternalDimen: public Variable
+class Char: public Command
 {
 public:
-    InternalDimen(const string& name, const any& initValue = any(0))
-        : Variable(name, initValue) {}
-
-    bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
-
-    static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
-    static string dimenToString(int n, int o=0, bool mu=false);
+    explicit Char(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool createDef(Parser& parser, shared_ptr<Token> token, int num);
 };
 
-class DimenVariable: public InternalDimen
+class MathChar: public Command
 {
 public:
-    DimenVariable(const string& name, const any& initValue = any(0))
-        : InternalDimen(name, initValue) {}
-
-    bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+    explicit MathChar(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool createDef(Parser& parser, shared_ptr<Token> token, int num);
 };
 
-class SpecialDimen: public InternalDimen
+class Delimiter: public Command
 {
 public:
-    SpecialDimen(const string& name, const any& initValue = any(0))
-        : InternalDimen(name, initValue) {}
+    explicit Delimiter(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
 
-    bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+class CharDef: public Command
+{
+public:
+    explicit CharDef(const string& name): Command(name) {}
+};
+
+class MathCharDef: public Command
+{
+public:
+    explicit MathCharDef(const string& name): Command(name) {}
 };
 
 } // namespace base
 } // namespace texpp
 
+
 #endif
+
 

@@ -45,7 +45,7 @@ public:
     bool execute(Parser&, shared_ptr<Node>);
 };
 
-template<class Cmd, class Item>
+template<class Cmd>
 class RegisterDef: public Command
 {
 public:
@@ -60,8 +60,8 @@ protected:
     shared_ptr<Cmd> m_group;
 };
 
-template<class Cmd, class Item>
-bool RegisterDef<Cmd, Item>::invoke(Parser& parser, shared_ptr<Node> node)
+template<class Cmd>
+bool RegisterDef<Cmd>::invoke(Parser& parser, shared_ptr<Node> node)
 {
     Node::ptr lvalue = parser.parseControlSequence();
     node->appendChild("lvalue", lvalue);
@@ -73,18 +73,7 @@ bool RegisterDef<Cmd, Item>::invoke(Parser& parser, shared_ptr<Node> node)
     Token::ptr ltoken = lvalue->value(Token::ptr());
     int num = rvalue->value(int(0));
 
-    if(num < 0 || num > 255) {
-        parser.logger()->log(Logger::ERROR,
-            "Bad register code (" + boost::lexical_cast<string>(num) + ")",
-            parser, parser.lastToken());
-        num = 0;
-    }
-
-    const any& ivalue = m_group->initValue();
-    string iname = m_group->name() + boost::lexical_cast<string>(num);
-    parser.setSymbol(ltoken->value(), Command::ptr(new Item(iname, ivalue)));
-
-    return true;
+    return m_group->createDef(parser, ltoken, num);
 }
 
 } // namespace base

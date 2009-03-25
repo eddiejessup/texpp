@@ -63,15 +63,6 @@ public:
                         shared_ptr<Node> node, Operation op);
 };
 
-class GlueRegister: public GlueVariable
-{
-public:
-    GlueRegister(const string& name, const any& initValue = any(Glue(0)))
-        : GlueVariable(name, initValue) {}
-
-    string parseName(Parser& parser, shared_ptr<Node> node);
-};
-
 class InternalMuGlue: public Variable
 {
 public:
@@ -95,16 +86,6 @@ public:
     bool invokeOperation(Parser& parser,
                         shared_ptr<Node> node, Operation op);
 };
-
-class MuGlueRegister: public MuGlueVariable
-{
-public:
-    MuGlueRegister(const string& name, const any& initValue = any(Glue(0)))
-        : MuGlueVariable(name, initValue) {}
-
-    string parseName(Parser& parser, shared_ptr<Node> node);
-};
-
 
 } // namespace base
 } // namespace texpp

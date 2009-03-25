@@ -47,15 +47,6 @@ public:
                         shared_ptr<Node> node, Operation op);
 };
 
-class CountRegister: public IntegerVariable
-{
-public:
-    CountRegister(const string& name, const any& initValue = any(0))
-        : IntegerVariable(name, initValue) {}
-
-    string parseName(Parser& parser, shared_ptr<Node> node);
-};
-
 class CharcodeVariable: public InternalInteger
 {
 public:

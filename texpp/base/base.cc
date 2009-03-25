@@ -28,6 +28,7 @@
 #include <texpp/base/glue.h>
 #include <texpp/base/toks.h>
 #include <texpp/base/font.h>
+#include <texpp/base/char.h>
 
 #include <texpp/parser.h>
 
@@ -64,7 +65,7 @@ void initSymbols(Parser& parser)
     parser.setSymbol("\\nullfont", nullfont);
 
     #define __TEXPP_SET_FONT_GROUP(name, T) \
-        parser.setSymbol("\\" name, Command::ptr(new T("\\" name))); \
+        __TEXPP_SET_COMMAND(name, T) \
         parser.setSymbol(name, nullfont)
 
     //__TEXPP_SET_FONT_GROUP("font", Font);
@@ -77,27 +78,36 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("delcode", CharcodeVariable, int(0),
                                         TEXPP_INT_MIN, 16777215);
 
-    __TEXPP_SET_COMMAND("count", CountRegister, int(0));
-    __TEXPP_SET_COMMAND("dimen", DimenRegister, int(0));
-    __TEXPP_SET_COMMAND("skip", GlueRegister, Glue(0));
-    __TEXPP_SET_COMMAND("muskip", MuGlueRegister, Glue(0));
-    __TEXPP_SET_COMMAND("toks", ToksRegister, Token::list());
-
-    #define __TEXPP_SET_REGDEF(name, T, I) \
+    #define __TEXPP_SET_REGISTER(name, T, v) \
+        __TEXPP_SET_COMMAND(name, Register<T>); \
         parser.setSymbol("\\" name "def", \
-            Command::ptr(new RegisterDef<T, I>("\\" name "def",  \
+            Command::ptr(new RegisterDef<Register<T> >("\\" name "def", \
+                static_pointer_cast<Register<T> >( \
+                    parser.symbol("\\" name, Command::ptr())))))
+
+    __TEXPP_SET_REGISTER("count", IntegerVariable, int(0));
+    __TEXPP_SET_REGISTER("dimen", DimenVariable, int(0));
+    __TEXPP_SET_REGISTER("skip", GlueVariable, Glue(0));
+    __TEXPP_SET_REGISTER("muskip", MuGlueVariable, Glue(0));
+    __TEXPP_SET_REGISTER("toks", ToksVariable, Token::list());
+
+    #define __TEXPP_SET_CHAR(name, T) \
+        __TEXPP_SET_COMMAND(name, T); \
+        parser.setSymbol("\\" name "def", \
+            Command::ptr(new RegisterDef<T>("\\" name "def", \
                 static_pointer_cast<T>( \
                     parser.symbol("\\" name, Command::ptr())))))
-        
-    __TEXPP_SET_REGDEF("count", CountRegister, IntegerVariable);
-    __TEXPP_SET_REGDEF("dimen", DimenRegister, DimenVariable);
-    __TEXPP_SET_REGDEF("skip", GlueRegister, GlueVariable);
-    __TEXPP_SET_REGDEF("muskip", MuGlueRegister, MuGlueVariable);
-    __TEXPP_SET_REGDEF("toks", ToksRegister, ToksVariable);
+
+    __TEXPP_SET_CHAR("char", Char);
+    __TEXPP_SET_CHAR("mathchar", MathChar);
+    __TEXPP_SET_COMMAND("delimiter", Delimiter);
+
+    //__TEXPP_SET_REGDEF("char", Char, CharDef);
+    //__TEXPP_SET_REGDEF("char", MathChar, IgnoredCommand); // TODO
+    //__TEXPP_SET_REGDEF("char", Delimiter, IgnoredCommand); // TODO
 
     #define __TEXPP_SET_VARIABLE(name, T, value, ...) \
-        parser.setSymbol("\\" name, \
-            Command::ptr(new T("\\" name, value, ##__VA_ARGS__))); \
+        __TEXPP_SET_COMMAND(name, T, value, ##__VA_ARGS__); \
         parser.setSymbol(name, value)
 
     __TEXPP_SET_VARIABLE("endlinechar", IntegerVariable, int(0));
@@ -258,8 +268,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("xdef", UnimplementedCommand);
     __TEXPP_SET_COMMAND("read", UnimplementedCommand);
     __TEXPP_SET_COMMAND("setbox", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("chardef", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("mathchardef", UnimplementedCommand);
     __TEXPP_SET_COMMAND("hyphenation", UnimplementedCommand);
     __TEXPP_SET_COMMAND("patterns", UnimplementedCommand);
     __TEXPP_SET_COMMAND("box", UnimplementedCommand);
@@ -337,9 +345,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("setlanguage", UnimplementedCommand);
 
     // math mode
-    __TEXPP_SET_COMMAND("char", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("mathchar", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("delimiter", UnimplementedCommand);
     __TEXPP_SET_COMMAND("mskip", UnimplementedCommand);
     __TEXPP_SET_COMMAND("nonscript", UnimplementedCommand);
     __TEXPP_SET_COMMAND("noboundary", UnimplementedCommand);

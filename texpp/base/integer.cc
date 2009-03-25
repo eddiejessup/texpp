@@ -89,22 +89,6 @@ bool IntegerVariable::invokeOperation(Parser& parser,
     return InternalInteger::invokeOperation(parser, node, op);
 }
 
-string CountRegister::parseName(Parser& parser, shared_ptr<Node> node)
-{
-    Node::ptr number = parser.parseNumber();
-    node->appendChild("variable_number", number);
-    int n = number->value(int(0));
-
-    if(n < 0 || n > 255) {
-        parser.logger()->log(Logger::ERROR,
-            "Bad register code (" + boost::lexical_cast<string>(n) + ")",
-            parser, parser.lastToken());
-        n = 0;
-    }
-
-    return name().substr(1) + boost::lexical_cast<string>(n);
-}
-
 string CharcodeVariable::parseName(Parser& parser, shared_ptr<Node> node)
 {
     Node::ptr number = parser.parseNumber();

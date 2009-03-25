@@ -49,15 +49,6 @@ public:
         : InternalToks(name, initValue) {}
 };
 
-class ToksRegister: public ToksVariable
-{
-public:
-    ToksRegister(const string& name, const any& initValue = any(Token::list()))
-        : ToksVariable(name, initValue) {}
-
-    string parseName(Parser& parser, shared_ptr<Node> node);
-};
-
 } // namespace base
 } // namespace texpp
 
