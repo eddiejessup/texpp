@@ -293,11 +293,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("unkern", UnimplementedCommand);
     __TEXPP_SET_COMMAND("unskip", UnimplementedCommand);
     __TEXPP_SET_COMMAND("mark", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("topmark", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("firstmark", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("botmark", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("splitfirstmark", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("splitbotmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("insert", UnimplementedCommand);
     __TEXPP_SET_COMMAND("vadjust", UnimplementedCommand);
 
@@ -374,6 +369,48 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("overwithdelims", UnimplementedCommand);
     __TEXPP_SET_COMMAND("atopwithdelims", UnimplementedCommand);
     __TEXPP_SET_COMMAND("abovewithdelims", UnimplementedCommand);
+
+    // unimplemented macros
+    __TEXPP_SET_COMMAND("csname", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("endcsname", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("expandafter", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("noexpand", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("the", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("number", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("romannumeral", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("string", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("fontname", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("jobname", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("meaning", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("topmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("firstmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("botmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("splitfirstmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("splitbotmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("input", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("endinput", UnimplementedCommand);
+
+    // conditionals
+    __TEXPP_SET_COMMAND("if", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifcat", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifx", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifcase", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifnum", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifodd", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifhmode", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifvmode", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifmmode", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifinner", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifdim", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifvoid", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifhbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifvbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ifeof", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("iftrue", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("iffalse", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("fi", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("else", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("or", UnimplementedCommand);
 
     // INITEX context
     for(int i=0; i<256; ++i) {
