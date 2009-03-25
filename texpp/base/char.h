@@ -21,6 +21,7 @@
 
 #include <texpp/common.h>
 #include <texpp/command.h>
+#include <texpp/base/integer.h>
 
 namespace texpp {
 namespace base {
@@ -48,16 +49,13 @@ public:
     bool invoke(Parser& parser, shared_ptr<Node> node);
 };
 
-class CharDef: public Command
+class CharDef: public InternalInteger
 {
 public:
-    explicit CharDef(const string& name): Command(name) {}
-};
-
-class MathCharDef: public Command
-{
-public:
-    explicit MathCharDef(const string& name): Command(name) {}
+    explicit CharDef(const string& name, const any& initValue = any(0))
+        : InternalInteger(name, initValue) {}
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
 };
 
 } // namespace base

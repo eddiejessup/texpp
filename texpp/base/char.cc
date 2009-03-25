@@ -80,7 +80,7 @@ bool Char::createDef(Parser& parser, shared_ptr<Token> token, int num)
     }
 
     std::ostringstream s; s << name() << '"' << std::hex << num;
-    parser.setSymbol(token, Command::ptr(new CharDef(s.str())));
+    parser.setSymbol(token, Command::ptr(new CharDef(s.str(), num)));
     return true;
 }
 
@@ -95,8 +95,23 @@ bool MathChar::createDef(Parser& parser, shared_ptr<Token> token, int num)
 
     std::ostringstream s;
     s << name() << '"' << std::hex << std::uppercase << num;
-    parser.setSymbol(token, Command::ptr(new MathCharDef(s.str())));
+    parser.setSymbol(token, Command::ptr(new CharDef(s.str(), num)));
     return true;
+}
+
+bool CharDef::invokeOperation(Parser&,
+                        shared_ptr<Node> node, Operation op)
+{
+    if(op == GET) {
+        node->setValue(m_initValue);
+        return true;
+    } else if(op == EXPAND) {
+        node->setValue(boost::lexical_cast<string>(
+            m_initValue.type() == typeid(int) ? 
+            *unsafe_any_cast<int>(&m_initValue) : 0));
+        return true;
+    }
+    return false;
 }
 
 } // namespace base
