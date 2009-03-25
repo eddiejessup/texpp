@@ -157,38 +157,6 @@ bool MuGlueVariable::invokeOperation(Parser& parser,
     return invokeGlueVarOperation(*this, parser, node, op, true);
 }
 
-string GlueRegister::parseName(Parser& parser, shared_ptr<Node> node)
-{
-    Node::ptr number = parser.parseNumber();
-    node->appendChild("variable_number", number);
-    int n = number->value(int(0));
-
-    if(n < 0 || n > 255) {
-        parser.logger()->log(Logger::ERROR,
-            "Bad register code (" + boost::lexical_cast<string>(n) + ")",
-            parser, parser.lastToken());
-        n = 0;
-    }
-
-    return name().substr(1) + boost::lexical_cast<string>(n);
-}
-
-string MuGlueRegister::parseName(Parser& parser, shared_ptr<Node> node)
-{
-    Node::ptr number = parser.parseNumber();
-    node->appendChild("variable_number", number);
-    int n = number->value(int(0));
-
-    if(n < 0 || n > 255) {
-        parser.logger()->log(Logger::ERROR,
-            "Bad register code (" + boost::lexical_cast<string>(n) + ")",
-            parser, parser.lastToken());
-        n = 0;
-    }
-
-    return name().substr(1) + boost::lexical_cast<string>(n);
-}
-
 string InternalGlue::glueToString(const Glue& g, bool mu)
 {
     string s = InternalDimen::dimenToString(g.width, 0, mu);

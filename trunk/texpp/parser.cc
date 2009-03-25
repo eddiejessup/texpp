@@ -474,7 +474,8 @@ Node::ptr Parser::parseNormalInteger()
 
     }
 
-    Node::ptr integer = tryParseVariableValue<base::InternalInteger>();
+    Node::ptr integer =
+        base::Variable::tryParseVariableValue<base::InternalInteger>(*this);
     if(integer) {
         node->appendChild("internal_integer", integer);
         node->setValue(integer->valueAny());
@@ -594,7 +595,8 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         return node;
     }
 
-    Node::ptr dimen = tryParseVariableValue<base::InternalDimen>();
+    Node::ptr dimen =
+        base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
     if(dimen) {
         node->appendChild("internal_dimen", dimen);
         node->setValue(dimen->valueAny());
@@ -649,7 +651,8 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     bool i_found = false;
     int i_unit = 0;
 
-    Node::ptr iunit = tryParseVariableValue<base::InternalInteger>();
+    Node::ptr iunit =
+        base::Variable::tryParseVariableValue<base::InternalInteger>(*this);
     if(iunit) {
         node->appendChild("internal_unit", iunit);
         i_unit = iunit->value(0);
@@ -657,7 +660,8 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit = tryParseVariableValue<base::InternalDimen>();
+        Node::ptr iunit =
+            base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
             i_unit = iunit->value(0);
@@ -666,7 +670,8 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit = tryParseVariableValue<base::InternalDimen>();
+        Node::ptr iunit =
+            base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
             i_unit = iunit->value(0);
@@ -675,7 +680,8 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit = tryParseVariableValue<base::InternalGlue>();
+        Node::ptr iunit =
+            base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
             i_unit = iunit->value(base::Glue(0)).width;
@@ -684,7 +690,8 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit = tryParseVariableValue<base::InternalMuGlue>();
+        Node::ptr iunit =
+            base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
             i_unit = iunit->value(base::Glue(0)).width;
@@ -828,7 +835,8 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         }
 
     } else {
-        Node::ptr i_node = tryParseVariableValue<base::InternalMuGlue>();
+        Node::ptr i_node =
+            base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(i_node) {
             node->appendChild("internal_muunit", i_node);
             int i_unit = i_node->value(base::Glue(0)).width;
@@ -954,14 +962,16 @@ Node::ptr Parser::parseNumber()
     node->appendChild("sign", parseOptionalSigns());
 
     int unsigned_value = 0;
-    Node::ptr internal = tryParseVariableValue<base::InternalDimen>();
+    Node::ptr internal =
+        base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
     if(internal) {
         node->appendChild("coerced_dimen", internal);
         unsigned_value = internal->value(0);
     }
 
     if(!internal) {
-        internal = tryParseVariableValue<base::InternalGlue>();
+        internal =
+            base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
         if(internal) {
             node->appendChild("coerced_glue", internal);
             unsigned_value = internal->value(base::Glue(0)).width;
@@ -969,7 +979,8 @@ Node::ptr Parser::parseNumber()
     }
 
     if(!internal) {
-        internal = tryParseVariableValue<base::InternalMuGlue>();
+        internal =
+            base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("coerced_muglue", internal);
             unsigned_value = internal->value(base::Glue(0)).width;
@@ -997,7 +1008,8 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
     bool intern_mu = false;
 
     int unsigned_value = 0;
-    Node::ptr internal = tryParseVariableValue<base::InternalGlue>();
+    Node::ptr internal =
+        base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
     if(internal) {
         node->appendChild("coerced_glue", internal);
         unsigned_value = internal->value(base::Glue(0)).width;
@@ -1005,7 +1017,8 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
     }
 
     if(!internal) {
-        internal = tryParseVariableValue<base::InternalMuGlue>();
+        internal =
+            base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("coerced_muglue", internal);
             unsigned_value = internal->value(base::Glue(0)).width;
@@ -1039,7 +1052,8 @@ Node::ptr Parser::parseGlue(bool mu)
     bool intern = false;
     bool intern_mu = false;
 
-    Node::ptr internal = tryParseVariableValue<base::InternalGlue>();
+    Node::ptr internal =
+        base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
     if(internal) {
         node->appendChild("internal_glue", internal);
         glue = internal->value(base::Glue(0));
@@ -1047,7 +1061,8 @@ Node::ptr Parser::parseGlue(bool mu)
     }
 
     if(!internal) {
-        internal = tryParseVariableValue<base::InternalMuGlue>();
+        internal =
+            base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("internal_glue", internal);
             glue = internal->value(base::Glue(0));
