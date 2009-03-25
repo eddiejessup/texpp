@@ -19,7 +19,7 @@
 || registerdef   || yes ||
 || boxes         || *no* ||
 || arithmetic    || yes ||
-|| token lists   || yex ||
+|| token lists   || yes ||
 || expansion     || *in progress* ||
 || macros        || *in progress* ||
 || file i/o      || *no* ||
