@@ -9,7 +9,7 @@
 || \par          || yes ||
 || \let          || yes ||
 || \show         || yes ||
-|| \showthe      || *partly* ||
+|| \showthe      || yes ||
 || \message      || yes ||
 || \catcode      || yes ||
 || \endlinechar  || yes ||
@@ -20,6 +20,7 @@
 || glue parameters || yes ||
 || muglue parameters || yes ||
 || registerdef   || yes ||
+|| special integers || yes ||
 || boxes         || *no* ||
 || arithmetic    || yes ||
 || token lists   || yes ||
