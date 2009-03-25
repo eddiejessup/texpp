@@ -39,6 +39,11 @@ bool InternalInteger::invokeOperation(Parser& parser,
         node->setValue(rvalue->valueAny());
         parser.setSymbol(name, rvalue->valueAny());
         return true;
+    } else if(op == Variable::EXPAND) {
+        string name = parseName(parser, node);
+        int val = parser.symbol(name, int(0));
+        node->setValue(boost::lexical_cast<string>(val));
+        return true;
     } else {
         return Variable::invokeOperation(parser, node, op);
     }
@@ -74,11 +79,10 @@ bool IntegerVariable::invokeOperation(Parser& parser,
             parser.logger()->log(Logger::ERROR,
                 "Arithmetic overflow",
                 parser, parser.lastToken());
-            return false;
+        } else {
+            node->setValue(v);
+            parser.setSymbol(name, v);
         }
-
-        node->setValue(v);
-        parser.setSymbol(name, v);
         return true;
     }
 
@@ -142,7 +146,7 @@ bool CharcodeVariable::invokeOperation(Parser& parser,
         parser.setSymbol(name, n);
         return true;
     } else {
-        return Variable::invokeOperation(parser, node, op);
+        return InternalInteger::invokeOperation(parser, node, op);
     }
 }
 

@@ -28,27 +28,13 @@ namespace base {
 class Variable: public Command
 {
 public:
-    enum Operation { GET, ASSIGN, ADVANCE, MULTIPLY, DIVIDE };
+    enum Operation { GET, ASSIGN, ADVANCE, MULTIPLY, DIVIDE, EXPAND };
 
     Variable(const string& name, const any& initValue = any())
         : Command(name), m_initValue(initValue) {}
 
     const any& initValue() const { return m_initValue; }
-    void setInitValue(const any& initValue) { m_initValue = initValue; }
 
-    virtual bool check(Parser&, shared_ptr<Node>) { return true; }
-    virtual bool set(Parser& parser, const any& value, bool global = false);
-
-    virtual const any& getAny(Parser& parser, bool global = false);
-
-    template<typename T>
-    T get(Parser& parser, T def, bool global = false) {
-        const any& value = getAny(parser, global);
-        if(value.type() != typeid(T)) return def;
-        else return *unsafe_any_cast<T>(&value);
-    }
-
-    virtual string reprValue(Parser& parser, shared_ptr<Node> node);
     virtual string parseName(Parser& parser, shared_ptr<Node> node);
     virtual bool invokeOperation(Parser& parser,
                         shared_ptr<Node> node, Operation op);
@@ -71,44 +57,6 @@ public:
 
 protected:
     Variable::Operation m_op;
-};
-
-template<class Cmd>
-class FixedVariableGroup: public FixedCommandGroup<Cmd>
-{
-public:
-    FixedVariableGroup(const string& name,
-                size_t maxCount, const any& initValue)
-        : FixedCommandGroup<Cmd>(name, maxCount), m_initValue(initValue) {}
-
-    const any& initValue() const { return m_initValue; }
-    void setInitValue(const any& initValue) { m_initValue = initValue; }
-
-    string groupType() const { return "register"; }
-    Command::ptr createCommand(const string& name) {
-        return Command::ptr(new Cmd(name, m_initValue));
-    }
-
-    /*shared_ptr<Node> parse(Parser& parser);
-    bool execute(Parser& parser, shared_ptr<Node> node);
-    */
-
-protected:
-    any m_initValue;
-};
-
-class RegisterGroupDef: public Command
-{
-public:
-    RegisterGroupDef(const string& name, shared_ptr<CommandGroupBase> group)
-        : Command(name), m_group(group) {}
-
-    shared_ptr<CommandGroupBase> group() { return m_group; }
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser& parser, shared_ptr<Node> node);
-
-protected:
-    shared_ptr<CommandGroupBase> m_group;
 };
 
 } // namespace base

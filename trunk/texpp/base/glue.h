@@ -44,19 +44,13 @@ struct Glue
 class InternalGlue: public Variable
 {
 public:
-    InternalGlue(const string& name,
-            const any& initValue = any(Glue(0)), bool mu = false)
-        : Variable(name, initValue), m_mu(mu) {}
+    InternalGlue(const string& name, const any& initValue = any(Glue(0)))
+        : Variable(name, initValue) {}
 
-    /*
     bool invokeOperation(Parser& parser,
                         shared_ptr<Node> node, Operation op);
 
-    string reprValue(Parser& parser, shared_ptr<Node> node);*/
     static string glueToString(const Glue& g, bool mu = false);
-
-protected:
-    bool m_mu;
 };
 
 class GlueVariable: public InternalGlue
@@ -64,6 +58,18 @@ class GlueVariable: public InternalGlue
 public:
     GlueVariable(const string& name, const any& initValue = any(Glue(0)))
         : InternalGlue(name, initValue) {}
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+};
+
+class GlueRegister: public GlueVariable
+{
+public:
+    GlueRegister(const string& name, const any& initValue = any(Glue(0)))
+        : GlueVariable(name, initValue) {}
+
+    string parseName(Parser& parser, shared_ptr<Node> node);
 };
 
 class InternalMuGlue: public Variable
@@ -71,11 +77,12 @@ class InternalMuGlue: public Variable
 public:
     InternalMuGlue(const string& name, const any& initValue = any(Glue(0)))
         : Variable(name, initValue) {}
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser& parser, shared_ptr<Node> node);
 
-    static string muGlueToString(const Glue& g) {
-        return InternalGlue::glueToString(g, true);
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+
+    static string glueToString(const Glue& g, bool mu = true) {
+        return InternalGlue::glueToString(g, mu);
     }
 };
 
@@ -84,6 +91,18 @@ class MuGlueVariable: public InternalMuGlue
 public:
     MuGlueVariable(const string& name, const any& initValue = any(Glue(0)))
         : InternalMuGlue(name, initValue) {}
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+};
+
+class MuGlueRegister: public MuGlueVariable
+{
+public:
+    MuGlueRegister(const string& name, const any& initValue = any(Glue(0)))
+        : MuGlueVariable(name, initValue) {}
+
+    string parseName(Parser& parser, shared_ptr<Node> node);
 };
 
 

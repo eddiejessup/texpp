@@ -26,11 +26,6 @@
 namespace texpp {
 namespace base {
 
-string Variable::reprValue(Parser&, shared_ptr<Node> node)
-{
-    return reprAny(node->valueAny());
-}
-
 string Variable::parseName(Parser&, shared_ptr<Node>)
 {
     return name().substr(1);
@@ -51,27 +46,6 @@ bool Variable::invokeOperation(Parser& parser,
 bool Variable::invoke(Parser& parser, shared_ptr<Node> node)
 {
     return invokeOperation(parser, node, ASSIGN);
-}
-
-const any& Variable::getAny(Parser& parser, bool global)
-{
-    const any& ret = parser.symbolAny(name().substr(1), global);
-    return !ret.empty() ? ret : m_initValue;
-}
-
-bool Variable::set(Parser& parser, const any& value, bool global)
-{
-    string varname = name().substr(1);
-    parser.setSymbol(varname, value, global);
-    return true;
-    /*
-    any s = parser.symbolAny(varname, global);
-    if(s.type() == value.type()) {
-        parser.setSymbol(varname, value, global);
-        return true;
-    } else {
-        return false;
-    }*/
 }
 
 bool ArithmeticCommand::invoke(Parser& parser, shared_ptr<Node> node)
@@ -97,30 +71,6 @@ bool ArithmeticCommand::invoke(Parser& parser, shared_ptr<Node> node)
     }
 
     return ok;
-}
-
-bool RegisterGroupDef::parseArgs(Parser& parser, shared_ptr<Node> node)
-{
-    node->appendChild("lvalue", parser.parseControlSequence());
-    node->appendChild("equals", parser.parseOptionalEquals(false));
-    node->appendChild("rvalue", parser.parseNumber());
-    return true;
-}
-
-bool RegisterGroupDef::execute(Parser& parser, shared_ptr<Node> node)
-{
-    int item = node->child("rvalue")->value(int(0));
-    Command::ptr cmd = m_group->item(item);
-    if(!cmd) {
-        parser.logger()->log(Logger::ERROR,
-            "Bad register code (" + boost::lexical_cast<string>(item) + ")",
-            parser, parser.lastToken());
-        cmd = m_group->item(0);
-    }
-    parser.setSymbol(
-        node->child("lvalue")->value(Token::ptr()),
-        cmd);
-    return true;
 }
 
 } // namespace base

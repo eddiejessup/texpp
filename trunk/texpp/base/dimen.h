@@ -40,7 +40,6 @@ public:
     bool invokeOperation(Parser& parser,
                         shared_ptr<Node> node, Operation op);
 
-    string reprValue(Parser& parser, shared_ptr<Node> node);
     static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
     static string dimenToString(int n, int o=0, bool mu=false);
 };

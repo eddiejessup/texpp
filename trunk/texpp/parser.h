@@ -147,9 +147,6 @@ public:
 
     Node::ptr parseTextWord();
 
-    template<class Cmd>
-    shared_ptr<Cmd> parseCommandOrGroup(Node::ptr node);
-
     template<class Var>
     Node::ptr tryParseVariableValue();
 
@@ -226,23 +223,6 @@ protected:
 
     static any EMPTY_ANY;
 };
-
-template<class Cmd>
-shared_ptr<Cmd> Parser::parseCommandOrGroup(Node::ptr node)
-{
-    Command::ptr cmd = symbol(peekToken(), Command::ptr());
-    if(dynamic_pointer_cast<Cmd>(cmd)) {
-        node->appendChild("command", parseControlSequence());
-        return static_pointer_cast<Cmd>(cmd);
-    }
-    shared_ptr<CommandGroupBase> gr =
-        dynamic_pointer_cast<CommandGroupBase>(cmd);
-    if(gr && dynamic_pointer_cast<Cmd>(gr->item(0))) {
-        node->appendChild("command", parseControlSequence());
-        return static_pointer_cast<Cmd>(gr->parseCommand(*this, node));
-    }
-    return shared_ptr<Cmd>();
-}
 
 template<class Var>
 Node::ptr Parser::tryParseVariableValue()

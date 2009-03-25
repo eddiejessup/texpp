@@ -61,37 +61,5 @@ bool TokenCommand::execute(Parser&, Node::ptr)
     return true;
 }
 
-Command::ptr CommandGroupBase::parseCommand(Parser& parser, Node::ptr node)
-{
-    Node::ptr number = parser.parseNumber();
-    node->appendChild("command_number", number);
-
-    Command::ptr cmd = item(number->value(int(0)));
-    if(!cmd) {
-        parser.logger()->log(Logger::ERROR, "Bad " + groupType() +
-           " code (" + boost::lexical_cast<string>(number->value(int(0))) +
-           ")", parser, parser.lastToken());
-        
-        cmd = item(0);
-    }
-
-    return cmd;
-}
-
-bool CommandGroupBase::parseArgs(Parser& parser, Node::ptr node)
-{
-    Command::ptr cmd = parseCommand(parser, node);
-    if(cmd) return cmd->parseArgs(parser, node);
-    else return false;
-}
-
-bool CommandGroupBase::execute(Parser& parser, Node::ptr node)
-{
-    Command::ptr cmd = item(node->child("command_number")->value(int(0)));
-    if(!cmd) cmd = item(0);
-    if(cmd) return cmd->execute(parser, node);
-    else return false;
-}
-
 } // namespace texpp
 

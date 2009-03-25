@@ -69,53 +69,6 @@ protected:
     shared_ptr<Token> m_token;
 };
 
-class CommandGroupBase: public Command
-{
-public:
-    CommandGroupBase(const string& name) : Command(name) {}
-
-    virtual Command::ptr item(size_t) { return Command::ptr(); }
-    virtual Command::ptr createCommand(const string&) {
-        return Command::ptr();
-    }
-
-    virtual string groupType() const { return "group"; }
-
-    virtual Command::ptr parseCommand(Parser& parser, shared_ptr<Node> node);
-
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser& parser, shared_ptr<Node> node);
-};
-
-template<class Cmd>
-class FixedCommandGroup: public CommandGroupBase
-{
-public:
-    FixedCommandGroup(const string& name, size_t maxCount)
-        : CommandGroupBase(name), m_maxCount(maxCount) {}
-
-    Command::ptr item(size_t n);
-    Command::ptr createCommand(const string& name) {
-        return Command::ptr(new Cmd(name));
-    }
-
-protected:
-    size_t m_maxCount;
-    vector<Command::ptr> m_items;
-};
-
-template<class Cmd>
-Command::ptr FixedCommandGroup<Cmd>::item(size_t n)
-{
-    if(n >= m_maxCount) return Command::ptr();
-    if(n >= m_items.size()) m_items.resize(n+1);
-    if(!m_items[n]) {
-        m_items[n] = createCommand(
-            name() + boost::lexical_cast<string>(n));
-    }
-    return m_items[n];
-}
-
 } // namespace texpp
 
 #endif

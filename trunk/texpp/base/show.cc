@@ -60,8 +60,8 @@ bool ShowThe::invoke(Parser& parser, Node::ptr node)
     string str;
     shared_ptr<Variable> var = parser.symbolCommand<Variable>(token);
     if(var) {
-        bool ok = var->invokeOperation(parser, node, Variable::GET);
-        if(ok) str = var->reprValue(parser, node);
+        bool ok = var->invokeOperation(parser, node, Variable::EXPAND);
+        if(ok) str = node->value(string());
     } else {
         parser.logger()->log(Logger::ERROR,
             "You can't use `" + token->texRepr() +

@@ -27,7 +27,6 @@
 #include <texpp/base/dimen.h>
 #include <texpp/base/glue.h>
 #include <texpp/base/toks.h>
-#include <texpp/base/arithmetic.h>
 #include <texpp/base/font.h>
 
 #include <texpp/parser.h>
@@ -70,41 +69,6 @@ void initSymbols(Parser& parser)
 
     //__TEXPP_SET_FONT_GROUP("font", Font);
 
-    /*
-    #define __TEXPP_SET_VARIABLE_GROUP(name, value, maxcount, T) \
-        parser.setSymbol("\\" name, Command::ptr( \
-            new FixedVariableGroup<T>("\\" name, maxcount, value))); \
-        parser.setSymbol(name, value)
-
-    __TEXPP_SET_VARIABLE_GROUP("count", int(0), 256, IntegerVariable);
-    __TEXPP_SET_VARIABLE_GROUP("dimen", int(0), 256, DimenVariable);
-    __TEXPP_SET_VARIABLE_GROUP("skip", int(0), 256, GlueVariable);
-    __TEXPP_SET_VARIABLE_GROUP("muskip", int(0), 256, MuGlueVariable);
-    __TEXPP_SET_VARIABLE_GROUP("toks", int(0), 256, ToksVariable);
-
-    __TEXPP_SET_COMMAND("countdef", RegisterGroupDef,
-                static_pointer_cast<CommandGroupBase>(
-                    parser.symbol("\\count", Command::ptr())));
-    __TEXPP_SET_COMMAND("dimendef", RegisterGroupDef,
-                static_pointer_cast<CommandGroupBase>(
-                    parser.symbol("\\dimen", Command::ptr())));
-    __TEXPP_SET_COMMAND("skipdef", RegisterGroupDef,
-                static_pointer_cast<CommandGroupBase>(
-                    parser.symbol("\\skip", Command::ptr())));
-    __TEXPP_SET_COMMAND("muskipdef", RegisterGroupDef,
-                static_pointer_cast<CommandGroupBase>(
-                    parser.symbol("\\muskip", Command::ptr())));
-    __TEXPP_SET_COMMAND("toksdef", RegisterGroupDef,
-                static_pointer_cast<CommandGroupBase>(
-                    parser.symbol("\\toks", Command::ptr())));
-    */
-
-
-    #define __TEXPP_SET_VARIABLE(name, T, value, ...) \
-        parser.setSymbol("\\" name, \
-            Command::ptr(new T("\\" name, value, ##__VA_ARGS__))); \
-        parser.setSymbol(name, value)
-
     __TEXPP_SET_COMMAND("catcode", CharcodeVariable, int(0), 0, 15);
     __TEXPP_SET_COMMAND("lccode", CharcodeVariable, int(0), 0, 255);
     __TEXPP_SET_COMMAND("uscode", CharcodeVariable, int(0), 0, 255);
@@ -115,7 +79,26 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("count", CountRegister, int(0));
     __TEXPP_SET_COMMAND("dimen", DimenRegister, int(0));
-#warning TODO: Use initValue as default and don't create variable until its used
+    __TEXPP_SET_COMMAND("skip", GlueRegister, Glue(0));
+    __TEXPP_SET_COMMAND("muskip", MuGlueRegister, Glue(0));
+    __TEXPP_SET_COMMAND("toks", ToksRegister, Token::list());
+
+    #define __TEXPP_SET_REGDEF(name, T, I) \
+        parser.setSymbol("\\" name "def", \
+            Command::ptr(new RegisterDef<T, I>("\\" name "def",  \
+                static_pointer_cast<T>( \
+                    parser.symbol("\\" name, Command::ptr())))))
+        
+    __TEXPP_SET_REGDEF("count", CountRegister, IntegerVariable);
+    __TEXPP_SET_REGDEF("dimen", DimenRegister, DimenVariable);
+    __TEXPP_SET_REGDEF("skip", GlueRegister, GlueVariable);
+    __TEXPP_SET_REGDEF("muskip", MuGlueRegister, MuGlueVariable);
+    __TEXPP_SET_REGDEF("toks", ToksRegister, ToksVariable);
+
+    #define __TEXPP_SET_VARIABLE(name, T, value, ...) \
+        parser.setSymbol("\\" name, \
+            Command::ptr(new T("\\" name, value, ##__VA_ARGS__))); \
+        parser.setSymbol(name, value)
 
     __TEXPP_SET_VARIABLE("endlinechar", IntegerVariable, int(0));
     __TEXPP_SET_VARIABLE("mag", IntegerVariable, int(0));
@@ -196,7 +179,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("hoffset", DimenVariable, int(0));
     __TEXPP_SET_VARIABLE("voffset", DimenVariable, int(0));
 
-    /*
     __TEXPP_SET_VARIABLE("baselineskip", GlueVariable, Glue(0));
     __TEXPP_SET_VARIABLE("lineskip", GlueVariable, Glue(0));
     __TEXPP_SET_VARIABLE("parskip", GlueVariable, Glue(0));
@@ -216,7 +198,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("thinmuskip", MuGlueVariable, Glue(0));
     __TEXPP_SET_VARIABLE("medmuskip", MuGlueVariable, Glue(0));
     __TEXPP_SET_VARIABLE("thickmuskip", MuGlueVariable, Glue(0));
-    */
 
     for(int i=0; i<256; ++i) {
         string n = boost::lexical_cast<string>(i);

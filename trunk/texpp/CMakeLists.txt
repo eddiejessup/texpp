@@ -19,7 +19,6 @@ set(libtexpp_SOURCES
     base/dimen.cc
     base/glue.cc
     base/toks.cc
-    base/arithmetic.cc
     base/font.cc
     base/base.cc
 )
