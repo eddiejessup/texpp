@@ -22,27 +22,27 @@
 namespace texpp {
 namespace base {
 
-bool Let::parseArgs(Parser& parser, Node::ptr node)
+bool Let::invoke(Parser& parser, shared_ptr<Node> node)
 {
-    node->appendChild("lvalue", parser.parseControlSequence());
+    Node::ptr lvalue = parser.parseControlSequence();
+    node->appendChild("lvalue", lvalue);
     node->appendChild("equals", parser.parseOptionalEquals(true));
-    node->appendChild("rvalue", parser.parseToken());
-    return true;
-}
 
-bool Let::execute(Parser& parser, Node::ptr node)
-{
-    Token::ptr token = node->child("rvalue")->value(Token::ptr());
-    if(token->isControl()) {
+    Node::ptr rvalue = parser.parseToken();
+    node->appendChild("rvalue", rvalue);
+
+    Token::ptr ltoken = lvalue->value(Token::ptr());
+    Token::ptr rtoken = rvalue->value(Token::ptr());
+
+    if(rtoken->isControl()) {
         parser.setSymbol(
-            node->child("lvalue")->value(Token::ptr()),
-            parser.symbol(token, Command::ptr())
+            ltoken, parser.symbol(rtoken, Command::ptr())
             );
     } else {
         parser.setSymbol(
-            node->child("lvalue")->value(Token::ptr()),
-            Command::ptr(new TokenCommand(token)));
+            ltoken, Command::ptr(new TokenCommand(rtoken)));
     }
+
     return true;
 }
 

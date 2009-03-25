@@ -34,8 +34,9 @@ public:
     InternalToks(const string& name,
         const any& initValue = any(Token::list()))
         : Variable(name, initValue) {}
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser& parser, shared_ptr<Node> node);
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
 
     static string toksToString(Parser& parser, const Token::list& toks);
 };
@@ -46,6 +47,15 @@ public:
     ToksVariable(const string& name,
         const any& initValue = any(Token::list()))
         : InternalToks(name, initValue) {}
+};
+
+class ToksRegister: public ToksVariable
+{
+public:
+    ToksRegister(const string& name, const any& initValue = any(Token::list()))
+        : ToksVariable(name, initValue) {}
+
+    string parseName(Parser& parser, shared_ptr<Node> node);
 };
 
 } // namespace base

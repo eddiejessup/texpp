@@ -674,28 +674,25 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         }
     }
 
-    /*
-    if(!i_found) {
-        shared_ptr<base::InternalGlue> i_glue = 
-            parseCommandOrGroup<base::InternalGlue>(i_node);
-        if(i_glue) {
-            node->appendChild("internal_unit", i_node);
-            i_unit = i_glue->get(*this, base::Glue(0)).width;
+    if(!iunit) {
+        Node::ptr iunit = tryParseVariableValue<base::InternalGlue>();
+        if(iunit) {
+            node->appendChild("internal_unit", iunit);
+            i_unit = iunit->value(base::Glue(0)).width;
             i_found = true;
         }
     }
 
-    if(!i_found) {
-        shared_ptr<base::InternalMuGlue> i_muglue = 
-            parseCommandOrGroup<base::InternalMuGlue>(i_node);
-        if(i_muglue) {
-            node->appendChild("internal_unit", i_node);
-            i_unit = i_muglue->get(*this, base::Glue(0)).width;
+    if(!iunit) {
+        Node::ptr iunit = tryParseVariableValue<base::InternalMuGlue>();
+        if(iunit) {
+            node->appendChild("internal_unit", iunit);
+            i_unit = iunit->value(base::Glue(0)).width;
             i_found = true;
             i_mu = true;
         }
-    }*/
-        
+    }
+
     if(!i_found && !mu) {
         static vector<string> kw_internal_units;
         if(kw_internal_units.empty()) {
@@ -831,13 +828,10 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         }
 
     } else {
-        Node::ptr i_node(new Node("internal_muunit"));
-
-        shared_ptr<base::InternalMuGlue> i_muglue = 
-            parseCommandOrGroup<base::InternalMuGlue>(i_node);
-        if(i_muglue) {
+        Node::ptr i_node = tryParseVariableValue<base::InternalMuGlue>();
+        if(i_node) {
             node->appendChild("internal_muunit", i_node);
-            int i_unit = i_muglue->get(*this, base::Glue(0)).width;
+            int i_unit = i_node->value(base::Glue(0)).width;
 
             if(i_unit != 0) {
                 int v = TEXPP_SCALED_MAX;
@@ -959,52 +953,38 @@ Node::ptr Parser::parseNumber()
     Node::ptr node(new Node("number"));
     node->appendChild("sign", parseOptionalSigns());
 
+    int unsigned_value = 0;
     Node::ptr internal = tryParseVariableValue<base::InternalDimen>();
     if(internal) {
         node->appendChild("coerced_dimen", internal);
+        unsigned_value = internal->value(0);
     }
 
-    /*
     if(!internal) {
         internal = tryParseVariableValue<base::InternalGlue>();
-    }
-    */
-
-    /*
-    shared_ptr<base::InternalDimen> dimen = 
-        parseCommandOrGroup<base::InternalDimen>(internal);
-    if(dimen) {
-        internal->setType("internal_dimen");
-        internal->setValue(dimen->get(*this, int(0)));
-        node->appendChild("coerced_dimen", internal);
-    } else {
-        shared_ptr<base::InternalGlue> glue = 
-            parseCommandOrGroup<base::InternalGlue>(internal);
-        if(glue) {
-            internal->setType("internal_glue");
-            internal->setValue(glue->get(*this, base::Glue(0)).width);
+        if(internal) {
             node->appendChild("coerced_glue", internal);
-        } else {
-            shared_ptr<base::InternalMuGlue> muglue = 
-                parseCommandOrGroup<base::InternalMuGlue>(internal);
-            if(muglue) {
-                internal->setType("internal_muglue");
-                internal->setValue(muglue->get(*this, base::Glue(0)).width);
-                node->appendChild("coerced_muglue", internal);
-                logger()->log(Logger::ERROR,
-                    "Incompatible glue units", *this, lastToken());
-            } else {
-                node->appendChild("normal_integer", parseNormalInteger());
-            }
+            unsigned_value = internal->value(base::Glue(0)).width;
         }
-    }*/
+    }
 
     if(!internal) {
-        node->appendChild("normal_integer", parseNormalInteger());
+        internal = tryParseVariableValue<base::InternalMuGlue>();
+        if(internal) {
+            node->appendChild("coerced_muglue", internal);
+            unsigned_value = internal->value(base::Glue(0)).width;
+            logger()->log(Logger::ERROR,
+                "Incompatible glue units", *this, lastToken());
+        }
     }
 
-    node->setValue(node->child(0)->value(int(0)) *
-                        node->child(1)->value(int(0)));
+    if(!internal) {
+        internal = parseNormalInteger();
+        node->appendChild("normal_integer", internal);
+        unsigned_value = internal->value(0);
+    }
+
+    node->setValue(node->child(0)->value(int(0)) * unsigned_value);
     return node;
 }
 
@@ -1016,22 +996,19 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
     bool intern = false;
     bool intern_mu = false;
 
-    Node::ptr internal(new Node("internal"));
-    shared_ptr<base::InternalGlue> glue = 
-        parseCommandOrGroup<base::InternalGlue>(internal);
-    if(glue) {
-        internal->setType("internal_glue");
-        internal->setValue(glue->get(*this, base::Glue(0)).width);
+    int unsigned_value = 0;
+    Node::ptr internal = tryParseVariableValue<base::InternalGlue>();
+    if(internal) {
         node->appendChild("coerced_glue", internal);
+        unsigned_value = internal->value(base::Glue(0)).width;
         intern = true;
-    } else {
-        Node::ptr internal(new Node("internal"));
-        shared_ptr<base::InternalMuGlue> muglue = 
-            parseCommandOrGroup<base::InternalMuGlue>(internal);
-        if(muglue) {
-            internal->setType("internal_muglue");
-            internal->setValue(muglue->get(*this, base::Glue(0)).width);
+    }
+
+    if(!internal) {
+        internal = tryParseVariableValue<base::InternalMuGlue>();
+        if(internal) {
             node->appendChild("coerced_muglue", internal);
+            unsigned_value = internal->value(base::Glue(0)).width;
             intern = true;
             intern_mu = true;
         }
@@ -1043,12 +1020,12 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
                 "Incompatible glue units", *this, lastToken());
         }
     } else {
-        node->appendChild(mu ? "normal_mudimen" : "normal_dimen",
-                            parseNormalDimen(fil, mu));
+        internal = parseNormalDimen(fil, mu);
+        node->appendChild(mu ? "normal_mudimen" : "normal_dimen", internal);
+        unsigned_value = internal->value(0);
     }
 
-    node->setValue(node->child(0)->value(int(0)) *
-                        node->child(1)->value(int(0)));
+    node->setValue(node->child(0)->value(int(0)) * unsigned_value);
     return node;
 }
 
@@ -1062,24 +1039,18 @@ Node::ptr Parser::parseGlue(bool mu)
     bool intern = false;
     bool intern_mu = false;
 
-    Node::ptr internal(new Node("internal"));
-    shared_ptr<base::InternalGlue> iglue = 
-        parseCommandOrGroup<base::InternalGlue>(internal);
-    if(iglue) {
-        internal->setType("internal_glue");
-        glue = iglue->get(*this, base::Glue(0));
-        internal->setValue(glue);
+    Node::ptr internal = tryParseVariableValue<base::InternalGlue>();
+    if(internal) {
         node->appendChild("internal_glue", internal);
+        glue = internal->value(base::Glue(0));
         intern = true;
-    } else {
-        Node::ptr internal(new Node("internal"));
-        shared_ptr<base::InternalMuGlue> iglue = 
-            parseCommandOrGroup<base::InternalMuGlue>(internal);
-        if(iglue) {
-            internal->setType("internal_muglue");
-            glue = iglue->get(*this, base::Glue(0));
-            internal->setValue(glue);
-            node->appendChild("internal_muglue", internal);
+    }
+
+    if(!internal) {
+        internal = tryParseVariableValue<base::InternalMuGlue>();
+        if(internal) {
+            node->appendChild("internal_glue", internal);
+            glue = internal->value(base::Glue(0));
             intern = true;
             intern_mu = true;
         }

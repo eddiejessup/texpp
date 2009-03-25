@@ -25,11 +25,6 @@
 namespace texpp {
 namespace base {
 
-string InternalDimen::reprValue(Parser&, shared_ptr<Node> node)
-{
-    return dimenToString(node->value(int(0)));
-}
-
 bool InternalDimen::invokeOperation(Parser& parser,
                         shared_ptr<Node> node, Operation op)
 {
@@ -42,6 +37,11 @@ bool InternalDimen::invokeOperation(Parser& parser,
 
         node->setValue(rvalue->valueAny());
         parser.setSymbol(name, rvalue->valueAny());
+        return true;
+    } else if(op == EXPAND) {
+        string name = parseName(parser, node);
+        int val = parser.symbol(name, int(0));
+        node->setValue(dimenToString(val));
         return true;
     } else {
         return Variable::invokeOperation(parser, node, op);
@@ -65,6 +65,7 @@ bool DimenVariable::invokeOperation(Parser& parser,
 
         node->setValue(v);
         parser.setSymbol(name, v);
+        return true;
 
     } else if(op == MULTIPLY || op == DIVIDE) {
         string name = parseName(parser, node);
@@ -78,9 +79,7 @@ bool DimenVariable::invokeOperation(Parser& parser,
         int rv = rvalue->value(int(0));
         bool overflow = false;
 
-        if(op == ADVANCE) {
-            v += rv;
-        } else if(op == MULTIPLY) {
+        if(op == MULTIPLY) {
             pair<int,bool> p = safeMultiply(v, rv,  TEXPP_SCALED_MAX);
             v = p.first; overflow = p.second;
         } else if(op == DIVIDE) {
@@ -92,11 +91,10 @@ bool DimenVariable::invokeOperation(Parser& parser,
             parser.logger()->log(Logger::ERROR,
                 "Arithmetic overflow",
                 parser, parser.lastToken());
-            return false;
+        } else {
+            node->setValue(v);
+            parser.setSymbol(name, v);
         }
-
-        node->setValue(v);
-        parser.setSymbol(name, v);
         return true;
     }
 

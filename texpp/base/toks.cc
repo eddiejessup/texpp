@@ -18,6 +18,7 @@
 
 #include <texpp/base/toks.h>
 #include <texpp/parser.h>
+#include <texpp/logger.h>
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
@@ -25,30 +26,36 @@
 namespace texpp {
 namespace base {
 
-bool InternalToks::parseArgs(Parser& parser, Node::ptr node)
+bool InternalToks::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
 {
-    node->appendChild("equals", parser.parseOptionalEquals(false));
+    if(op == ASSIGN) {
+        string name = parseName(parser, node);
 
-    Node::ptr text(new Node("internal_toks"));
-    shared_ptr<base::InternalToks> toks = 
-        parser.parseCommandOrGroup<base::InternalToks>(text);
-    if(toks) {
-        text->setValue(toks->getAny(parser));
+        node->appendChild("equals", parser.parseOptionalEquals(false));
 
-    } else {
-        text = parser.parseGeneralText();
-        Token::list_ptr tokens = text->child("balanced_text")
-                                    ->value(Token::list_ptr());
-        text->setValue(tokens ? *tokens : Token::list());
+        Node::ptr internal =
+            parser.tryParseVariableValue<base::InternalToks>();
+        if(internal) {
+            node->setValue(internal->valueAny());
+        } else {
+            internal = parser.parseGeneralText();
+            Token::list_ptr tokens = internal->child("balanced_text")
+                                        ->value(Token::list_ptr());
+            node->setValue(tokens ? *tokens : Token::list());
+        }
+        parser.setSymbol(name, node->valueAny());
+        node->appendChild("rvalue", internal);
+        return true;
+
+    } else if(op == EXPAND) {
+        string name = parseName(parser, node);
+        Token::list toks = parser.symbol(name, Token::list());
+        node->setValue(toksToString(parser, toks));
+        return true;
+
     }
-    node->appendChild("rvalue", text);
-
-    return check(parser, node->child("rvalue"));
-}
-
-bool InternalToks::execute(Parser& parser, Node::ptr node)
-{
-    return set(parser, node->child("rvalue")->valueAny());
+    return Variable::invokeOperation(parser, node, op);
 }
 
 string InternalToks::toksToString(Parser& parser, const Token::list& toks)
@@ -73,6 +80,22 @@ string InternalToks::toksToString(Parser& parser, const Token::list& toks)
         }
     }
     return str;
+}
+
+string ToksRegister::parseName(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("variable_number", number);
+    int n = number->value(int(0));
+
+    if(n < 0 || n > 255) {
+        parser.logger()->log(Logger::ERROR,
+            "Bad register code (" + boost::lexical_cast<string>(n) + ")",
+            parser, parser.lastToken());
+        n = 0;
+    }
+
+    return name().substr(1) + boost::lexical_cast<string>(n);
 }
 
 } // namespace base
