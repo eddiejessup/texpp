@@ -199,6 +199,183 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("medmuskip", MuGlueVariable, Glue(0));
     __TEXPP_SET_VARIABLE("thickmuskip", MuGlueVariable, Glue(0));
 
+    __TEXPP_SET_VARIABLE("output", ToksVariable, Token::list());
+    __TEXPP_SET_VARIABLE("everypar", ToksVariable, Token::list());
+    __TEXPP_SET_VARIABLE("everymath", ToksVariable, Token::list());
+    __TEXPP_SET_VARIABLE("everydisplay", ToksVariable, Token::list());
+    __TEXPP_SET_VARIABLE("everyhbox", ToksVariable, Token::list());
+    __TEXPP_SET_VARIABLE("everyvbox", ToksVariable, Token::list());
+    __TEXPP_SET_VARIABLE("everyjob", ToksVariable, Token::list());
+    __TEXPP_SET_VARIABLE("everycr", ToksVariable, Token::list());
+    __TEXPP_SET_VARIABLE("errhelp", ToksVariable, Token::list());
+
+    // Ignored commands
+    __TEXPP_SET_COMMAND("errorstopmode", IgnoredCommand);
+    __TEXPP_SET_COMMAND("scrollmode", IgnoredCommand);
+    __TEXPP_SET_COMMAND("nonstopmode", IgnoredCommand);
+    __TEXPP_SET_COMMAND("batchmode", IgnoredCommand);
+    __TEXPP_SET_COMMAND("dump", IgnoredCommand);
+
+    // Unimplemented commands
+
+    __TEXPP_SET_COMMAND("lastpenalty", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("parshape", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("inputlineno", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("hyphenchar", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("skewshar", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("badness", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("spacefactor", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("prevgraf", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("deadcycles", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("insertpenalties", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("textfont", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("scriptfont", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("scriptscriptfont", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("lastkern", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("fontdimen", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("prevdepth", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("pagegoal", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("pagetotal", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("pagestretch", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("pagefilstrerch", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("pagefillstrerch", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("pagefilllstrerch", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("pageshrink", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("pagedepth", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ht", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("wd", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("dp", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("lastskip", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("global", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("long", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("outer", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("def", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("gdef", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("edef", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("xdef", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("read", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("setbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("chardef", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathchardef", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("hyphenation", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("patterns", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("box", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("copy", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("lastbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vsplit", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("hbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vtop", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("spread", UnimplementedCommand);
+
+    __TEXPP_SET_COMMAND("begingroup", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("endgroup", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("showbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("showlists", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("shipout", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("ignorespaces", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("afterassignment", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("aftergroup", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("uppercase", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("lowercase", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("errmessage", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("openin", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("closein", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("immediate", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("openout", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("closeout", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("write", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("special", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("penalty", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("kern", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mkern", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("unpenalty", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("unkern", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("unskip", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("topmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("firstmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("botmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("splitfirstmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("splitbotmark", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("insert", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vadjust", UnimplementedCommand);
+
+    // vertical mode
+    __TEXPP_SET_COMMAND("vskip", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vfil", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vfill", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vss", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vfilneg", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("leaders", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("cleaders", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("xleaders", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vrule", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("hrule", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("moveleft", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("moveright", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("unvbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("unvcopy", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("halign", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("indent", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("noindent", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("dump", UnimplementedCommand);
+
+    // horizontal mode
+    __TEXPP_SET_COMMAND("hskip", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("hfil", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("hfill", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("hss", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("hfilneg", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("raise", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("lower", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("unhbox", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("unhcopy", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("valign", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("accent", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("/", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("discretionary", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("-", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("setlanguage", UnimplementedCommand);
+
+    // math mode
+    __TEXPP_SET_COMMAND("char", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathchar", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("delimiter", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mskip", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("nonscript", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("noboundary", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("vcenter", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathord", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathop", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathbin", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathrel", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathopen", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathclose", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathpunct", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathinner", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("underline", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("overline", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathaccent", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("radical", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("displaylimits", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("limits", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("nolimits", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("mathchoice", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("displaystyle", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("textstyle", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("scriptstyle", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("scriptscriptstyle", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("left", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("right", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("over", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("atop", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("above", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("overwithdelims", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("atopwithdelims", UnimplementedCommand);
+    __TEXPP_SET_COMMAND("abovewithdelims", UnimplementedCommand);
+
+    // INITEX context
     for(int i=0; i<256; ++i) {
         string n = boost::lexical_cast<string>(i);
 

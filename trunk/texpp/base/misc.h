@@ -25,6 +25,19 @@
 namespace texpp {
 namespace base {
 
+class UnimplementedCommand: public Command
+{
+public:
+    explicit UnimplementedCommand(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
+class IgnoredCommand: public Command
+{
+public:
+    explicit IgnoredCommand(const string& name): Command(name) {}
+};
+
 class Relax: public Command
 {
 public:

@@ -18,9 +18,20 @@
 
 #include <texpp/base/misc.h>
 #include <texpp/parser.h>
+#include <texpp/logger.h>
 
 namespace texpp {
 namespace base {
+
+bool UnimplementedCommand::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    parser.logger()->log(Logger::UNIMPLEMENTED,
+        "Command " +
+        node->child("control_token")->value(Token::ptr())->texRepr() +
+        " is not yet implemented in TeXpp",
+        parser, parser.lastToken());
+    return true;
+}
 
 bool End::invoke(Parser& parser, shared_ptr<Node>)
 {
