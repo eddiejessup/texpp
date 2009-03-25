@@ -29,18 +29,13 @@ class Relax: public Command
 {
 public:
     explicit Relax(const string& name): Command(name) {}
-
-    bool parseArgs(Parser&, shared_ptr<Node>) { return true; }
-    bool execute(Parser&, shared_ptr<Node>) { return true; }
 };
 
 class End: public Command
 {
 public:
     explicit End(const string& name): Command(name) {}
-
-    bool parseArgs(Parser&, shared_ptr<Node>) { return true; }
-    bool execute(Parser& parser, shared_ptr<Node>);
+    bool invoke(Parser& parser, shared_ptr<Node> node);
 };
 
 } // namespace base

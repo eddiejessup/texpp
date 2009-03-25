@@ -22,8 +22,10 @@
 namespace texpp {
 namespace base {
 
-bool End::execute(Parser& parser, Node::ptr) {
-    parser.end(); return true;
+bool End::invoke(Parser& parser, shared_ptr<Node>)
+{
+    parser.end();
+    return true;
 }
 
 } // namespace base

@@ -25,6 +25,32 @@
 namespace texpp {
 namespace base {
 
+/*
+string InternalGlue::reprValue(Parser&, shared_ptr<Node> node)
+{
+    return glueToString(node->value(int(0)), m_mu);
+}
+
+bool InternalGlue::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
+{
+    if(op == ASSIGN) {
+        string name = parseName(parser, node);
+
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+        Node::ptr rvalue = parser.parseGlue(m_mu);
+        node->appendChild("rvalue", rvalue);
+
+        node->setValue(rvalue->valueAny());
+        parser.setSymbol(name, rvalue->valueAny());
+        return true;
+    } else {
+        return Variable::invokeOperation(parser, node, op);
+    }
+}*/
+
+
+/*
 bool InternalGlue::parseArgs(Parser& parser, Node::ptr node)
 {
     node->appendChild("equals", parser.parseOptionalEquals(false));
@@ -36,6 +62,7 @@ bool InternalGlue::execute(Parser& parser, Node::ptr node)
 {
     return set(parser, node->child("rvalue")->value(Glue(0)));
 }
+*/
 
 bool InternalMuGlue::parseArgs(Parser& parser, Node::ptr node)
 {

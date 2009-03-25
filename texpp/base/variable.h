@@ -28,6 +28,8 @@ namespace base {
 class Variable: public Command
 {
 public:
+    enum Operation { GET, ASSIGN, ADVANCE, MULTIPLY, DIVIDE };
+
     Variable(const string& name, const any& initValue = any())
         : Command(name), m_initValue(initValue) {}
 
@@ -46,8 +48,29 @@ public:
         else return *unsafe_any_cast<T>(&value);
     }
 
+    virtual string reprValue(Parser& parser, shared_ptr<Node> node);
+    virtual string parseName(Parser& parser, shared_ptr<Node> node);
+    virtual bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+
 protected:
     any m_initValue;
+};
+
+class ArithmeticCommand: public Command
+{
+public:
+    explicit ArithmeticCommand(const string& name, Variable::Operation op)
+        : Command(name), m_op(op) {}
+
+    Variable::Operation operation() const { return m_op; }
+
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+
+protected:
+    Variable::Operation m_op;
 };
 
 template<class Cmd>

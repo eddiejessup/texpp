@@ -36,9 +36,11 @@ class InternalDimen: public Variable
 public:
     InternalDimen(const string& name, const any& initValue = any(0))
         : Variable(name, initValue) {}
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser& parser, shared_ptr<Node> node);
 
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+
+    string reprValue(Parser& parser, shared_ptr<Node> node);
     static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
     static string dimenToString(int n, int o=0, bool mu=false);
 };
@@ -48,6 +50,18 @@ class DimenVariable: public InternalDimen
 public:
     DimenVariable(const string& name, const any& initValue = any(0))
         : InternalDimen(name, initValue) {}
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+};
+
+class DimenRegister: public DimenVariable
+{
+public:
+    DimenRegister(const string& name, const any& initValue = any(0))
+        : DimenVariable(name, initValue) {}
+
+    string parseName(Parser& parser, shared_ptr<Node> node);
 };
 
 } // namespace base

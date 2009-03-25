@@ -152,6 +152,23 @@ void Parser::setSymbol(const string& name, const any& value, bool global)
                                         std::make_pair(0, any())));
         }
     }
+
+    if(!global || m_groupLevel == 0) setSpecialSymbol(name, value);
+}
+
+void Parser::setSpecialSymbol(const string& name, const any& value)
+{
+    if(value.type() == typeid(int)) {
+        if(name == "endlinechar") {
+            m_lexer->setEndlinechar(*unsafe_any_cast<int>(&value));
+        } else if(name.substr(0, 7) == "catcode") {
+            std::istringstream s(name.substr(7));
+            int n = 0; s >> n;
+            if(!s.fail() && n >= 0 && n <= 255) {
+                m_lexer->setCatcode(n, *unsafe_any_cast<int>(&value));
+            }
+        }
+    }
 }
 
 void Parser::beginGroup()
@@ -177,8 +194,11 @@ void Parser::endGroup()
             m_symbolsGlobal.erase(it1);
             if(it->second.second.empty())
                 m_symbols.erase(it);
+            else
+                setSpecialSymbol(it->first, it->second.second);
         } else {
             it->second = item.second;
+            setSpecialSymbol(it->first, it->second.second);
         }
 
         m_symbolsStack.pop_back();
@@ -313,11 +333,11 @@ bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
     return false;
 }
 
-Node::ptr Parser::parseCommand(Command::ptr command)
+Node::ptr Parser::invokeCommand(Command::ptr command)
 {
     Node::ptr node(new Node("command"));
     node->appendChild("control_token", parseToken());
-    command->parseArgs(*this, node); // XXX check errors
+    command->invoke(*this, node); // XXX check errors
     return node;
 }
 
@@ -454,10 +474,10 @@ Node::ptr Parser::parseNormalInteger()
 
     }
 
-    shared_ptr<base::InternalInteger> integer = 
-        parseCommandOrGroup<base::InternalInteger>(node);
+    Node::ptr integer = tryParseVariableValue<base::InternalInteger>();
     if(integer) {
-        node->setValue(integer->getAny(*this));
+        node->appendChild("internal_integer", integer);
+        node->setValue(integer->valueAny());
         return node;
     }
 
@@ -574,10 +594,10 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         return node;
     }
 
-    shared_ptr<base::InternalDimen> dimen = 
-        parseCommandOrGroup<base::InternalDimen>(node);
+    Node::ptr dimen = tryParseVariableValue<base::InternalDimen>();
     if(dimen) {
-        node->setValue(dimen->getAny(*this));
+        node->appendChild("internal_dimen", dimen);
+        node->setValue(dimen->valueAny());
         return node;
     }
 
@@ -625,29 +645,36 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     // <internal unit>
-    Node::ptr i_node(new Node("unternal_unit"));
-    bool i_found = false;
     bool i_mu = false;
+    bool i_found = false;
     int i_unit = 0;
 
-    shared_ptr<base::InternalInteger> i_int = 
-        parseCommandOrGroup<base::InternalInteger>(i_node);
-    if(i_int) {
-        node->appendChild("internal_unit", i_node);
-        i_unit = i_int->get(*this, int(0));
+    Node::ptr iunit = tryParseVariableValue<base::InternalInteger>();
+    if(iunit) {
+        node->appendChild("internal_unit", iunit);
+        i_unit = iunit->value(0);
         i_found = true;
     }
 
-    if(!i_found) {
-        shared_ptr<base::InternalDimen> i_dimen = 
-            parseCommandOrGroup<base::InternalDimen>(i_node);
-        if(i_dimen) {
-            node->appendChild("internal_unit", i_node);
-            i_unit = i_dimen->get(*this, int(0));
+    if(!iunit) {
+        Node::ptr iunit = tryParseVariableValue<base::InternalDimen>();
+        if(iunit) {
+            node->appendChild("internal_unit", iunit);
+            i_unit = iunit->value(0);
             i_found = true;
         }
     }
 
+    if(!iunit) {
+        Node::ptr iunit = tryParseVariableValue<base::InternalDimen>();
+        if(iunit) {
+            node->appendChild("internal_unit", iunit);
+            i_unit = iunit->value(0);
+            i_found = true;
+        }
+    }
+
+    /*
     if(!i_found) {
         shared_ptr<base::InternalGlue> i_glue = 
             parseCommandOrGroup<base::InternalGlue>(i_node);
@@ -667,7 +694,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             i_found = true;
             i_mu = true;
         }
-    }
+    }*/
         
     if(!i_found && !mu) {
         static vector<string> kw_internal_units;
@@ -676,9 +703,9 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             kw_internal_units.push_back("ex");
         }
 
-        i_node = parseKeyword(kw_internal_units);
-        if(i_node) {
-            node->appendChild("internal_unit", i_node);
+        iunit = parseKeyword(kw_internal_units);
+        if(iunit) {
+            node->appendChild("internal_unit", iunit);
             i_unit = 0; // TODO: fontdimen
             i_found = true;
         }
@@ -932,7 +959,18 @@ Node::ptr Parser::parseNumber()
     Node::ptr node(new Node("number"));
     node->appendChild("sign", parseOptionalSigns());
 
-    Node::ptr internal(new Node("internal"));
+    Node::ptr internal = tryParseVariableValue<base::InternalDimen>();
+    if(internal) {
+        node->appendChild("coerced_dimen", internal);
+    }
+
+    /*
+    if(!internal) {
+        internal = tryParseVariableValue<base::InternalGlue>();
+    }
+    */
+
+    /*
     shared_ptr<base::InternalDimen> dimen = 
         parseCommandOrGroup<base::InternalDimen>(internal);
     if(dimen) {
@@ -959,6 +997,10 @@ Node::ptr Parser::parseNumber()
                 node->appendChild("normal_integer", parseNormalInteger());
             }
         }
+    }*/
+
+    if(!internal) {
+        node->appendChild("normal_integer", parseNormalInteger());
     }
 
     node->setValue(node->child(0)->value(int(0)) *
@@ -1214,9 +1256,7 @@ Node::ptr Parser::parseGroup(Command::ptr endCmd, bool parseBeginEnd)
         if(peekToken()->isControl()) {
             Command::ptr cmd = symbol(peekToken(), Command::ptr());
             if(cmd) {
-                node->appendChild("control", parseCommand(cmd));
-                executeCommand(cmd, node->child(
-                                        node->childrenCount()-1));
+                node->appendChild("control", invokeCommand(cmd));
             } else {
                 m_logger->log(Logger::ERROR, "Undefined control sequence",
                                                 *this, lastToken());

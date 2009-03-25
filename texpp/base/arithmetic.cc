@@ -27,6 +27,7 @@
 namespace texpp {
 namespace base {
 
+/*
 bool ArithmeticCommand::parseArgs(Parser& parser, Node::ptr node)
 {
     static vector<string> kw_by(1, "by");
@@ -191,6 +192,7 @@ bool ArithmeticCommand::execute(Parser& parser, Node::ptr node)
 
     return true;
 }
+*/
 
 } // namespace base
 } // namespace texpp

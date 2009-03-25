@@ -30,16 +30,13 @@
 namespace texpp {
 namespace base {
 
-bool Show::parseArgs(Parser& parser, Node::ptr node)
+bool Show::invoke(Parser& parser, shared_ptr<Node> node)
 {
-    node->appendChild("token", parser.parseToken());
-    return true;
-}
+    Node::ptr tokenNode = parser.parseToken();
+    Token::ptr token = tokenNode->value(Token::ptr());
+    node->appendChild("token", tokenNode);
 
-bool Show::execute(Parser& parser, Node::ptr node)
-{
     string str;
-    Token::ptr token = node->child("token")->value(Token::ptr());
     if(token->isCharacter()) {
         str = token->meaning();
     } else {
@@ -54,105 +51,29 @@ bool Show::execute(Parser& parser, Node::ptr node)
     return true;
 }
 
-bool ShowThe::parseArgs(Parser& parser, Node::ptr node)
+bool ShowThe::invoke(Parser& parser, Node::ptr node)
 {
-    Node::ptr arg(new Node("internal_quantity"));
-    shared_ptr<InternalInteger> integer =
-        parser.parseCommandOrGroup<InternalInteger>(arg);
-    if(integer) {
-        arg->setType("internal_integer");
-        arg->setValue(integer->getAny(parser));
-        node->appendChild("internal_quantity", arg);
-        return true;
+    Node::ptr tokenNode = parser.parseToken();
+    Token::ptr token = tokenNode->value(Token::ptr());
+    node->appendChild("token", tokenNode);
+
+    string str;
+    shared_ptr<Variable> var = parser.symbolCommand<Variable>(token);
+    if(var) {
+        bool ok = var->invokeOperation(parser, node, Variable::GET);
+        if(ok) str = var->reprValue(parser, node);
+    } else {
+        parser.logger()->log(Logger::ERROR,
+            "You can't use `" + token->texRepr() +
+            "' after " + char(parser.symbol("escapechar", int(0))) + "the",
+            parser, token);
+        str = "0";
     }
 
-    shared_ptr<InternalDimen> dimen =
-        parser.parseCommandOrGroup<InternalDimen>(arg);
-    if(dimen) {
-        arg->setType("internal_dimen");
-        arg->setValue(dimen->getAny(parser));
-        node->appendChild("internal_quantity", arg);
-        return true;
-    }
-
-    shared_ptr<InternalGlue> glue =
-        parser.parseCommandOrGroup<InternalGlue>(arg);
-    if(glue) {
-        arg->setType("internal_glue");
-        arg->setValue(glue->getAny(parser));
-        node->appendChild("internal_quantity", arg);
-        return true;
-    }
-
-    shared_ptr<InternalMuGlue> muglue =
-        parser.parseCommandOrGroup<InternalMuGlue>(arg);
-    if(muglue) {
-        arg->setType("internal_muglue");
-        arg->setValue(muglue->getAny(parser));
-        node->appendChild("internal_quantity", arg);
-        return true;
-    }
-
-    shared_ptr<InternalToks> toks =
-        parser.parseCommandOrGroup<InternalToks>(arg);
-    if(toks) {
-        arg->setType("internal_toks");
-        arg->setValue(toks->getAny(parser));
-        node->appendChild("internal_quantity", arg);
-        return true;
-    }
-
-    shared_ptr<FontSelector> font =
-        parser.parseCommandOrGroup<FontSelector>(arg);
-    if(font) {
-        arg->setType("font_selector");
-        arg->setValue(font);
-        node->appendChild("internal_quantity", arg);
-        return true;
-    }
-
-    parser.logger()->log(Logger::ERROR,
-        "You can't use `" + parser.peekToken()->texRepr() +
-        "' after " + char(parser.symbol("escapechar", int(0))) + "the",
+    parser.logger()->log(Logger::SHOW, str,
         parser, parser.lastToken());
-    node->setValue(int(0));
 
-    node->appendChild("internal_quantity", parser.parseToken());
-    node->child("internal_quantity")->setValue(int(0));
-
-    return true;
-}
-
-bool ShowThe::execute(Parser& parser, Node::ptr node)
-{
-    Node::ptr arg = node->child("internal_quantity");
-    if(arg->type() == "internal_integer") {
-        parser.logger()->log(Logger::SHOW,
-            boost::lexical_cast<string>(arg->value(int(0))),
-            parser, parser.lastToken());
-    } else if(arg->type() == "internal_dimen") {
-        parser.logger()->log(Logger::SHOW,
-            InternalDimen::dimenToString(arg->value(int(0))),
-            parser, parser.lastToken());
-    } else if(arg->type() == "internal_glue") {
-        parser.logger()->log(Logger::SHOW,
-            InternalGlue::glueToString(arg->value(Glue(0))),
-            parser, parser.lastToken());
-    } else if(arg->type() == "internal_muglue") {
-        parser.logger()->log(Logger::SHOW,
-            InternalMuGlue::muGlueToString(arg->value(Glue(0))),
-            parser, parser.lastToken());
-    } else if(arg->type() == "internal_toks") {
-        parser.logger()->log(Logger::SHOW,
-            InternalToks::toksToString(parser, arg->value(Token::list())),
-            parser, parser.lastToken());
-    } else if(arg->type() == "font_selector") {
-        char escape = parser.symbol("escapechar", int(0));
-        parser.logger()->log(Logger::SHOW,
-            arg->value(shared_ptr<FontSelector>())->Command::texRepr(escape),
-            parser, parser.lastToken());
-    }
-    return true;
+    return bool(var);
 }
 
 } // namespace base

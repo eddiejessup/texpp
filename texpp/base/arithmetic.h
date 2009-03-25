@@ -25,6 +25,7 @@
 namespace texpp {
 namespace base {
 
+/*
 class ArithmeticCommand: public Command
 {
 public:
@@ -40,6 +41,7 @@ public:
 protected:
     Type m_type;
 };
+*/
 
 } // namespace base
 } // namespace texpp
