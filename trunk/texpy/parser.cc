@@ -81,11 +81,13 @@ void export_node()
         .def("tokens", (vector<Token::ptr>& (Node::*)())(&Node::tokens),
             return_internal_reference<1,
                 return_value_policy<reference_existing_object> >())
+        .def("childrenCount", &Node::childrenCount)
         .def("children", (Node::ChildrenList& (Node::*)())(&Node::children),
             return_internal_reference<1,
                 return_value_policy<reference_existing_object> >())
-        .def("appendChild", &Node::appendChild)
         .def("child", (Node::ptr (Node::*)(const string&))(&Node::child))
+        .def("child", (Node::ptr (Node::*)(int))(&Node::child))
+        .def("appendChild", &Node::appendChild)
         ;
 
     class_<Node::ChildrenList>("ChildrenList")

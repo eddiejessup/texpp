@@ -131,7 +131,7 @@ public:
 
     Node::ptr parseToken();
     Node::ptr parseControlSequence();
-    Node::ptr parseCharacter();
+    Node::ptr parseCharacter(const string& type = string("character"));
 
     Node::ptr parseKeyword(const vector<string>& keywords);
     Node::ptr parseOptionalKeyword(const vector<string>& keywords);

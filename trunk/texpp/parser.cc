@@ -425,9 +425,9 @@ Node::ptr Parser::parseControlSequence()
     return node;
 }
 
-Node::ptr Parser::parseCharacter()
+Node::ptr Parser::parseCharacter(const string& type)
 {
-    Node::ptr node(new Node("character"));
+    Node::ptr node(new Node(type));
     if(peekToken() && peekToken()->isCharacter()) {
         node->setValue(peekToken()->value());
         nextToken(&node->tokens());
@@ -1343,10 +1343,12 @@ Node::ptr Parser::parseGroup(bool parseBeginEnd,
             node->appendChild("text_word", parseTextWord());
 
         } else if(peekToken()->isCharacterCat(Token::CC_SPACE)) {
-            node->appendChild("space", parseCharacter());
+            node->appendChild("text_space",
+                        parseCharacter("text_space"));
 
         } else if(peekToken()->isCharacterCat(Token::CC_OTHER)) {
-            node->appendChild("character", parseCharacter());
+            node->appendChild("text_character",
+                        parseCharacter("text_character"));
 
         } else if(peekToken()->isCharacterCat(Token::CC_BGROUP)) {
             beginGroup();
