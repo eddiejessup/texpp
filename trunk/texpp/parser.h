@@ -219,6 +219,8 @@ protected:
     SymbolStack     m_symbolsStack;
     vector<size_t>  m_symbolsStackLevels;
 
+    size_t          m_lineNo;
+
     static any EMPTY_ANY;
 };
 
