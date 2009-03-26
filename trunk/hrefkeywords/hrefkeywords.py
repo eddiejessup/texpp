@@ -76,7 +76,7 @@ def doReplace(node, macro, concepts):
                     if item is None: # not found
                         break
                     elif True in item: # do found
-                        max_m = n # but keep looking for bigger one
+                        max_m = m # but keep looking for bigger one
                         word = item[True]
                         
                 # skip spaces, break on anything else
