@@ -94,6 +94,7 @@ public:
     enum Mode { VERTICAL, HORIZONTAL,
                 RVERTICAL, RHORIZONTAL,
                 MATH };
+    enum GroupType { GROUP_NORMAL, GROUP_MATH };
 
     Parser(const string& fileName, std::istream* file,
             bool interactive = false,
@@ -124,8 +125,7 @@ public:
     bool helperIsImplicitCharacter(Token::CatCode catCode);
 
     Node::ptr parseGroup(bool parseBeginEnd = true,
-        Command::ptr beginCmd = Command::ptr(),
-        Command::ptr endCmd = Command::ptr());
+                GroupType groupType = GROUP_NORMAL);
 
     Node::ptr invokeCommand(Command::ptr command);
 
