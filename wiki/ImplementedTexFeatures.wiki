@@ -21,8 +21,9 @@
 || muglue parameters || yes ||
 || registerdef   || yes ||
 || special integers || yes ||
-|| boxes         || *no* ||
+|| boxes         || yes ||
 || arithmetic    || yes ||
+|| prefixes      || yes ||
 || token lists   || yes ||
 || font expressions || yes ||
 || fontdimen     || *stub* ||
