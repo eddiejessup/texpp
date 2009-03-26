@@ -25,6 +25,7 @@
 #include <texpp/command.h>
 
 #include <deque>
+#include <set>
 #include <cassert>
 #include <climits>
 
@@ -108,6 +109,9 @@ public:
     Mode mode() const { return m_mode; }
     void setMode(Mode mode) { m_mode = mode; }
 
+    std::set<string>& activePrefixes() { return m_activePrefixes; }
+    bool isPrefixActive(const string& prefix);
+
     //////// Tokens
     Token::ptr lastToken();
     Token::ptr peekToken();
@@ -119,16 +123,9 @@ public:
     //////// Parse helpers
     bool helperIsImplicitCharacter(Token::CatCode catCode);
 
-    bool parseCommandArgs(Command::ptr command, Node::ptr node) {
-        return command->parseArgs(*this, node);
-    }
-
-    bool executeCommand(Command::ptr command, Node::ptr node) {
-        return command->execute(*this, node);
-    }
-
-    Node::ptr parseGroup(Command::ptr endCmd = Command::ptr(),
-                         bool parseBeginEnd = true);
+    Node::ptr parseGroup(bool parseBeginEnd = true,
+        Command::ptr beginCmd = Command::ptr(),
+        Command::ptr endCmd = Command::ptr());
 
     Node::ptr invokeCommand(Command::ptr command);
 
@@ -148,6 +145,7 @@ public:
     Node::ptr parseDimen(bool fil = false, bool mu = false);
     Node::ptr parseGlue(bool mu = false);
 
+    Node::ptr parseFiller();
     Node::ptr parseBalancedText();
     Node::ptr parseGeneralText(
             Node::ptr node = Node::ptr());
@@ -229,6 +227,7 @@ protected:
 
     size_t          m_lineNo;
     Mode            m_mode;
+    std::set<string> m_activePrefixes;
 
     static any EMPTY_ANY;
 };

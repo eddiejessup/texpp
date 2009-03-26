@@ -45,7 +45,8 @@ bool InternalToks::invokeOperation(Parser& parser,
             node->setValue(tokens ? *tokens : Token::list());
         }
         node->appendChild("rvalue", internal);
-        parser.setSymbol(name, node->valueAny());
+        parser.setSymbol(name, node->valueAny(),
+                    parser.isPrefixActive("\\global"));
         return true;
 
     } else if(op == EXPAND) {

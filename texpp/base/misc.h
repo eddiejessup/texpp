@@ -42,6 +42,7 @@ class Relax: public Command
 {
 public:
     explicit Relax(const string& name): Command(name) {}
+    bool checkPrefixes(Parser&) { return false; }
 };
 
 class End: public Command

@@ -38,6 +38,7 @@ public:
         return Cmd::texRepr(escape);
     }
 
+    /*
     bool parseArgs(Parser& p, Node::ptr n) {
         if(override f = this->get_override("parseArgs"))
             return f(p, n);
@@ -56,7 +57,7 @@ public:
 
     bool default_execute(Parser& p, Node::ptr n) {
         return Cmd::execute(p, n);
-    }
+    }*/
 };
 
 }}
@@ -71,10 +72,6 @@ inline void export_derived_command(const char* name)
            name, _init())
         .def("texRepr", &Cmd::texRepr,
                     &CommandWrap<Cmd>::default_texRepr)
-        .def("parseArgs", &Cmd::parseArgs,
-                    &CommandWrap<Cmd>::default_parseArgs)
-        .def("execute", &Cmd::execute,
-                    &CommandWrap<Cmd>::default_execute)
         ;
 }
 
@@ -89,10 +86,6 @@ void export_command()
             return_value_policy<copy_const_reference>())
         .def("texRepr", &Command::texRepr,
                     &CommandWrap<Command>::default_texRepr)
-        .def("parseArgs", &Command::parseArgs,
-                    &CommandWrap<Command>::default_parseArgs)
-        .def("execute", &Command::execute,
-                    &CommandWrap<Command>::default_execute)
         ;
 
     export_derived_command<TokenCommand, bases<Command>,

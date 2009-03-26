@@ -36,7 +36,8 @@ bool InternalDimen::invokeOperation(Parser& parser,
         node->appendChild("rvalue", rvalue);
 
         node->setValue(rvalue->valueAny());
-        parser.setSymbol(name, rvalue->valueAny());
+        parser.setSymbol(name, rvalue->valueAny(),
+                    parser.isPrefixActive("\\global"));
         return true;
     } else if(op == EXPAND) {
         string name = parseName(parser, node);
@@ -64,7 +65,7 @@ bool DimenVariable::invokeOperation(Parser& parser,
         v += rvalue->value(int(0));
 
         node->setValue(v);
-        parser.setSymbol(name, v);
+        parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
         return true;
 
     } else if(op == MULTIPLY || op == DIVIDE) {
@@ -93,7 +94,7 @@ bool DimenVariable::invokeOperation(Parser& parser,
                 parser, parser.lastToken());
         } else {
             node->setValue(v);
-            parser.setSymbol(name, v);
+            parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
         }
         return true;
     }

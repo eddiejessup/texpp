@@ -38,7 +38,8 @@ bool invokeGlueOperation(Variable& var, Parser& parser,
         node->appendChild("rvalue", rvalue);
 
         node->setValue(rvalue->valueAny());
-        parser.setSymbol(name, rvalue->valueAny());
+        parser.setSymbol(name, rvalue->valueAny(),
+                    parser.isPrefixActive("\\global"));
         return true;
     } else if(op == Variable::EXPAND) {
         string name = var.parseName(parser, node);
@@ -82,7 +83,7 @@ bool invokeGlueVarOperation(Variable& var, Parser& parser,
         }
 
         node->setValue(v);
-        parser.setSymbol(name, v);
+        parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
         return true;
 
     } else if(op == Variable::MULTIPLY || op == Variable::DIVIDE) {
@@ -124,7 +125,7 @@ bool invokeGlueVarOperation(Variable& var, Parser& parser,
                 parser, parser.lastToken());
         } else {
             node->setValue(v);
-            parser.setSymbol(name, v);
+            parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
         }
         return true;
     }

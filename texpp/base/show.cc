@@ -63,8 +63,11 @@ bool ShowThe::invoke(Parser& parser, Node::ptr node)
         bool ok = var->invokeOperation(parser, node, Variable::EXPAND);
         if(ok) str = node->value(string());
     } else {
+        string tname = token->texRepr();
+        Command::ptr cmd = parser.symbol(token, Command::ptr());
+        if(cmd) tname = cmd->texRepr();
         parser.logger()->log(Logger::ERROR,
-            "You can't use `" + token->texRepr() +
+            "You can't use `" + tname +
             "' after " + char(parser.symbol("escapechar", int(0))) + "the",
             parser, token);
         str = "0";

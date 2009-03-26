@@ -46,6 +46,10 @@ public:
     template<class Var>
     static Node::ptr tryParseVariableValue(Parser& parser);
 
+    bool checkPrefixes(Parser& parser) {
+        return checkPrefixesGlobal(parser);
+    }
+
 protected:
     any m_initValue;
 };
@@ -59,6 +63,9 @@ public:
     Variable::Operation operation() const { return m_op; }
 
     bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool checkPrefixes(Parser& parser) {
+        return checkPrefixesGlobal(parser);
+    }
 
 protected:
     Variable::Operation m_op;
@@ -129,7 +136,8 @@ bool Register<Var>::createDef(Parser& parser, Token::ptr token, int num)
     }
 
     string iname = this->name() + boost::lexical_cast<string>(num);
-    parser.setSymbol(token, Command::ptr(new Var(iname, this->initValue())));
+    parser.setSymbol(token, Command::ptr(new Var(iname, this->initValue())),
+                        parser.isPrefixActive("\\global"));
     return true;
 }
 
