@@ -144,6 +144,8 @@ public:
     Node::ptr parseGeneralText(
             Node::ptr node = Node::ptr());
 
+    Node::ptr parseFileName();
+
     Node::ptr parseTextWord();
 
     //////// Symbols

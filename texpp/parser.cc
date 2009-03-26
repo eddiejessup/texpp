@@ -1202,6 +1202,24 @@ Node::ptr Parser::parseGeneralText(Node::ptr node)
     return node;
 }
 
+Node::ptr Parser::parseFileName()
+{
+    Node::ptr node(new Node("file_name"));
+    string fileName;
+
+    while(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&node->tokens());
+
+    while(peekToken()->isCharacterCat(Token::CC_LETTER) ||
+            peekToken()->isCharacterCat(Token::CC_OTHER)) {
+        Token::ptr letter = nextToken(&node->tokens());
+        fileName += letter->value();
+    }
+
+    node->setValue(fileName);
+    return node;
+}
+
 Node::ptr Parser::parseTextWord()
 {
     Node::ptr node(new Node("text_word"));

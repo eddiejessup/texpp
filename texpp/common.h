@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include <iostream> // tmp
+
 //#include <tr1/memory>
 #include <boost/shared_ptr.hpp>
 #include <boost/any.hpp>

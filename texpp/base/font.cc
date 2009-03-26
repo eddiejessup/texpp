@@ -22,30 +22,223 @@
 namespace texpp {
 namespace base {
 
-bool FontSelector::execute(Parser&, shared_ptr<Node>)
-{
-    return true;
-}
+shared_ptr<FontInfo> defaultFontInfo(new FontInfo("\\nullfont", "nullfont"));
 
 string FontSelector::texRepr(char) const
 {
-    return "select font " + m_fontName;
+    return "select font " + initFontInfo()->file;
 }
 
-/*
-Command::ptr Font::parseCommand(Parser& parser, Node::ptr)
+bool FontSelector::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
 {
-    if(name().size() < 2) return Command::ptr();
-    return parser.symbol(name().substr(1), shared_ptr<FontSelector>());
+    if(op == EXPAND) {
+        string str = initFontInfo()->selector;
+        if(!str.empty() && str[0] == '\\')
+            str[0] = parser.symbol("escapechar", int('\\'));
+        else
+            str = parser.symbol("escapechar", int('\\')) + "FONT" + str;
+        node->setValue(str + ' ');
+        return true;
+    } else if(op == ASSIGN) {
+        parser.setSymbol("font", initFontInfo());
+        return true;
+    } else if(op == GET) {
+        node->setValue(initFontInfo());
+        return true;
+    }
+    return false;
 }
-*/
 
-/*
-bool Font::parseArgs(Parser& parser, Node::ptr node)
+bool Font::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
 {
+    if(op == EXPAND) {
+        string name = parseName(parser, node);
+        FontInfo::ptr fontInfo = parser.symbol(name, defaultFontInfo);
 
+        string str = fontInfo->selector;
+        if(!str.empty() && str[0] == '\\')
+            str[0] = parser.symbol("escapechar", int('\\'));
+        else
+            str = parser.symbol("escapechar", int('\\')) + "FONT" + str;
+        node->setValue(str + ' ');
+        return true;
+
+    } else if(op == ASSIGN) {
+        string name = parseName(parser, node);
+
+        Node::ptr lvalue = parser.parseControlSequence();
+        Token::ptr ltoken = lvalue->value(Token::ptr());
+
+        node->appendChild("lvalue", lvalue);
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+
+        Node::ptr fileName = parser.parseFileName();
+        node->appendChild("file_name", fileName);
+
+        static vector<string> kw_at;
+        if(kw_at.empty()) {
+            kw_at.push_back("at");
+            kw_at.push_back("scaled");
+        }
+
+        Node::ptr at = parser.parseOptionalKeyword(kw_at);
+        node->appendChild("at_clause", at);
+
+        if(at->value(string()) == "at") {
+            node->appendChild("at", parser.parseDimen());
+        } else if(at->value(string()) == "scaled") {
+            node->appendChild("scaled", parser.parseNumber());
+        }
+
+        FontInfo::ptr fontInfo(new FontInfo(ltoken->value(),
+                                fileName->value(string())));
+        
+        node->setValue(fontInfo);
+        parser.setSymbol(ltoken->value(),
+            Command::ptr(new FontSelector(ltoken->value(), fontInfo)));
+
+        return true;
+
+    } else if(op == GET) {
+        string name = parseName(parser, node);
+        const any& ret = parser.symbolAny(name);
+        node->setValue(ret.empty() ? m_initValue : ret);
+        return true;
+    }
+    return false;
 }
-*/
+
+bool FontFamily::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
+{
+    if(op == EXPAND) {
+        string name = parseName(parser, node);
+        FontInfo::ptr fontInfo = parser.symbol(name, defaultFontInfo);
+
+        string str = fontInfo->selector;
+        if(!str.empty() && str[0] == '\\')
+            str[0] = parser.symbol("escapechar", int('\\'));
+        else
+            str = parser.symbol("escapechar", int('\\')) + "FONT" + str;
+        node->setValue(str + ' ');
+        return true;
+
+    } else if(op == ASSIGN) {
+        string name = parseName(parser, node);
+
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+
+        Node::ptr rvalue =
+            Variable::tryParseVariableValue<base::FontVariable>(parser);
+        if(!rvalue) {
+            parser.logger()->log(Logger::ERROR,
+                "Missing font identifier",
+                parser, parser.lastToken());
+            rvalue = Node::ptr(new Node("error_missing_font"));
+            rvalue->setValue(defaultFontInfo);
+        }
+
+        node->appendChild("rvalue", rvalue);
+        node->setValue(rvalue->valueAny());
+        parser.setSymbol(name, rvalue->valueAny());
+
+        return true;
+
+    } else if(op == GET) {
+        string name = parseName(parser, node);
+        const any& ret = parser.symbolAny(name);
+        node->setValue(ret.empty() ? m_initValue : ret);
+        return true;
+    }
+    return false;
+}
+
+string FontFamily::parseName(Parser& parser, shared_ptr<Node> node)
+{
+    shared_ptr<Node> number = parser.parseNumber();
+    node->appendChild("family_number", number);
+    int n = number->value(int(0));
+
+    if(n < 0 || n > 15) {
+        parser.logger()->log(Logger::ERROR,
+            "Bad number (" + boost::lexical_cast<string>(n) + ")",
+            parser, parser.lastToken());
+        n = 0;
+    }
+
+    return this->name().substr(1) + boost::lexical_cast<string>(n);
+}
+
+string FontChar::parseName(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr font =
+        Variable::tryParseVariableValue<base::FontVariable>(parser);
+    if(!font) {
+        parser.logger()->log(Logger::ERROR,
+            "Missing font identifier",
+            parser, parser.lastToken());
+        font = Node::ptr(new Node("error_missing_font"));
+        font->setValue(defaultFontInfo);
+    }
+    node->appendChild("variable_font", font);
+
+    return name().substr(1) + font->value(defaultFontInfo)->selector;
+}
+
+string FontDimen::parseName(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("variable_number", number);
+    int n = number->value(int(0));
+
+    Node::ptr font =
+        Variable::tryParseVariableValue<base::FontVariable>(parser);
+    if(!font) {
+        parser.logger()->log(Logger::ERROR,
+            "Missing font identifier",
+            parser, parser.lastToken());
+        font = Node::ptr(new Node("error_missing_font"));
+        font->setValue(defaultFontInfo);
+    }
+    node->appendChild("variable_font", font);
+    FontInfo::ptr fontInfo = font->value(defaultFontInfo);
+
+    if(n <= 0 || n > 7) {
+        string str = fontInfo->selector;
+        if(!str.empty() && str[0] == '\\')
+            str[0] = parser.symbol("escapechar", int('\\'));
+        else
+            str = parser.symbol("escapechar", int('\\')) + "FONT" + str;
+        parser.logger()->log(Logger::ERROR,
+            "Font " + str + " has only 7 fontdimen parameters", // TODO: 7?
+            parser, parser.lastToken());
+        n = 0;
+    }
+
+    return name().substr(1) + boost::lexical_cast<string>(n)
+                            + fontInfo->selector;
+}
+
+bool FontDimen::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
+{
+    if(op == ASSIGN) {
+        string name = parseName(parser, node);
+
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+        Node::ptr rvalue = parser.parseDimen();
+        node->appendChild("rvalue", rvalue);
+
+        node->setValue(rvalue->valueAny());
+        if(name.substr(0, 11) != "fontdimen0\\")
+            parser.setSymbol(name, rvalue->valueAny(), true); // global
+        return true;
+    } else {
+        return SpecialDimen::invokeOperation(parser, node, op);
+    }
+}
 
 } // namespace base
 } // namespace texpp
