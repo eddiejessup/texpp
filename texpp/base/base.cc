@@ -48,8 +48,8 @@ void initSymbols(Parser& parser)
             Command::ptr(new T("\\" name, ##__VA_ARGS__)))
     
     __TEXPP_SET_COMMAND("end",        End);
+    __TEXPP_SET_COMMAND("par",        Par);
     __TEXPP_SET_COMMAND("relax",      Relax);
-    __TEXPP_SET_COMMAND("par",        Relax);
     __TEXPP_SET_COMMAND("let",        Let);
     __TEXPP_SET_COMMAND("show",       Show);
     __TEXPP_SET_COMMAND("showthe",    ShowThe);

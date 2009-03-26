@@ -32,6 +32,18 @@
 #include <cassert>
 #include <iterator>
 
+namespace {
+
+const texpp::string modeNames[] = {
+    "vertical",
+    "horizontal",
+    "restricted vertical",
+    "restricted horizontal",
+    "math",
+    "unknown"
+};
+} // namespace
+
 namespace texpp {
 
 Node::ptr Node::child(const string& name)
@@ -87,7 +99,8 @@ string Node::treeRepr(size_t indent) const
 
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_end(false), m_lineNo(1)
+    : m_logger(logger), m_groupLevel(0), m_end(false),
+      m_lineNo(1), m_mode(VERTICAL)
 {
     if(!m_logger)
         m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
@@ -99,7 +112,8 @@ Parser::Parser(const string& fileName, std::istream* file,
 
 Parser::Parser(const string& fileName, std::auto_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_end(false), m_lineNo(1)
+    : m_logger(logger), m_groupLevel(0), m_end(false),
+      m_lineNo(1), m_mode(VERTICAL)
 {
     if(!m_logger)
         m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
@@ -107,6 +121,13 @@ Parser::Parser(const string& fileName, std::auto_ptr<std::istream> file,
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
 
     base::initSymbols(*this);
+}
+
+const string& Parser::modeName() const
+{
+    if(m_mode < VERTICAL || m_mode > MATH)
+        return modeNames[5];
+    return modeNames[m_mode];
 }
 
 any Parser::EMPTY_ANY;

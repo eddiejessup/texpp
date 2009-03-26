@@ -90,6 +90,10 @@ protected:
 class Parser
 {
 public:
+    enum Mode { VERTICAL, HORIZONTAL,
+                RVERTICAL, RHORIZONTAL,
+                MATH };
+
     Parser(const string& fileName, std::istream* file,
             bool interactive = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
@@ -99,6 +103,10 @@ public:
             shared_ptr<Logger> logger = shared_ptr<Logger>());
 
     Node::ptr parse();
+
+    const string& modeName() const;
+    Mode mode() const { return m_mode; }
+    void setMode(Mode mode) { m_mode = mode; }
 
     //////// Tokens
     Token::ptr lastToken();
@@ -220,6 +228,7 @@ protected:
     vector<size_t>  m_symbolsStackLevels;
 
     size_t          m_lineNo;
+    Mode            m_mode;
 
     static any EMPTY_ANY;
 };
