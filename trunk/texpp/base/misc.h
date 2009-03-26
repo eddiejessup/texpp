@@ -51,6 +51,13 @@ public:
     bool invoke(Parser& parser, shared_ptr<Node> node);
 };
 
+class Par: public Command
+{
+public:
+    explicit Par(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 

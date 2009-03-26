@@ -17,6 +17,7 @@
 */
 
 #include <texpp/base/misc.h>
+#include <texpp/base/parshape.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
@@ -36,6 +37,16 @@ bool UnimplementedCommand::invoke(Parser& parser, shared_ptr<Node> node)
 bool End::invoke(Parser& parser, shared_ptr<Node>)
 {
     parser.end();
+    return true;
+}
+
+bool Par::invoke(Parser& parser, shared_ptr<Node>)
+{
+    parser.setSymbol("parshape", ParshapeInfo());
+    if(parser.mode() == Parser::RHORIZONTAL)
+        parser.setMode(Parser::RVERTICAL);
+    else if(parser.mode() == Parser::HORIZONTAL)
+        parser.setMode(Parser::VERTICAL);
     return true;
 }
 
