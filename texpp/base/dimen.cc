@@ -156,6 +156,40 @@ bool SpecialDimen::invokeOperation(Parser& parser,
     }
 }
 
+string BoxDimen::parseName(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("variable_number", number);
+    int n = number->value(int(0));
+
+    if(n < 0 || n > 255) {
+        parser.logger()->log(Logger::ERROR,
+            "Bad register code (" + boost::lexical_cast<string>(n) + ")",
+            parser, parser.lastToken());
+        n = 0;
+    }
+
+    return name().substr(1) + boost::lexical_cast<string>(n);
+}
+
+bool BoxDimen::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
+{
+    if(op == ASSIGN) {
+        string name = parseName(parser, node);
+
+        node->appendChild("equals", parser.parseOptionalEquals(false));
+        Node::ptr rvalue = parser.parseDimen();
+        node->appendChild("rvalue", rvalue);
+
+        node->setValue(rvalue->valueAny());
+        return true;
+    } else {
+        return InternalDimen::invokeOperation(parser, node, op);
+    }
+}
+
+
 } // namespace base
 } // namespace texpp
 
