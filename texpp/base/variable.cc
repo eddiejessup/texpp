@@ -62,8 +62,12 @@ bool ArithmeticCommand::invoke(Parser& parser, shared_ptr<Node> node)
     }
 
     if(!ok) {
+        string tname;
+        Command::ptr cmd = parser.symbol(token, Command::ptr());
+        if(cmd) tname = cmd->texRepr();
+        else tname = token->meaning();
         parser.logger()->log(Logger::ERROR,
-            string("You can't use `") + token->texRepr() +
+            string("You can't use `") + tname +
             string("' after ") + texRepr(),
             parser, token);
         node->setValue(int(0));

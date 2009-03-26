@@ -49,7 +49,7 @@ public:
 
     Node(const string& type): m_type(type) {}
 
-    string source() const { return string(); }
+    string source() const;
 
     const string& type() const { return m_type; }
     void setType(const string& type) { m_type = type; }

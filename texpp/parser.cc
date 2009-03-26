@@ -32,6 +32,8 @@
 #include <cassert>
 #include <iterator>
 
+#include <boost/foreach.hpp>
+
 namespace {
 
 const texpp::string modeNames[] = {
@@ -93,6 +95,19 @@ string Node::treeRepr(size_t indent) const
         }
     } else {
         str += '\n';
+    }
+    return str;
+}
+
+string Node::source() const
+{
+    string str;
+    BOOST_FOREACH(Token::ptr token, m_tokens) {
+        str += token->source();
+    }
+    typedef pair<string, Node::ptr> C;
+    BOOST_FOREACH(C c, m_children) {
+        str += c.second->source();
     }
     return str;
 }
@@ -443,7 +458,6 @@ Node::ptr Parser::parseKeyword(const vector<string>& keywords)
         }
 
         if(kw == kwEnd) {
-            pushBack(&node->tokens());
             break;
         } else if(kw->size() == n) {
             node->setValue(value);
@@ -451,6 +465,7 @@ Node::ptr Parser::parseKeyword(const vector<string>& keywords)
         }
     }
 
+    pushBack(&node->tokens());
     return Node::ptr();
 }
 
@@ -1129,9 +1144,10 @@ Node::ptr Parser::parseGlue(bool mu)
     Node::ptr dimenStretch;
     static vector<string> kw_plus(1, "plus");
     Node::ptr stretch = parseOptionalKeyword(kw_plus);
+    node->appendChild("stretch", stretch);
     if(stretch->value(string()) == "plus") {
         dimenStretch = parseDimen(true, mu);
-        stretch->appendChild("dimen", dimenStretch);
+        node->appendChild("stretch_dimen", dimenStretch);
         stretch->setValue(dimenStretch->valueAny());
         stretch->setType("stretch");
 
@@ -1145,14 +1161,15 @@ Node::ptr Parser::parseGlue(bool mu)
             glue.stretchOrder = std::count(v.begin(), v.end(), 'l');
         }
     }
-    node->appendChild("stretch", stretch);
 
     Node::ptr dimenShrink;
     static vector<string> kw_minus(1, "minus");
     Node::ptr shrink = parseOptionalKeyword(kw_minus);
+    node->appendChild("shrink", shrink);
     if(shrink->value(string()) == "minus") {
         dimenShrink = parseDimen(true, mu);
-        shrink->appendChild("dimen", dimenShrink);
+        node->appendChild("shrink_dimen", dimenShrink);
+
         shrink->setValue(dimenShrink->valueAny());
         shrink->setType("shrink");
 
@@ -1166,7 +1183,6 @@ Node::ptr Parser::parseGlue(bool mu)
             glue.shrinkOrder = std::count(v.begin(), v.end(), 'l');
         }
     }
-    node->appendChild("shrink", shrink);
 
     node->setValue(glue);
     return node;

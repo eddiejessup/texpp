@@ -70,6 +70,14 @@ protected:
     shared_ptr<Token> m_token;
 };
 
+class Macro: public Command
+{
+public:
+    Macro(const string& name = string()): Command(name) {}
+
+    virtual bool expand(Parser&, shared_ptr<Node>) { return false; }
+};
+
 } // namespace texpp
 
 #endif
