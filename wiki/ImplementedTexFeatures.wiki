@@ -24,6 +24,8 @@
 || boxes         || *no* ||
 || arithmetic    || yes ||
 || token lists   || yes ||
+|| font expressions || yes ||
+|| fontdimen     || *stub* ||
 || expansion     || *in progress* ||
 || macros        || *in progress* ||
 || file i/o      || *no* ||
