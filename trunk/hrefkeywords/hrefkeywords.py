@@ -40,6 +40,7 @@ def parseDocument(filename, fileobj):
     parser.setSymbol('\\end', None)
     parser.setSymbol('catcode'+str(ord('{')), 1)
     parser.setSymbol('catcode'+str(ord('}')), 2)
+    parser.setSymbol('catcode'+str(ord('$')), 3)
     return parser.parse()
 
 def checkWhitelist(node):

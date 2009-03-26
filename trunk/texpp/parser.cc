@@ -1290,15 +1290,23 @@ Node::ptr Parser::parseTextWord()
     return node;
 }
 
-Node::ptr Parser::parseGroup(bool parseBeginEnd,
-                Command::ptr beginCmd, Command::ptr endCmd)
+Node::ptr Parser::parseGroup(bool parseBeginEnd, GroupType groupType)
 {
     Node::ptr node(new Node("group"));
     if(parseBeginEnd) {
-        if((beginCmd && symbol(peekToken(), Command::ptr()) == beginCmd) ||
-               (!beginCmd && helperIsImplicitCharacter(Token::CC_BGROUP))) {
-            node->appendChild("group_begin", parseToken());
-        } else {
+        bool ok = false;
+        if(groupType == GROUP_NORMAL) {
+            if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
+                node->appendChild("group_begin", parseToken());
+                ok = true;
+            }
+        } else if(groupType == GROUP_MATH) {
+            if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
+                node->appendChild("group_begin", parseToken());
+                ok = true;
+            }
+        }
+        if(!ok) {
             logger()->log(Logger::ERROR, "Missing { inserted",
                                     *this, lastToken());
             Node::ptr left_brace(new Node("token"));
@@ -1320,11 +1328,18 @@ Node::ptr Parser::parseGroup(bool parseBeginEnd,
         }
 
         if(parseBeginEnd) {
-            if((endCmd && symbol(peekToken(), Command::ptr()) == endCmd) ||
-                   (!endCmd && helperIsImplicitCharacter(Token::CC_EGROUP))) {
-                node->appendChild("group_end", parseToken());
-                endGroup();
-                break;
+            if(groupType == GROUP_NORMAL) {
+                if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
+                    node->appendChild("group_end", parseToken());
+                    endGroup();
+                    break;
+                }
+            } else if(groupType == GROUP_MATH) {
+                if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
+                    node->appendChild("group_end", parseToken());
+                    endGroup();
+                    break;
+                }
             }
         }
 
@@ -1360,6 +1375,17 @@ Node::ptr Parser::parseGroup(bool parseBeginEnd,
             node->appendChild("error_extra_group_end",
                                             parseToken());
 
+        } else if(peekToken()->isCharacterCat(Token::CC_MATHSHIFT)) {
+            // TODO: $$ $$ groups
+            beginGroup();
+            Mode prevMode = mode();
+            setMode(MATH);
+            node->appendChild("inline_math", parseGroup(true, GROUP_MATH));
+            if(prevMode == RHORIZONTAL || prevMode == RVERTICAL)
+                setMode(RHORIZONTAL);
+            else
+                setMode(HORIZONTAL);
+            
         } else {
             node->appendChild("other_token", parseToken());
         }
