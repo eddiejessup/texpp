@@ -87,7 +87,7 @@ string Node::treeRepr(size_t indent) const
 
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_end(false)
+    : m_logger(logger), m_groupLevel(0), m_end(false), m_lineNo(1)
 {
     if(!m_logger)
         m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
@@ -99,7 +99,7 @@ Parser::Parser(const string& fileName, std::istream* file,
 
 Parser::Parser(const string& fileName, std::auto_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_end(false)
+    : m_logger(logger), m_groupLevel(0), m_end(false), m_lineNo(1)
 {
     if(!m_logger)
         m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
@@ -265,6 +265,10 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
         }
     }
 
+    if(!m_lexer->interactive() && m_lexer->lineNo() != m_lineNo) {
+        m_lineNo = m_lexer->lineNo();
+        setSymbol("inputlineno", int(m_lineNo));
+    }
     return ret;
 }
 

@@ -76,6 +76,17 @@ public:
 };
 
 template<class Var>
+class ReadOnlyVariable: public Var
+{
+public:
+    ReadOnlyVariable(const string& name, const any& initValue = any(0))
+        : Var(name, initValue) {}
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Variable::Operation op);
+};
+
+template<class Var>
 Node::ptr Variable::tryParseVariableValue(Parser& parser)
 {
     shared_ptr<Var> var = parser.symbolCommand<Var>(parser.peekToken());
@@ -120,6 +131,20 @@ bool Register<Var>::createDef(Parser& parser, Token::ptr token, int num)
     string iname = this->name() + boost::lexical_cast<string>(num);
     parser.setSymbol(token, Command::ptr(new Var(iname, this->initValue())));
     return true;
+}
+
+template<class Var>
+bool ReadOnlyVariable<Var>::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Variable::Operation op)
+{
+    if(op == Variable::ASSIGN) {
+        parser.logger()->log(Logger::ERROR, "You can't use `" +
+            this->texRepr() + "' in " + "vertical" + " mode",
+            parser, parser.lastToken());
+        return true;
+    } else {
+        return Var::invokeOperation(parser, node, op);
+    }
 }
 
 } // namespace base

@@ -30,6 +30,7 @@
 #include <texpp/base/font.h>
 #include <texpp/base/char.h>
 #include <texpp/base/parshape.h>
+#include <texpp/base/hyphenation.h>
 
 #include <texpp/parser.h>
 
@@ -60,6 +61,9 @@ void initSymbols(Parser& parser)
         ArithmeticCommand, Variable::MULTIPLY);
     __TEXPP_SET_COMMAND("divide",
         ArithmeticCommand, Variable::DIVIDE);
+
+    __TEXPP_SET_COMMAND("hyphenation", Hyphenation);
+    __TEXPP_SET_COMMAND("patterns", Hyphenation);
 
     __TEXPP_SET_COMMAND("nullfont", FontSelector, base::defaultFontInfo);
 
@@ -123,6 +127,19 @@ void initSymbols(Parser& parser)
         parser.setSymbol(name, value)
 
     __TEXPP_SET_VARIABLE("parshape", Parshape, ParshapeInfo());
+
+    __TEXPP_SET_VARIABLE("lastpenalty",
+            ReadOnlyVariable<InternalInteger>, int(0));
+    __TEXPP_SET_VARIABLE("inputlineno",
+            ReadOnlyVariable<InternalInteger>, int(0));
+    __TEXPP_SET_VARIABLE("badness",
+            ReadOnlyVariable<InternalInteger>, int(0));
+
+    __TEXPP_SET_VARIABLE("lastkern",
+            ReadOnlyVariable<InternalDimen>, int(0));
+
+    __TEXPP_SET_VARIABLE("lastskip",
+            ReadOnlyVariable<InternalGlue>, Glue(0));
 
     __TEXPP_SET_VARIABLE("endlinechar", IntegerVariable, int(0));
     __TEXPP_SET_VARIABLE("mag", IntegerVariable, int(0));
@@ -258,14 +275,6 @@ void initSymbols(Parser& parser)
 
     // Unimplemented commands
 
-    __TEXPP_SET_COMMAND("lastpenalty", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("inputlineno", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("badness", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("lastkern", UnimplementedCommand);
-    //__TEXPP_SET_COMMAND("ht", UnimplementedCommand);
-    //__TEXPP_SET_COMMAND("wd", UnimplementedCommand);
-    //__TEXPP_SET_COMMAND("dp", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("lastskip", UnimplementedCommand);
     __TEXPP_SET_COMMAND("global", UnimplementedCommand);
     __TEXPP_SET_COMMAND("long", UnimplementedCommand);
     __TEXPP_SET_COMMAND("outer", UnimplementedCommand);
@@ -275,8 +284,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("xdef", UnimplementedCommand);
     __TEXPP_SET_COMMAND("read", UnimplementedCommand);
     __TEXPP_SET_COMMAND("setbox", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("hyphenation", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("patterns", UnimplementedCommand);
     __TEXPP_SET_COMMAND("box", UnimplementedCommand);
     __TEXPP_SET_COMMAND("copy", UnimplementedCommand);
     __TEXPP_SET_COMMAND("lastbox", UnimplementedCommand);

@@ -189,7 +189,6 @@ bool BoxDimen::invokeOperation(Parser& parser,
     }
 }
 
-
 } // namespace base
 } // namespace texpp
 

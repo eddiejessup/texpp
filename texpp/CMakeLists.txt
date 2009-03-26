@@ -22,6 +22,7 @@ set(libtexpp_SOURCES
     base/font.cc
     base/char.cc
     base/parshape.cc
+    base/hyphenation.cc
     base/base.cc
 )
 
