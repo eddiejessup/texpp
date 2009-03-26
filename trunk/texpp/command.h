@@ -42,12 +42,13 @@ public:
     virtual string repr() const;
     virtual string texRepr(char escape = '\\') const;
 
-    virtual bool parseArgs(Parser&, shared_ptr<Node>) { return false; }
-    virtual bool execute(Parser&, shared_ptr<Node>) { return false; }
-
+    virtual bool checkPrefixes(Parser&);
     virtual bool invoke(Parser&, shared_ptr<Node>) { return true; }
 
 protected:
+    bool checkPrefixesGlobal(Parser&);
+    bool checkPrefixesMacro(Parser&);
+
     string m_name;
 };
 

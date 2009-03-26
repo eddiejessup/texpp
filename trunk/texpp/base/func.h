@@ -29,11 +29,22 @@
 namespace texpp {
 namespace base {
 
+class Prefix: public Command
+{
+public:
+    explicit Prefix(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool checkPrefixes(Parser&) { return false; }
+};
+
 class Let: public Command
 {
 public:
     explicit Let(const string& name): Command(name) {}
     bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool checkPrefixes(Parser& parser) {
+        return checkPrefixesGlobal(parser);
+    }
 };
 
 class FutureLet: public Command
@@ -55,6 +66,9 @@ public:
     shared_ptr<Cmd> group() { return m_group; }
 
     bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool checkPrefixes(Parser& parser) {
+        return checkPrefixesGlobal(parser);
+    }
 
 protected:
     shared_ptr<Cmd> m_group;

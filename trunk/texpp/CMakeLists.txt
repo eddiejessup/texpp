@@ -23,6 +23,7 @@ set(libtexpp_SOURCES
     base/char.cc
     base/parshape.cc
     base/hyphenation.cc
+    base/box.cc
     base/base.cc
 )
 

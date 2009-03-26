@@ -50,7 +50,8 @@ bool Parshape::invokeOperation(Parser& parser,
         }
 
         node->setValue(info);
-        parser.setSymbol(name, info);
+        parser.setSymbol(name, info,
+            parser.isPrefixActive("\\global"));
         return true;
 
     } else if(op == GET) {

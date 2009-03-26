@@ -22,6 +22,12 @@
 namespace texpp {
 namespace base {
 
+bool Prefix::invoke(Parser& parser, shared_ptr<Node>)
+{
+    parser.activePrefixes().insert(name());
+    return true;
+}
+
 bool Let::invoke(Parser& parser, shared_ptr<Node> node)
 {
     Node::ptr lvalue = parser.parseControlSequence();
@@ -36,11 +42,14 @@ bool Let::invoke(Parser& parser, shared_ptr<Node> node)
 
     if(rtoken->isControl()) {
         parser.setSymbol(
-            ltoken, parser.symbol(rtoken, Command::ptr())
+            ltoken, parser.symbol(rtoken, Command::ptr()),
+            parser.isPrefixActive("\\global")
             );
     } else {
         parser.setSymbol(
-            ltoken, Command::ptr(new TokenCommand(rtoken)));
+            ltoken, Command::ptr(new TokenCommand(rtoken)),
+            parser.isPrefixActive("\\global")
+            );
     }
 
     return true;
@@ -64,7 +73,8 @@ bool FutureLet::execute(Parser& parser, Node::ptr node)
         parser.symbol(
             node->child(3)->value(Token::ptr()),
             Command::ptr()
-        )
+        ),
+        parser.isPrefixActive("\\global")
     );
     return true;
 }

@@ -31,6 +31,7 @@
 #include <texpp/base/char.h>
 #include <texpp/base/parshape.h>
 #include <texpp/base/hyphenation.h>
+#include <texpp/base/box.h>
 
 #include <texpp/parser.h>
 
@@ -55,6 +56,11 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("showthe",    ShowThe);
     __TEXPP_SET_COMMAND("message",    Message);
 
+    // prefixes
+    __TEXPP_SET_COMMAND("global", Prefix);
+    __TEXPP_SET_COMMAND("long", Prefix);
+    __TEXPP_SET_COMMAND("outer", Prefix);
+
     __TEXPP_SET_COMMAND("advance",
         ArithmeticCommand, Variable::ADVANCE);
     __TEXPP_SET_COMMAND("multiply",
@@ -64,6 +70,17 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("hyphenation", Hyphenation);
     __TEXPP_SET_COMMAND("patterns", Hyphenation);
+
+    __TEXPP_SET_COMMAND("hbox", BoxSpec, Parser::RHORIZONTAL);
+    __TEXPP_SET_COMMAND("vbox", BoxSpec, Parser::RVERTICAL);
+    __TEXPP_SET_COMMAND("vtop", BoxSpec, Parser::RVERTICAL);
+
+    __TEXPP_SET_COMMAND("box", Register<Box>);
+    __TEXPP_SET_COMMAND("copy", Register<Box>);
+    __TEXPP_SET_COMMAND("vsplit", Vsplit);
+    __TEXPP_SET_COMMAND("lastbox", Lastbox);
+
+    __TEXPP_SET_COMMAND("setbox", Setbox);
 
     __TEXPP_SET_COMMAND("nullfont", FontSelector, base::defaultFontInfo);
 
@@ -117,10 +134,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_CHAR("char", Char);
     __TEXPP_SET_CHAR("mathchar", MathChar);
     __TEXPP_SET_COMMAND("delimiter", Delimiter);
-
-    //__TEXPP_SET_REGDEF("char", Char, CharDef);
-    //__TEXPP_SET_REGDEF("char", MathChar, IgnoredCommand); // TODO
-    //__TEXPP_SET_REGDEF("char", Delimiter, IgnoredCommand); // TODO
 
     #define __TEXPP_SET_VARIABLE(name, T, value, ...) \
         __TEXPP_SET_COMMAND(name, T, value, ##__VA_ARGS__); \
@@ -275,22 +288,11 @@ void initSymbols(Parser& parser)
 
     // Unimplemented commands
 
-    __TEXPP_SET_COMMAND("global", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("long", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("outer", UnimplementedCommand);
     __TEXPP_SET_COMMAND("def", UnimplementedCommand);
     __TEXPP_SET_COMMAND("gdef", UnimplementedCommand);
     __TEXPP_SET_COMMAND("edef", UnimplementedCommand);
     __TEXPP_SET_COMMAND("xdef", UnimplementedCommand);
     __TEXPP_SET_COMMAND("read", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("setbox", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("box", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("copy", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("lastbox", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("vsplit", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("hbox", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("vbox", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("vtop", UnimplementedCommand);
     __TEXPP_SET_COMMAND("spread", UnimplementedCommand);
 
     __TEXPP_SET_COMMAND("begingroup", UnimplementedCommand);

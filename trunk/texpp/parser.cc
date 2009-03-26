@@ -192,6 +192,16 @@ void Parser::setSpecialSymbol(const string& name, const any& value)
     }
 }
 
+bool Parser::isPrefixActive(const string& prefix) {
+    bool ret = m_activePrefixes.find(prefix) != m_activePrefixes.end();
+    if(prefix == "\\global") {
+        int globaldefs = symbol("globaldefs", int(0));
+        if(globaldefs < 0) ret = false;
+        else if(globaldefs > 0) ret = true;
+    }
+    return ret;
+}
+
 void Parser::beginGroup()
 {
     m_symbolsStackLevels.push_back(m_symbolsStack.size());
@@ -362,7 +372,9 @@ Node::ptr Parser::invokeCommand(Command::ptr command)
 {
     Node::ptr node(new Node("command"));
     node->appendChild("control_token", parseToken());
+    bool prefix = command->checkPrefixes(*this);
     command->invoke(*this, node); // XXX check errors
+    if(prefix) m_activePrefixes.clear();
     return node;
 }
 
@@ -1179,13 +1191,9 @@ Node::ptr Parser::parseBalancedText()
     return node;
 }
 
-Node::ptr Parser::parseGeneralText(Node::ptr node)
+Node::ptr Parser::parseFiller()
 {
-    if(!node) node = Node::ptr(new Node("general_text"));
-
-    // parse filler
     Node::ptr filler(new Node("filler"));
-    node->appendChild("filler", filler);
     while(peekToken()) {
         if(helperIsImplicitCharacter(Token::CC_SPACE)) {
             nextToken(&filler->tokens());
@@ -1199,6 +1207,15 @@ Node::ptr Parser::parseGeneralText(Node::ptr node)
         }
         break;
     }
+    return filler;
+}
+
+Node::ptr Parser::parseGeneralText(Node::ptr node)
+{
+    if(!node) node = Node::ptr(new Node("general_text"));
+
+    // parse filler
+    node->appendChild("filler", parseFiller());
 
     // parse left_brace_i
     Node::ptr left_brace(new Node("left_brace_i"));
@@ -1257,11 +1274,22 @@ Node::ptr Parser::parseTextWord()
     return node;
 }
 
-Node::ptr Parser::parseGroup(Command::ptr endCmd, bool parseBeginEnd)
+Node::ptr Parser::parseGroup(bool parseBeginEnd,
+                Command::ptr beginCmd, Command::ptr endCmd)
 {
     Node::ptr node(new Node("group"));
     if(parseBeginEnd) {
-        node->appendChild("group_begin", parseToken());
+        if((beginCmd && symbol(peekToken(), Command::ptr()) == beginCmd) ||
+               (!beginCmd && helperIsImplicitCharacter(Token::CC_BGROUP))) {
+            node->appendChild("group_begin", parseToken());
+        } else {
+            logger()->log(Logger::ERROR, "Missing { inserted",
+                                    *this, lastToken());
+            Node::ptr left_brace(new Node("token"));
+            left_brace->setValue(Token::ptr(new Token(
+                        Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
+            node->appendChild("group_begin", left_brace);
+        }
     }
 
     while(true) {
@@ -1324,7 +1352,7 @@ Node::ptr Parser::parseGroup(Command::ptr endCmd, bool parseBeginEnd)
 
 Node::ptr Parser::parse()
 {
-    Node::ptr document = parseGroup(Command::ptr(), false);
+    Node::ptr document = parseGroup(false);
     document->setType("document");
     
     // Some skipped tokens may still exists even when

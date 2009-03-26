@@ -41,7 +41,8 @@ bool FontSelector::invokeOperation(Parser& parser,
         node->setValue(str + ' ');
         return true;
     } else if(op == ASSIGN) {
-        parser.setSymbol("font", initFontInfo());
+        parser.setSymbol("font", initFontInfo(),
+                    parser.isPrefixActive("\\global"));
         return true;
     } else if(op == GET) {
         node->setValue(initFontInfo());
@@ -97,7 +98,8 @@ bool Font::invokeOperation(Parser& parser,
         
         node->setValue(fontInfo);
         parser.setSymbol(ltoken->value(),
-            Command::ptr(new FontSelector(ltoken->value(), fontInfo)));
+            Command::ptr(new FontSelector(ltoken->value(), fontInfo)),
+            parser.isPrefixActive("\\global"));
 
         return true;
 
@@ -142,7 +144,8 @@ bool FontFamily::invokeOperation(Parser& parser,
 
         node->appendChild("rvalue", rvalue);
         node->setValue(rvalue->valueAny());
-        parser.setSymbol(name, rvalue->valueAny());
+        parser.setSymbol(name, rvalue->valueAny(),
+                    parser.isPrefixActive("\\global"));
 
         return true;
 
