@@ -60,15 +60,21 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("divide",
         ArithmeticCommand, Variable::DIVIDE);
 
-    shared_ptr<FontSelector> nullfont(
-        new FontSelector("\\nullfont", "nullfont"));
-    parser.setSymbol("\\nullfont", nullfont);
+    __TEXPP_SET_COMMAND("nullfont", FontSelector, base::defaultFontInfo);
 
     #define __TEXPP_SET_FONT_GROUP(name, T) \
-        __TEXPP_SET_COMMAND(name, T) \
-        parser.setSymbol(name, nullfont)
+        __TEXPP_SET_COMMAND(name, T, base::defaultFontInfo); \
+        parser.setSymbol(name, base::defaultFontInfo)
 
-    //__TEXPP_SET_FONT_GROUP("font", Font);
+    __TEXPP_SET_FONT_GROUP("font", Font);
+    __TEXPP_SET_FONT_GROUP("textfont", FontFamily);
+    __TEXPP_SET_FONT_GROUP("scriptfont", FontFamily);
+    __TEXPP_SET_FONT_GROUP("scriptscriptfont", FontFamily);
+
+    __TEXPP_SET_COMMAND("hyphenchar", FontChar);
+    __TEXPP_SET_COMMAND("skewchar", FontChar);
+
+    __TEXPP_SET_COMMAND("fontdimen", FontDimen);
 
     __TEXPP_SET_COMMAND("catcode", CharcodeVariable, int(0), 0, 15);
     __TEXPP_SET_COMMAND("lccode", CharcodeVariable, int(0), 0, 255);
@@ -247,14 +253,8 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("lastpenalty", UnimplementedCommand);
     __TEXPP_SET_COMMAND("parshape", UnimplementedCommand);
     __TEXPP_SET_COMMAND("inputlineno", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("hyphenchar", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("skewshar", UnimplementedCommand);
     __TEXPP_SET_COMMAND("badness", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("textfont", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("scriptfont", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("scriptscriptfont", UnimplementedCommand);
     __TEXPP_SET_COMMAND("lastkern", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("fontdimen", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ht", UnimplementedCommand);
     __TEXPP_SET_COMMAND("wd", UnimplementedCommand);
     __TEXPP_SET_COMMAND("dp", UnimplementedCommand);

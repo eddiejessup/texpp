@@ -23,48 +23,95 @@
 #include <texpp/command.h>
 
 #include <texpp/base/variable.h>
+#include <texpp/base/integer.h>
+#include <texpp/base/dimen.h>
 
 namespace texpp {
 namespace base {
 
-class FontSelector: public Command
+struct FontInfo
+{
+    typedef shared_ptr<FontInfo> ptr;
+
+    string selector;
+    string file;
+
+    FontInfo() {}
+    explicit FontInfo(string s, string f = "nullfont")
+        : selector(s), file(f) {}
+};
+
+extern shared_ptr<FontInfo> defaultFontInfo;
+
+class FontVariable: public Variable
 {
 public:
-    FontSelector(const string& name, const string& fontName)
-        : Command(name), m_fontName(fontName) {}
+    FontVariable(const string& name,
+        const any& initValue = any(defaultFontInfo))
+        : Variable(name, initValue) {}
+};
 
-    const string& fontName() const { return m_fontName; }
-    void setFontName(const string& fontName) { m_fontName = fontName; }
+class FontSelector: public FontVariable
+{
+public:
+    FontSelector(const string& name,
+        const any& initValue = any(defaultFontInfo))
+        : FontVariable(name, initValue) {}
 
-    bool parseArgs(Parser&, shared_ptr<Node>) { return true; }
-    bool execute(Parser&, shared_ptr<Node>);
+    FontInfo::ptr initFontInfo() const {
+        return m_initValue.type() == typeid(FontInfo::ptr) ?
+            *unsafe_any_cast<FontInfo::ptr>(&m_initValue) : defaultFontInfo;
+    }
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
 
     string texRepr(char escape = '\\') const;
-
-protected:
-    string m_fontName;
 };
 
-/*
-class Font: public FixedCommandGroup<FontSelector>
+class Font: public FontVariable
 {
 public:
-    Font(const string& name): FixedCommandGroup<FontSelector>(name, 1) {}
+    Font(const string& name,
+        const any& initValue = any(defaultFontInfo))
+        : FontVariable(name, initValue) {}
 
-    virtual Command::ptr item(size_t n) { return Command::ptr(); }
-    Command::ptr parseCommand(Parser& parser, shared_ptr<Node> node) {
-        return item(0);
-    }
-    //bool parseArgs(Parser& parser, shared_ptr<Node> node);
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
 };
-*/
 
-/*
-class FontSelector: public FontBase
+class FontFamily: public FontVariable
 {
+public:
+    FontFamily(const string& name,
+        const any& initValue = any(defaultFontInfo))
+        : FontVariable(name, initValue) {}
 
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+    string parseName(Parser& parser, shared_ptr<Node> node);
 };
-*/
+
+class FontChar: public SpecialInteger
+{
+public:
+    FontChar(const string& name, const any& initValue = any(0))
+        : SpecialInteger(name, initValue) {}
+
+    string parseName(Parser& parser, shared_ptr<Node> node);
+};
+
+class FontDimen: public SpecialDimen
+{
+public:
+    FontDimen(const string& name, const any& initValue = any(0))
+        : SpecialDimen(name, initValue) {}
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+    string parseName(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 
