@@ -38,6 +38,8 @@ def parseDocument(filename, fileobj):
     """ Parses the document using TeXpp """
     parser = texpy.Parser(filename, fileobj)
     parser.setSymbol('\\end', None)
+    parser.setSymbol('catcode'+str(ord('{')), 1)
+    parser.setSymbol('catcode'+str(ord('}')), 2)
     return parser.parse()
 
 def checkWhitelist(node):
