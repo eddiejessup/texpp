@@ -64,6 +64,18 @@ public:
                         shared_ptr<Node> node, Operation op);
 };
 
+class BoxDimen: public InternalDimen
+{
+public:
+    BoxDimen(const string& name,
+        const any& initValue = any())
+        : InternalDimen(name, initValue) {}
+
+    string parseName(Parser& parser, shared_ptr<Node> node);
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+};
+
 } // namespace base
 } // namespace texpp
 

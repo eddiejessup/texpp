@@ -21,6 +21,7 @@ set(libtexpp_SOURCES
     base/toks.cc
     base/font.cc
     base/char.cc
+    base/parshape.cc
     base/base.cc
 )
 

@@ -29,6 +29,7 @@
 #include <texpp/base/toks.h>
 #include <texpp/base/font.h>
 #include <texpp/base/char.h>
+#include <texpp/base/parshape.h>
 
 #include <texpp/parser.h>
 
@@ -92,7 +93,12 @@ void initSymbols(Parser& parser)
                     parser.symbol("\\" name, Command::ptr())))))
 
     __TEXPP_SET_REGISTER("count", IntegerVariable, int(0));
+
     __TEXPP_SET_REGISTER("dimen", DimenVariable, int(0));
+    __TEXPP_SET_REGISTER("ht", BoxDimen, int(0));
+    __TEXPP_SET_REGISTER("wd", BoxDimen, int(0));
+    __TEXPP_SET_REGISTER("dp", BoxDimen, int(0));
+
     __TEXPP_SET_REGISTER("skip", GlueVariable, Glue(0));
     __TEXPP_SET_REGISTER("muskip", MuGlueVariable, Glue(0));
     __TEXPP_SET_REGISTER("toks", ToksVariable, Token::list());
@@ -115,6 +121,8 @@ void initSymbols(Parser& parser)
     #define __TEXPP_SET_VARIABLE(name, T, value, ...) \
         __TEXPP_SET_COMMAND(name, T, value, ##__VA_ARGS__); \
         parser.setSymbol(name, value)
+
+    __TEXPP_SET_VARIABLE("parshape", Parshape, ParshapeInfo());
 
     __TEXPP_SET_VARIABLE("endlinechar", IntegerVariable, int(0));
     __TEXPP_SET_VARIABLE("mag", IntegerVariable, int(0));
@@ -251,13 +259,12 @@ void initSymbols(Parser& parser)
     // Unimplemented commands
 
     __TEXPP_SET_COMMAND("lastpenalty", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("parshape", UnimplementedCommand);
     __TEXPP_SET_COMMAND("inputlineno", UnimplementedCommand);
     __TEXPP_SET_COMMAND("badness", UnimplementedCommand);
     __TEXPP_SET_COMMAND("lastkern", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ht", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("wd", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("dp", UnimplementedCommand);
+    //__TEXPP_SET_COMMAND("ht", UnimplementedCommand);
+    //__TEXPP_SET_COMMAND("wd", UnimplementedCommand);
+    //__TEXPP_SET_COMMAND("dp", UnimplementedCommand);
     __TEXPP_SET_COMMAND("lastskip", UnimplementedCommand);
     __TEXPP_SET_COMMAND("global", UnimplementedCommand);
     __TEXPP_SET_COMMAND("long", UnimplementedCommand);
