@@ -203,8 +203,6 @@ class python_file_buffer : public std::basic_streambuf<char>
         pos_of_read_buffer_end_in_py_file(0),
         pos_of_write_buffer_end_in_py_file(buffer_size)
     {
-        std::cout << "python_file_buffer():" << (long int)(this) << std::endl;
-
       if (py_write != python::object()) {
         // C-like string to make debugging easier
         write_buffer = new char[buffer_size + 1];
@@ -226,7 +224,6 @@ class python_file_buffer : public std::basic_streambuf<char>
 
     /// Mundane destructor freeing the allocated resources
     virtual ~python_file_buffer() {
-        std::cout << "~python_file_buffer():" << (long int)(this) << std::endl;
       this->sync();
       if (write_buffer) delete[] write_buffer;
     }

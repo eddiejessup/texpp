@@ -30,4 +30,5 @@ if(BOOST_PYTHON_FOUND)
 endif(BOOST_PYTHON_FOUND)
 
 add_subdirectory(tests)
+add_subdirectory(hrefkeywords)
 
