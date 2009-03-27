@@ -1,5 +1,12 @@
 #summary Summary of implemented TeX features.
 
+=Introduction=
+Currently !TeXpp implements all TeX syntax rules from !TeXbook (chapter 24) except \futurelet, \read and <macro assignment>. However not all concrete commands are implemented (the most up-to-date statistic about it can be found in texpp/base/base.cc).
+
+Macro expansion is still NOT implemented, but I am working on it.
+
+=Details=
+
 || *Command*     || *Implemented?* ||
 || lexer         || yes ||
 || context       || yes ||
