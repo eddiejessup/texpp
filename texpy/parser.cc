@@ -60,6 +60,9 @@ public:
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Node_treeRepr_overloads, treeRepr, 0, 1)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
+    Parser_parseGroup_overloads, parseGroup, 1, 2)
+
 void export_node()
 {
     using namespace boost::python;
@@ -104,7 +107,7 @@ void export_parser()
 
     export_node();
 
-    class_<ParserWrap, boost::noncopyable >("Parser",
+    scope scopeParser = class_<ParserWrap, boost::noncopyable >("Parser",
             init<std::string, const std::auto_ptr<std::istream>&, bool>())
         .def(init<std::string, const std::auto_ptr<std::istream>&>())
 
@@ -115,6 +118,10 @@ void export_parser()
         .def("peekToken", &ParserWrap::peekToken0)
         .def("nextToken", &Parser::nextToken)
         .def("nextToken", &ParserWrap::nextToken0)
+
+        // parse*
+        .def("parseGroup", &Parser::parseGroup,
+            Parser_parseGroup_overloads())
 
         // Symbols
         .def("symbol", (const any& (Parser::*)(const string&, bool) const)(
@@ -134,6 +141,20 @@ void export_parser()
         .def("beginGroup", &Parser::beginGroup)
         .def("endGroup", &Parser::endGroup)
 
+        ;
+
+    enum_<Parser::Mode>("Mode")
+        .value("VERTICAL", Parser::VERTICAL)
+        .value("RVERTICAL", Parser::RVERTICAL)
+        .value("HORIZONTAL", Parser::HORIZONTAL)
+        .value("RHORIZONTAL", Parser::RHORIZONTAL)
+        .value("MATH", Parser::MATH)
+        ;
+
+    enum_<Parser::GroupType>("GroupType")
+        .value("GROUP_NORMAL", Parser::GROUP_NORMAL)
+        .value("GROUP_MATH", Parser::GROUP_MATH)
+        .value("GROUP_CUSTOM", Parser::GROUP_CUSTOM)
         ;
 
 }

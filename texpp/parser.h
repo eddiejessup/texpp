@@ -94,7 +94,8 @@ public:
     enum Mode { VERTICAL, HORIZONTAL,
                 RVERTICAL, RHORIZONTAL,
                 MATH };
-    enum GroupType { GROUP_NORMAL, GROUP_MATH };
+    enum GroupType { GROUP_DOCUMENT, GROUP_NORMAL,
+                     GROUP_MATH, GROUP_CUSTOM };
 
     Parser(const string& fileName, std::istream* file,
             bool interactive = false,
@@ -124,8 +125,8 @@ public:
     //////// Parse helpers
     bool helperIsImplicitCharacter(Token::CatCode catCode);
 
-    Node::ptr parseGroup(bool parseBeginEnd = true,
-                GroupType groupType = GROUP_NORMAL);
+    Node::ptr parseGroup(GroupType groupType,
+                                bool parseBeginEnd = true);
 
     Node::ptr invokeCommand(Command::ptr command);
 
@@ -190,6 +191,9 @@ public:
     void beginGroup();
     void endGroup();
 
+    void beginCustomGroup() { m_customGroupBegin = true; beginGroup(); }
+    void endCustomGroup() { endGroup(); m_customGroupEnd = true; }
+
     //////// Others
     shared_ptr<Logger> logger() { return m_logger; }
     shared_ptr<Lexer> lexer() { return m_lexer; }
@@ -228,6 +232,9 @@ protected:
     size_t          m_lineNo;
     Mode            m_mode;
     std::set<string> m_activePrefixes;
+
+    bool    m_customGroupBegin;
+    bool    m_customGroupEnd;
 
     static any EMPTY_ANY;
 };

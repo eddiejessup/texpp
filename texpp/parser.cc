@@ -1290,7 +1290,7 @@ Node::ptr Parser::parseTextWord()
     return node;
 }
 
-Node::ptr Parser::parseGroup(bool parseBeginEnd, GroupType groupType)
+Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
 {
     Node::ptr node(new Node("group"));
     if(parseBeginEnd) {
@@ -1353,6 +1353,16 @@ Node::ptr Parser::parseGroup(bool parseBeginEnd, GroupType groupType)
                 node->appendChild("error_unknown_control",
                                                 parseToken());
             }
+            if(m_customGroupBegin) {
+                m_customGroupBegin = false;
+                node->appendChild("custom_group",
+                        parseGroup(GROUP_CUSTOM, false));
+            }
+            if(m_customGroupEnd) {
+                m_customGroupEnd = false;
+                if(groupType == GROUP_CUSTOM)
+                    break;
+            }
 
         } else if(peekToken()->isCharacterCat(Token::CC_LETTER)) {
             node->appendChild("text_word", parseTextWord());
@@ -1367,7 +1377,7 @@ Node::ptr Parser::parseGroup(bool parseBeginEnd, GroupType groupType)
 
         } else if(peekToken()->isCharacterCat(Token::CC_BGROUP)) {
             beginGroup();
-            node->appendChild("group", parseGroup());
+            node->appendChild("group", parseGroup(GROUP_NORMAL));
             
         } else if(peekToken()->isCharacterCat(Token::CC_EGROUP)) {
             m_logger->log(Logger::ERROR, "Too many }'s",
@@ -1380,7 +1390,7 @@ Node::ptr Parser::parseGroup(bool parseBeginEnd, GroupType groupType)
             beginGroup();
             Mode prevMode = mode();
             setMode(MATH);
-            node->appendChild("inline_math", parseGroup(true, GROUP_MATH));
+            node->appendChild("inline_math", parseGroup(GROUP_MATH, true));
             if(prevMode == RHORIZONTAL || prevMode == RVERTICAL)
                 setMode(RHORIZONTAL);
             else
@@ -1396,7 +1406,7 @@ Node::ptr Parser::parseGroup(bool parseBeginEnd, GroupType groupType)
 
 Node::ptr Parser::parse()
 {
-    Node::ptr document = parseGroup(false);
+    Node::ptr document = parseGroup(GROUP_DOCUMENT, false);
     document->setType("document");
     
     // Some skipped tokens may still exists even when

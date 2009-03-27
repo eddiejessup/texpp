@@ -38,26 +38,25 @@ public:
         return Cmd::texRepr(escape);
     }
 
-    /*
-    bool parseArgs(Parser& p, Node::ptr n) {
-        if(override f = this->get_override("parseArgs"))
+    bool invoke(Parser& p, Node::ptr n) {
+        if(override f = this->get_override("invoke"))
             return f(p, n);
-        return Cmd::parseArgs(p, n);
+        return Cmd::invoke(p, n);
     }
 
-    bool default_parseArgs(Parser& p, Node::ptr n) {
-        return Cmd::parseArgs(p, n);
+    bool default_invoke(Parser& p, Node::ptr n) {
+        return Cmd::invoke(p, n);
     }
 
-    bool execute(Parser& p, Node::ptr n) {
-        if(override f = this->get_override("execute"))
-            return f(p, n);
-        return Cmd::execute(p, n);
+    bool checkPrefixes(Parser& p) {
+        if(override f = this->get_override("checkPrefixes"))
+            return f(p);
+        return Cmd::checkPrefixes(p);
     }
 
-    bool default_execute(Parser& p, Node::ptr n) {
-        return Cmd::execute(p, n);
-    }*/
+    bool default_checkPrefixes(Parser& p) {
+        return Cmd::checkPrefixes(p);
+    }
 };
 
 }}
@@ -70,8 +69,13 @@ inline void export_derived_command(const char* name)
 
     class_<CommandWrap<Cmd>, shared_ptr<Cmd>, _bases >(
            name, _init())
+        .def("__repr__", &Cmd::repr)
         .def("texRepr", &Cmd::texRepr,
                     &CommandWrap<Cmd>::default_texRepr)
+        .def("invoke", &Command::invoke,
+                    &CommandWrap<Cmd>::default_invoke)
+        .def("checkPrefixes", &Command::checkPrefixes,
+                    &CommandWrap<Cmd>::default_checkPrefixes)
         ;
 }
 
@@ -82,10 +86,15 @@ void export_command()
 
     class_<CommandWrap<Command>, shared_ptr<Command> >(
            "Command", init<std::string>())
+        .def("__repr__", &Command::repr)
         .def("name", &Command::name,
             return_value_policy<copy_const_reference>())
         .def("texRepr", &Command::texRepr,
                     &CommandWrap<Command>::default_texRepr)
+        .def("invoke", &Command::invoke,
+                    &CommandWrap<Command>::default_invoke)
+        .def("checkPrefixes", &Command::checkPrefixes,
+                    &CommandWrap<Command>::default_checkPrefixes)
         ;
 
     export_derived_command<TokenCommand, bases<Command>,
