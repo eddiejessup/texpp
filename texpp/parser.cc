@@ -227,7 +227,13 @@ void Parser::beginGroup()
 
 void Parser::endGroup()
 {
-    assert(m_groupLevel > 0);
+    if(m_groupLevel <= 0) {
+        m_logger->log(Logger::CRITICAL,
+            "Something really wrong: group level have reached zero!",
+            *this, lastToken());
+        return;
+    }
+    //assert(m_groupLevel > 0); //XXX!
     size_t symbolsStackLevels = m_symbolsStackLevels.empty() ? 0 :
                                 m_symbolsStackLevels.back();
     while(m_symbolsStack.size() > symbolsStackLevels) {
