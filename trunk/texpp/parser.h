@@ -95,7 +95,8 @@ public:
                 RVERTICAL, RHORIZONTAL,
                 MATH };
     enum GroupType { GROUP_DOCUMENT, GROUP_NORMAL,
-                     GROUP_MATH, GROUP_CUSTOM };
+                     GROUP_MATH, GROUP_MMATH,
+                     GROUP_CUSTOM };
 
     Parser(const string& fileName, std::istream* file,
             bool interactive = false,
@@ -131,6 +132,7 @@ public:
     Node::ptr parseCommand(Command::ptr command);
 
     Node::ptr parseToken();
+    Node::ptr parseMMathToken();
     Node::ptr parseControlSequence();
     Node::ptr parseCharacter(const string& type = string("character"));
 
