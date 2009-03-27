@@ -101,7 +101,7 @@ public:
             bool interactive = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
 
-    Parser(const string& fileName, std::auto_ptr<std::istream> file,
+    Parser(const string& fileName, shared_ptr<std::istream> file,
             bool interactive = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
 
@@ -128,7 +128,7 @@ public:
     Node::ptr parseGroup(GroupType groupType,
                                 bool parseBeginEnd = true);
 
-    Node::ptr invokeCommand(Command::ptr command);
+    Node::ptr parseCommand(Command::ptr command);
 
     Node::ptr parseToken();
     Node::ptr parseControlSequence();
@@ -231,6 +231,8 @@ protected:
 
     size_t          m_lineNo;
     Mode            m_mode;
+    GroupType       m_currentGroupType;
+
     std::set<string> m_activePrefixes;
 
     bool    m_customGroupBegin;

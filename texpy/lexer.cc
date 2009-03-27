@@ -19,8 +19,7 @@
 #include <boost/python.hpp>
 #include <texpp/lexer.h>
 
-#include <memory>
-
+/*
 namespace texpp {
 class Lexer_: public Lexer {
 public:
@@ -29,17 +28,17 @@ public:
         : Lexer(fileName, const_cast<std::auto_ptr<std::istream>&>(file),
                         interactive, saveLines) {}
 };
-}
+}*/
 
 void export_lexer()
 {
     using namespace boost::python;
     using namespace texpp;
 
-    class_<Lexer_, std::auto_ptr<Lexer_> >("Lexer",
-            init<std::string, const std::auto_ptr<std::istream>&,bool,bool>())
-        .def(init<std::string, const std::auto_ptr<std::istream>&,bool>())
-        .def(init<std::string, const std::auto_ptr<std::istream>&>())
+    class_<Lexer, shared_ptr<Lexer> >("Lexer",
+            init<std::string, shared_ptr<std::istream>,bool,bool>())
+        .def(init<std::string, shared_ptr<std::istream>,bool>())
+        .def(init<std::string, shared_ptr<std::istream> >())
         .def("nextToken", &Lexer::nextToken)
         .def("fileName", &Lexer::fileName, 
                 return_value_policy<copy_const_reference>())

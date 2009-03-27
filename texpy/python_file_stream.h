@@ -447,7 +447,7 @@ namespace details {
   class gen_stream : public BaseType
   {
     public:
-      gen_stream(std::auto_ptr<python_file_buffer> sb)
+      gen_stream(boost::shared_ptr<python_file_buffer> sb)
         : BaseType(sb.get())
       {
         m_sb = sb;
@@ -457,7 +457,7 @@ namespace details {
       {
       }
      protected:
-        std::auto_ptr<python_file_buffer> m_sb;
+        boost::shared_ptr<python_file_buffer> m_sb;
     };
 }
 

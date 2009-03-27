@@ -50,7 +50,7 @@
 #include <boost/python/def.hpp>
 #include <boost/python/handle.hpp>
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 #include "python_file_stream.h"
 
@@ -66,7 +66,7 @@ namespace boost_adaptbx { namespace file_conversion {
       converter::registry::push_back(
         &convertible,
         &construct,
-        type_id< std::auto_ptr<python_file_buffer> >());
+        type_id< boost::shared_ptr<python_file_buffer> >());
     }
 
     static void *convertible(PyObject *obj_ptr) {
@@ -86,10 +86,10 @@ namespace boost_adaptbx { namespace file_conversion {
     {
       using namespace boost::python;
       typedef converter::rvalue_from_python_storage<
-            std::auto_ptr<python_file_buffer> > rvalue_t;
+            boost::shared_ptr<python_file_buffer> > rvalue_t;
       void *storage = ((rvalue_t *) data)->storage.bytes;
       object python_file((handle<>(borrowed(obj_ptr))));
-      new (storage) std::auto_ptr<python_file_buffer>(
+      new (storage) boost::shared_ptr<python_file_buffer>(
             new python_file_buffer(python_file));
       data->convertible = storage;
     }
@@ -104,7 +104,7 @@ namespace boost_adaptbx { namespace file_conversion {
       converter::registry::push_back(
         &convertible,
         &construct,
-        type_id< std::auto_ptr<_stream> >());
+        type_id< boost::shared_ptr<_stream> >());
     }
 
     static void *convertible(PyObject *obj_ptr) {
@@ -125,14 +125,14 @@ namespace boost_adaptbx { namespace file_conversion {
     {
       using namespace boost::python;
       typedef converter::rvalue_from_python_storage<
-            std::auto_ptr<_stream> > rvalue_t;
+            boost::shared_ptr<_stream> > rvalue_t;
       void *storage = ((rvalue_t *) data)->storage.bytes;
       if(obj_ptr == Py_None) {
-          new (storage) std::auto_ptr<_stream>();
+          new (storage) boost::shared_ptr<_stream>();
       } else {
           object python_file((handle<>(borrowed(obj_ptr))));
-          new (storage) std::auto_ptr<_stream>(
-                new _realstream(std::auto_ptr<python_file_buffer>(
+          new (storage) boost::shared_ptr<_stream>(
+                new _realstream(boost::shared_ptr<python_file_buffer>(
                     new python_file_buffer(python_file))));
       }
       data->convertible = storage;
@@ -146,7 +146,7 @@ namespace boost_adaptbx { namespace file_conversion {
 
     static void wrap() {
       using namespace boost::python;
-      class_<wt, std::auto_ptr<wt>, boost::noncopyable>("buffer", no_init)
+      class_<wt, boost::shared_ptr<wt>, boost::noncopyable>("buffer", no_init)
         .def_readwrite("size", wt::buffer_size,
                        "The size of the buffer sitting "
                        "between a Python file object and a C++ stream.")

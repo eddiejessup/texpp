@@ -30,7 +30,7 @@ using namespace texpp;
 
 shared_ptr<Lexer> create_lexer(const string& input)
 {
-    std::auto_ptr<std::istream> ifile(new std::istringstream(input));
+    shared_ptr<std::istream> ifile(new std::istringstream(input));
     return shared_ptr<Lexer>(new Lexer("", ifile, false));
 }
 

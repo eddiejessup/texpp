@@ -115,7 +115,8 @@ string Node::source() const
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false),
-      m_lineNo(1), m_mode(VERTICAL)
+      m_lineNo(1), m_mode(VERTICAL), m_currentGroupType(GROUP_DOCUMENT),
+      m_customGroupBegin(false), m_customGroupEnd(false)
 {
     if(!m_logger)
         m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
@@ -125,10 +126,11 @@ Parser::Parser(const string& fileName, std::istream* file,
     base::initSymbols(*this);
 }
 
-Parser::Parser(const string& fileName, std::auto_ptr<std::istream> file,
+Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false),
-      m_lineNo(1), m_mode(VERTICAL)
+      m_lineNo(1), m_mode(VERTICAL), m_currentGroupType(GROUP_DOCUMENT),
+      m_customGroupBegin(false), m_customGroupEnd(false)
 {
     if(!m_logger)
         m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
@@ -383,7 +385,7 @@ bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
     return false;
 }
 
-Node::ptr Parser::invokeCommand(Command::ptr command)
+Node::ptr Parser::parseCommand(Command::ptr command)
 {
     Node::ptr node(new Node("command"));
     node->appendChild("control_token", parseToken());
@@ -1292,6 +1294,9 @@ Node::ptr Parser::parseTextWord()
 
 Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
 {
+    GroupType prevGroupType = m_currentGroupType;
+    m_currentGroupType = groupType;
+
     Node::ptr node(new Node("group"));
     if(parseBeginEnd) {
         bool ok = false;
@@ -1346,7 +1351,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
         if(peekToken()->isControl()) {
             Command::ptr cmd = symbol(peekToken(), Command::ptr());
             if(cmd) {
-                node->appendChild("control", invokeCommand(cmd));
+                node->appendChild("control", parseCommand(cmd));
             } else {
                 m_logger->log(Logger::ERROR, "Undefined control sequence",
                                                 *this, lastToken());
@@ -1401,6 +1406,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
         }
     }
 
+    m_currentGroupType = prevGroupType;
     return node;
 }
 
