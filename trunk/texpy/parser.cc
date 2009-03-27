@@ -26,6 +26,7 @@
 
 #include "std_pair.h"
 
+/*
 namespace texpp { namespace {
 
 using boost::python::object;
@@ -37,9 +38,6 @@ public:
             shared_ptr<Logger> logger = shared_ptr<Logger>())
         : Parser(fileName, const_cast<std::auto_ptr<std::istream>&>(file),
                     interactive, logger) {}
-
-    Token::ptr peekToken0() { return Parser::peekToken(); }
-    Token::ptr nextToken0() { return Parser::nextToken(); }
 
     const any& symbol0(const string& name) const {
         return Parser::symbolAny(name);
@@ -53,12 +51,19 @@ public:
     void setSymbol1(Token::ptr token, const any& value) {
         Parser::setSymbol(token, value);
     }
+
+    bool invokeCommand(Command::ptr cmd, Node::ptr node) {
+        return cmd->invoke(*this, node);
+    }
 };
 
-}}
+}}*/
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Node_treeRepr_overloads, treeRepr, 0, 1)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
+    Parser_setSymbol_overloads, setSymbol, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Parser_parseGroup_overloads, parseGroup, 1, 2)
@@ -107,23 +112,23 @@ void export_parser()
 
     export_node();
 
-    scope scopeParser = class_<ParserWrap, boost::noncopyable >("Parser",
-            init<std::string, const std::auto_ptr<std::istream>&, bool>())
-        .def(init<std::string, const std::auto_ptr<std::istream>&>())
+    scope scopeParser = class_<Parser, boost::noncopyable >("Parser",
+            init<std::string, shared_ptr<std::istream>, bool, shared_ptr<Logger> >())
+        .def(init<std::string, shared_ptr<std::istream>, bool>())
+        .def(init<std::string, shared_ptr<std::istream> >())
 
         .def("parse", &Parser::parse)
 
         // Tokens
         .def("peekToken", &Parser::peekToken)
-        .def("peekToken", &ParserWrap::peekToken0)
         .def("nextToken", &Parser::nextToken)
-        .def("nextToken", &ParserWrap::nextToken0)
 
         // parse*
         .def("parseGroup", &Parser::parseGroup,
             Parser_parseGroup_overloads())
 
         // Symbols
+        /*
         .def("symbol", (const any& (Parser::*)(const string&, bool) const)(
                 &Parser::symbolAny), return_value_policy<return_by_value>())
         .def("symbol", (const any& (Parser::*)(Token::ptr, bool) const)(
@@ -132,12 +137,15 @@ void export_parser()
                 return_value_policy<return_by_value>())
         .def("symbol", &ParserWrap::symbol1,
                 return_value_policy<return_by_value>())
+        */
         .def("setSymbol", (void (Parser::*)(const string&, const any&, bool))
-                        (&Parser::setSymbol))
+                        (&Parser::setSymbol),
+                        Parser_setSymbol_overloads())
         .def("setSymbol", (void (Parser::*)(Token::ptr, const any&, bool))
-                        (&Parser::setSymbol))
-        .def("setSymbol", &ParserWrap::setSymbol0)
-        .def("setSymbol", &ParserWrap::setSymbol1)
+                        (&Parser::setSymbol),
+                        Parser_setSymbol_overloads())
+        //.def("setSymbol", &ParserWrap::setSymbol0)
+        //.def("setSymbol", &ParserWrap::setSymbol1)
         .def("beginGroup", &Parser::beginGroup)
         .def("endGroup", &Parser::endGroup)
 

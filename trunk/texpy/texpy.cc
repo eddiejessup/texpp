@@ -29,6 +29,7 @@ void export_token();
 void export_lexer();
 void export_command();
 void export_parser();
+void export_logger();
 
 
 BOOST_PYTHON_MODULE(texpy)
@@ -42,5 +43,6 @@ BOOST_PYTHON_MODULE(texpy)
     export_lexer();
     export_command();
     export_parser();
+    export_logger();
 }
 

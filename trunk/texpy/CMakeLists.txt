@@ -8,6 +8,7 @@ set(libtexpy_SOURCES
     lexer.cc
     command.cc
     parser.cc
+    logger.cc
     texpy.cc
 )
 

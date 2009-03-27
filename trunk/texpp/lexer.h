@@ -34,7 +34,7 @@ class Lexer
 public:
     Lexer(const string& fileName, std::istream* file,
                 bool interactive = false, bool saveLines = false);
-    Lexer(const string& fileName, std::auto_ptr<std::istream> file,
+    Lexer(const string& fileName, shared_ptr<std::istream> file,
                 bool interactive = false, bool saveLines = false);
     ~Lexer();
 
@@ -71,6 +71,8 @@ protected:
         ST_MIDDLE = 4
     };
 
+    shared_ptr<std::istream> m_fileShared;
+
     std::istream*   m_file;
     string  m_fileName;
 
@@ -91,7 +93,6 @@ protected:
 
     bool    m_interactive;
     bool    m_saveLines;
-    bool    m_ownFile;
 
     vector<string> m_lines;
 };

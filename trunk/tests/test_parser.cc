@@ -32,7 +32,7 @@ using namespace texpp;
 class TestLogger: public Logger
 {
 public:
-    bool log(int, const string& message,
+    bool log(Level, const string& message,
                 Parser&, shared_ptr<Token> token) {
         logMessages.push_back(message);
         logPositions.push_back(
@@ -45,7 +45,7 @@ public:
 
 shared_ptr<Parser> create_parser(const string& input)
 {
-    std::auto_ptr<std::istream> ifile(new std::istringstream(input));
+    shared_ptr<std::istream> ifile(new std::istringstream(input));
     return shared_ptr<Parser>(
         new Parser("", ifile, false, shared_ptr<Logger>(new TestLogger)));
 }

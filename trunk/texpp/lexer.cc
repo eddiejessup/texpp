@@ -24,29 +24,30 @@ namespace texpp {
 
 Lexer::Lexer(const string& fileName, std::istream* file,
                 bool interactive, bool saveLines)
-    : m_file(file), m_fileName(fileName),
+    : m_fileShared(), m_file(file),
+      m_fileName(fileName),
       m_lineNo(0), m_charPos(0), m_charEnd(0),
       m_state(ST_NEW_LINE), m_char(0), m_catCode(Token::CC_NONE),
-      m_interactive(interactive), m_saveLines(saveLines), m_ownFile(false)
+      m_interactive(interactive), m_saveLines(saveLines)
 {
-    if(!m_file) { m_file = &std::cin; m_ownFile = false; }
+    if(!m_file) { m_file = &std::cin; }
     init();
 }
 
-Lexer::Lexer(const string& fileName, std::auto_ptr<std::istream> file,
+Lexer::Lexer(const string& fileName, shared_ptr<std::istream> file,
                     bool interactive, bool saveLines)
-    : m_file(file.release()), m_fileName(fileName),
+    : m_fileShared(file), m_file(file.get()),
+      m_fileName(fileName),
       m_lineNo(0), m_charPos(0), m_charEnd(0),
       m_state(ST_NEW_LINE), m_char(0), m_catCode(Token::CC_NONE),
-      m_interactive(interactive), m_saveLines(saveLines), m_ownFile(true)
+      m_interactive(interactive), m_saveLines(saveLines)
 {
-    if(!m_file) { m_file = &std::cin; m_ownFile = false; }
+    if(!m_file) { m_file = &std::cin; }
     init();
 }
 
 Lexer::~Lexer()
 {
-    if(m_ownFile) delete m_file;
 }
 
 void Lexer::init()

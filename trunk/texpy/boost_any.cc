@@ -19,6 +19,8 @@
 #include <boost/python.hpp>
 #include <boost/any.hpp>
 
+#include <texpp/command.h>
+
 #include <string>
 
 namespace {
@@ -28,6 +30,8 @@ namespace {
     static PyObject* convert(const boost::any& s)
     {
       using namespace boost::python;
+      using namespace texpp;
+
       if(s.empty())
           return incref(object().ptr());
       else if(s.type() == typeid(int))
@@ -36,6 +40,8 @@ namespace {
           return incref(object(*boost::unsafe_any_cast<std::string>(&s)).ptr());
       else if(s.type() == typeid(object))
           return incref(boost::unsafe_any_cast<object>(&s)->ptr());
+      else if(s.type() == typeid(Command::ptr))
+          return incref(object(boost::unsafe_any_cast<Command::ptr>(&s)).ptr());
       else
           throw std::runtime_error("unknown boost::any type"); // TODO
     }
@@ -61,21 +67,33 @@ namespace {
       boost::python::converter::rvalue_from_python_stage1_data *data)
     {
       using namespace boost::python;
+      using namespace texpp;
+
       typedef converter::rvalue_from_python_storage<
                             boost::any > rvalue_t;
       void *storage = ((rvalue_t *) data)->storage.bytes;
 
       if(obj_ptr == Py_None) {
+          // Empty
           new (storage) boost::any();
       } else if(PyInt_Check(obj_ptr)) {
+          // Int
           new (storage) boost::any(int(PyInt_AS_LONG(obj_ptr)));
       } else if(PyString_Check(obj_ptr)) {
+          // String
           new (storage) boost::any(std::string(
             PyString_AS_STRING(obj_ptr), PyString_GET_SIZE(obj_ptr) ));
       } else {
+          // try extract Command
           object any_object((handle<>(borrowed(obj_ptr))));
-          new (storage) boost::any(any_object);
-          //      new python_file_buffer(python_file));
+
+          extract<Command::ptr> cmd(any_object);
+          if(cmd.check()) {
+              new (storage) boost::any(Command::ptr(cmd));
+          } else {
+              // fallback
+              new (storage) boost::any(any_object);
+          }
       }
 
       data->convertible = storage;

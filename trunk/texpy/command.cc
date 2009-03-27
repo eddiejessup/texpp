@@ -28,29 +28,32 @@ template<class Cmd>
 class CommandWrap: public Cmd, public wrapper<Cmd>
 {
 public:
+    CommandWrap(const string& name = string())
+        : Cmd(name) {}
+
     string texRepr(char escape) const {
         if(override f = this->get_override("texRepr"))
             return f(escape);
-        return Cmd::texRepr();
+        return this->Cmd::texRepr();
     }
 
     string default_texRepr(char escape) const {
-        return Cmd::texRepr(escape);
+        return this->Cmd::texRepr(escape);
     }
 
     bool invoke(Parser& p, Node::ptr n) {
         if(override f = this->get_override("invoke"))
-            return f(p, n);
-        return Cmd::invoke(p, n);
+            return f(boost::ref(p), n);
+        return this->Cmd::invoke(p, n);
     }
 
     bool default_invoke(Parser& p, Node::ptr n) {
-        return Cmd::invoke(p, n);
+        return this->Cmd::invoke(p, n);
     }
 
     bool checkPrefixes(Parser& p) {
         if(override f = this->get_override("checkPrefixes"))
-            return f(p);
+            return f(boost::ref(p));
         return Cmd::checkPrefixes(p);
     }
 
@@ -84,7 +87,7 @@ void export_command()
     using namespace boost::python;
     using namespace texpp;
 
-    class_<CommandWrap<Command>, shared_ptr<Command> >(
+    class_<CommandWrap<Command>, shared_ptr< CommandWrap<Command> >, boost::noncopyable >(
            "Command", init<std::string>())
         .def("__repr__", &Command::repr)
         .def("name", &Command::name,

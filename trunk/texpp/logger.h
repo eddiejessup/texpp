@@ -31,24 +31,24 @@ class Logger
 public:
     typedef shared_ptr<Logger> ptr;
 
-    enum { MESSAGE = 0, SHOW = 30,
+    enum Level { MESSAGE = 0, SHOW = 30,
            ERROR = 40, CRITICAL = 50,
            UNIMPLEMENTED = 100 };
 
     Logger() {}
     virtual ~Logger() {}
 
-    const string& levelName(int level) const;
+    const string& levelName(Level level) const;
     string tokenLines(Parser& parser, shared_ptr<Token> token) const;
 
-    virtual bool log(int level, const string& message,
+    virtual bool log(Level level, const string& message,
                     Parser& parser, shared_ptr<Token> token) = 0;
 };
 
 class NullLogger: public Logger
 {
 public:
-    bool log(int, const string&, Parser&, shared_ptr<Token>) { return true; }
+    bool log(Level, const string&, Parser&, shared_ptr<Token>) { return true; }
 };
 
 class ConsoleLogger: public Logger
@@ -56,7 +56,7 @@ class ConsoleLogger: public Logger
 public:
     ConsoleLogger() {}
     ~ConsoleLogger();
-    bool log(int level, const string& message,
+    bool log(Level level, const string& message,
                 Parser& parser, shared_ptr<Token> token);
 protected:
     int m_atNewline;

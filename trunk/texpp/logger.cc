@@ -34,7 +34,7 @@ const int MAX_LINE_CHARS = 1000;
 
 namespace texpp {
 
-const string& Logger::levelName(int level) const
+const string& Logger::levelName(Level level) const
 {
     if(level <= MESSAGE) return loggerLevelNames[0];
     else if(level <= SHOW) return loggerLevelNames[1];
@@ -70,7 +70,7 @@ ConsoleLogger::~ConsoleLogger()
     if(!m_atNewline) std::cout << std::endl;
 }
 
-bool ConsoleLogger::log(int level, const string& message,
+bool ConsoleLogger::log(Level level, const string& message,
                             Parser& parser, Token::ptr token)
 {
     std::ostringstream r;
