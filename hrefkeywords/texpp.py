@@ -3,8 +3,6 @@
 import sys
 import texpy
 
-import latexstubs
-
 def main():
     """ Main routine """
     # Define command line options

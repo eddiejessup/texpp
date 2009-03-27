@@ -1327,7 +1327,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
                 // TODO: report error
                 Node::ptr group_end(new Node("group_end"));
                 node->appendChild("group_end", parseToken());
-                endGroup();
+                //endGroup();
             }
             break;
         }
@@ -1336,13 +1336,13 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             if(groupType == GROUP_NORMAL) {
                 if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
                     node->appendChild("group_end", parseToken());
-                    endGroup();
+                    //endGroup();
                     break;
                 }
             } else if(groupType == GROUP_MATH) {
                 if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
                     node->appendChild("group_end", parseToken());
-                    endGroup();
+                    //endGroup();
                     break;
                 }
             }
@@ -1350,19 +1350,30 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
 
         if(peekToken()->isControl()) {
             Command::ptr cmd = symbol(peekToken(), Command::ptr());
+            Node::ptr cmdNode;
             if(cmd) {
-                node->appendChild("control", parseCommand(cmd));
+                cmdNode = parseCommand(cmd);
+                //node->appendChild("control", parseCommand(cmd));
             } else {
                 m_logger->log(Logger::ERROR, "Undefined control sequence",
                                                 *this, lastToken());
-                node->appendChild("error_unknown_control",
-                                                parseToken());
+                cmdNode = parseToken();
+                //node->appendChild("error_unknown_control",
+                //                                parseToken());
             }
             if(m_customGroupBegin) {
                 m_customGroupBegin = false;
-                node->appendChild("custom_group",
-                        parseGroup(GROUP_CUSTOM, false));
+                string type = m_customGroupType;
+                Node::ptr customGroup = parseGroup(GROUP_CUSTOM, false);
+                customGroup->setType(type);
+                customGroup->children().insert(customGroup->children().begin(),
+                                                std::make_pair("control", cmdNode));
+                node->appendChild("custom_group", customGroup);
+            } else {
+                node->appendChild(cmd ? "control" : "error_unknown_control",
+                                    cmdNode);
             }
+
             if(m_customGroupEnd) {
                 m_customGroupEnd = false;
                 if(groupType == GROUP_CUSTOM)
@@ -1383,6 +1394,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
         } else if(peekToken()->isCharacterCat(Token::CC_BGROUP)) {
             beginGroup();
             node->appendChild("group", parseGroup(GROUP_NORMAL));
+            endGroup();
             
         } else if(peekToken()->isCharacterCat(Token::CC_EGROUP)) {
             m_logger->log(Logger::ERROR, "Too many }'s",
@@ -1400,6 +1412,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
                 setMode(RHORIZONTAL);
             else
                 setMode(HORIZONTAL);
+            endGroup();
             
         } else {
             node->appendChild("other_token", parseToken());

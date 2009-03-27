@@ -63,6 +63,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Node_treeRepr_overloads, treeRepr, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
+    Parser_symbol_overloads, symbol, 1, 2)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Parser_setSymbol_overloads, setSymbol, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
@@ -128,16 +131,13 @@ void export_parser()
             Parser_parseGroup_overloads())
 
         // Symbols
-        /*
         .def("symbol", (const any& (Parser::*)(const string&, bool) const)(
-                &Parser::symbolAny), return_value_policy<return_by_value>())
+                        &Parser::symbolAny),
+                        return_value_policy<return_by_value>(),
+                        Parser_symbol_overloads())
         .def("symbol", (const any& (Parser::*)(Token::ptr, bool) const)(
-                &Parser::symbolAny), return_value_policy<return_by_value>())
-        .def("symbol", &ParserWrap::symbol0,
-                return_value_policy<return_by_value>())
-        .def("symbol", &ParserWrap::symbol1,
-                return_value_policy<return_by_value>())
-        */
+                        &Parser::symbolAny), return_value_policy<return_by_value>(),
+                        Parser_symbol_overloads())
         .def("setSymbol", (void (Parser::*)(const string&, const any&, bool))
                         (&Parser::setSymbol),
                         Parser_setSymbol_overloads())
@@ -148,6 +148,8 @@ void export_parser()
         //.def("setSymbol", &ParserWrap::setSymbol1)
         .def("beginGroup", &Parser::beginGroup)
         .def("endGroup", &Parser::endGroup)
+        .def("beginCustomGroup", &Parser::beginCustomGroup)
+        .def("endCustomGroup", &Parser::endCustomGroup)
 
         ;
 
@@ -160,9 +162,9 @@ void export_parser()
         ;
 
     enum_<Parser::GroupType>("GroupType")
-        .value("GROUP_NORMAL", Parser::GROUP_NORMAL)
-        .value("GROUP_MATH", Parser::GROUP_MATH)
-        .value("GROUP_CUSTOM", Parser::GROUP_CUSTOM)
+        .value("NORMAL", Parser::GROUP_NORMAL)
+        .value("MATH", Parser::GROUP_MATH)
+        .value("CUSTOM", Parser::GROUP_CUSTOM)
         ;
 
 }
