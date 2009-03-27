@@ -3,6 +3,8 @@
 import sys
 import texpy
 
+import latexstubs
+
 def loadConcepts(conceptsfile):
     """ Loads concepts from the files
         and arranges them in a dictionary """
@@ -37,14 +39,21 @@ def loadConcepts(conceptsfile):
 def parseDocument(filename, fileobj):
     """ Parses the document using TeXpp """
     parser = texpy.Parser(filename, fileobj)
+
     parser.setSymbol('\\end', None)
     parser.setSymbol('catcode'+str(ord('{')), 1)
     parser.setSymbol('catcode'+str(ord('}')), 2)
     parser.setSymbol('catcode'+str(ord('$')), 3)
+
+    parser.setSymbol("\\begin", latexstubs.BeginCommand("\\begin"))
+    parser.setSymbol("\\end", latexstubs.EndCommand("\\end"))
+
     return parser.parse()
 
 def checkWhitelist(node):
-    return False
+    return node.type() in ('environment_document',
+                           'environment_itemize',
+                           'environment_enumerate')
 
 def doReplace(node, macro, concepts):
     """ Recursively replaces concepts in the node and returns
@@ -103,11 +112,11 @@ def doReplace(node, macro, concepts):
 
         # Walk recursively if whitelisted
         elif checkWhitelist(child):
-            (src1, stats1) = doReplace(node.child(n), macro, concepts)
+            (src1, stats1) = doReplace(child, macro, concepts)
             src += src1
-            for w,n in stats1.iteritems():
+            for w,c in stats1.iteritems():
                 stats.setdefault(w, 0)
-                stats[w] += n
+                stats[w] += c
 
         # Just grab the source otherwise
         else:

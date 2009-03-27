@@ -141,11 +141,12 @@ bool BoxSpec::invokeOperation(Parser& parser,
 
         parser.beginGroup();
         parser.setMode(m_mode);
-
         Node::ptr group = parser.parseGroup(Parser::GROUP_NORMAL);
+        parser.setMode(prevMode);
+        parser.endGroup();
+
         node->appendChild("content", group);
 
-        parser.setMode(prevMode);
 
         node->setValue(group);
         return true;

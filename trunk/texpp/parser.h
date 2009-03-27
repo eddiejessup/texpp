@@ -191,7 +191,8 @@ public:
     void beginGroup();
     void endGroup();
 
-    void beginCustomGroup() { m_customGroupBegin = true; beginGroup(); }
+    void beginCustomGroup(const string& type) {
+        m_customGroupBegin = true; m_customGroupType = type; beginGroup(); }
     void endCustomGroup() { endGroup(); m_customGroupEnd = true; }
 
     //////// Others
@@ -235,6 +236,7 @@ protected:
 
     std::set<string> m_activePrefixes;
 
+    string  m_customGroupType;
     bool    m_customGroupBegin;
     bool    m_customGroupEnd;
 
