@@ -32,6 +32,13 @@ public:
     bool expand(Parser& parser, shared_ptr<Node> node);
 };
 
+class Romannumeral: public Macro
+{
+public:
+    explicit Romannumeral(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 

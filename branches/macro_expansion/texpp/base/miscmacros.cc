@@ -36,6 +36,30 @@ bool NumberMacro::expand(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
+bool Romannumeral::expand(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+
+    static int BASIC_VALUES[] = { 1000, 900, 500, 400, 100, 90,
+             50, 40, 10, 9, 5, 4, 1 };
+    static const char* BASIC_ROMAN_NUMBERS[] = { "m", "cm", "d", "cd",
+             "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i" };
+
+    string str;
+    int num = number->value(int(0));
+    for(size_t i = 0; i < sizeof(BASIC_VALUES)/sizeof(int); ++i) {
+        while(num >= BASIC_VALUES[i]) {
+            str += BASIC_ROMAN_NUMBERS[i];
+            num -= BASIC_VALUES[i];
+        }
+    }
+
+    node->setValue(stringToTokens(str));
+
+    return true;
+}
+
 } // namespace base
 } // namespace texpp
 

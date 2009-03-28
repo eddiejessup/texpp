@@ -1,5 +1,18 @@
+\catcode`{=1
+\catcode`}=2
 
 \count\number--1=10
 \showthe\count1
+
+\number\relax
+
+\newlinechar=`@
+\message{~ \number--25@}
+\message{~ \number-25@}
+\message{~ \number\count1@}
+
+\message{~ \romannumeral--25@}
+\message{~ \romannumeral-25@}
+\message{~ \romannumeral\count1@}
 
 \end
