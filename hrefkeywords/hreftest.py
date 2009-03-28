@@ -116,6 +116,7 @@ def fix_latex_hyperref(filename, testhref=False):
     # Check wether hyperref is already included
     hyperref_found = False
     hyperref_re = re.compile(r'^([^%]*\\usepackage\s*)(?:\[([^]]*)\])?(\s*{\s*hyperref\s*})')
+    end_re = re.compile(r'^[^%]*\\end\s*{\s*document\s*}')
     for line in fobj:
         m = hyperref_re.match(line)
         if m:
@@ -126,11 +127,15 @@ def fix_latex_hyperref(filename, testhref=False):
                 line = hyperref_re.sub(r'\1[breaklinks]\3', line)
             hyperref_found = True
 
+        if not hyperref_found and end_re.match(line):
+            break
+
         dobj.write(line)
 
     if not hyperref_found:
         # We have to insert hyperref ourselfs
         fobj.seek(0)
+        dobj.seek(0)
         dobj.truncate()
         documentclass_re = re.compile(r'^[^%]*\\documentclass\s*([^]]*])?\s*{\s*[^}]*\s*}')
         for line in fobj:
