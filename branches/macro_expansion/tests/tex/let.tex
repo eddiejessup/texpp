@@ -1,0 +1,27 @@
+% control->control
+\let\x\relax
+\show\x
+
+\let\y=\relax
+\show\y
+
+\let\:a \show\:
+
+% redefine existing control
+\let\relax\z \show\relax
+
+% control->token
+\let\x aa \show\x
+\let\x 11 \show\x
+
+% active symbol
+\catcode`!=13
+\let!=\par
+\show!
+
+% errors
+\let=\x
+\let1=\x
+\let a=\x
+
+\end
