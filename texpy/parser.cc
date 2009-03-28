@@ -151,6 +151,7 @@ void export_parser()
         .def("beginCustomGroup", &Parser::beginCustomGroup)
         .def("endCustomGroup", &Parser::endCustomGroup)
 
+        .def("end", &Parser::end)
         ;
 
     enum_<Parser::Mode>("Mode")

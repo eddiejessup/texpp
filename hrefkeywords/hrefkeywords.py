@@ -40,20 +40,11 @@ def parseDocument(filename, fileobj):
     """ Parses the document using TeXpp """
     parser = texpy.Parser(filename, fileobj)
 
-    parser.setSymbol('\\end', None)
-    parser.setSymbol('catcode'+str(ord('{')), 1)
-    parser.setSymbol('catcode'+str(ord('}')), 2)
-    parser.setSymbol('catcode'+str(ord('$')), 3)
+    # Mimic the most important parts of LaTeX style
+    latexstubs.initLaTeXstyle(parser)
 
-    parser.setSymbol("\\begin", latexstubs.BeginCommand("\\begin"))
-    parser.setSymbol("\\end", latexstubs.EndCommand("\\end"))
-
+    # Do the real work
     return parser.parse()
-
-def checkWhitelist(node):
-    return node.type() in ('environment_document',
-                           'environment_itemize',
-                           'environment_enumerate')
 
 def doReplace(node, macro, concepts):
     """ Recursively replaces concepts in the node and returns
@@ -111,7 +102,7 @@ def doReplace(node, macro, concepts):
                 src += child.value()
 
         # Walk recursively if whitelisted
-        elif checkWhitelist(child):
+        elif child.type() in latexstubs.whitelistEnvironments:
             (src1, stats1) = doReplace(child, macro, concepts)
             src += src1
             for w,c in stats1.iteritems():
