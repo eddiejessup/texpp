@@ -94,7 +94,8 @@ def find_main_latex_file(dirname):
             # Look for \documentclass in file
             fobj = file(fnamefull, 'r')
             for line in fobj:
-                if line.find('\\documentclass')>=0:
+                if line.find('\\documentclass')>=0 or \
+                        line.find('\\documentstyle')>=0:
                     fobj.close()
                     return fname
             fobj.close()
@@ -182,7 +183,7 @@ def test_one_file(fname, opt):
     # Find main tex file
     texfile = find_main_latex_file(unpackdir)
     if not texfile:
-        raise TestError('Can not find TeX file in the archive',
+        raise TestError('Can not find main TeX file in the archive',
                         TestError.NO_TEX_FILE, TestError.ET_ERROR)
 
     # Prepare dirs for test
@@ -309,10 +310,11 @@ def main(argv):
     for fname in files:
         filenum += 1
 
-        print '[%d of %d] %s:' % (
-                        filenum, filescount, fname,),
+        sys.stdout.write('[%d of %d] %s:' % (
+                        filenum, filescount, fname,))
+        sys.stdout.flush()
         if opt.verbose:
-            print
+            sys.stdout.write('\n')
 
         testcount += 1
         logfile.write('%s: ' % (fname,))
@@ -329,9 +331,9 @@ def main(argv):
         logfile.flush()
 
         if opt.verbose:
-            print ' ...',
+            sys.stdout.write(' ...')
 
-        print '%s' % (result,)
+        sys.stdout.write(' %s\n' % (result,))
     
         if etype == TestError.ET_ERROR:
             testerror += 1
@@ -341,7 +343,8 @@ def main(argv):
     msg = '%d (of %d) tests failed, %d tests broken' % (testfail, testcount - testerror, testerror)
     if logfile:
         logfile.write(msg + '\n')
-    print msg
+
+    sys.stdout.write(msg + '\n')
 
 if __name__ == '__main__':
     main(sys.argv)
