@@ -18,6 +18,7 @@
 
 #include <texpp/base/base.h>
 
+#include <texpp/base/miscmacros.h>
 #include <texpp/base/misc.h>
 #include <texpp/base/show.h>
 #include <texpp/base/func.h>
@@ -47,14 +48,18 @@ void initSymbols(Parser& parser)
     #define __TEXPP_SET_COMMAND(name, T, ...) \
         parser.setSymbol("\\" name, \
             Command::ptr(new T("\\" name, ##__VA_ARGS__)))
+
+    // macros
+    __TEXPP_SET_COMMAND("number", NumberMacro);
     
-    __TEXPP_SET_COMMAND("end",        End);
-    __TEXPP_SET_COMMAND("par",        Par);
-    __TEXPP_SET_COMMAND("relax",      Relax);
-    __TEXPP_SET_COMMAND("let",        Let);
-    __TEXPP_SET_COMMAND("show",       Show);
-    __TEXPP_SET_COMMAND("showthe",    ShowThe);
-    __TEXPP_SET_COMMAND("message",    Message);
+    // various commands
+    __TEXPP_SET_COMMAND("end", End);
+    __TEXPP_SET_COMMAND("par", Par);
+    __TEXPP_SET_COMMAND("relax", Relax);
+    __TEXPP_SET_COMMAND("let", Let);
+    __TEXPP_SET_COMMAND("show", Show);
+    __TEXPP_SET_COMMAND("showthe", ShowThe);
+    __TEXPP_SET_COMMAND("message", Message);
 
     // prefixes
     __TEXPP_SET_COMMAND("global", Prefix);
@@ -400,7 +405,7 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("expandafter", UnimplementedCommand);
     __TEXPP_SET_COMMAND("noexpand", UnimplementedCommand);
     __TEXPP_SET_COMMAND("the", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("number", UnimplementedCommand);
+    //__TEXPP_SET_COMMAND("number", UnimplementedCommand);
     __TEXPP_SET_COMMAND("romannumeral", UnimplementedCommand);
     __TEXPP_SET_COMMAND("string", UnimplementedCommand);
     __TEXPP_SET_COMMAND("fontname", UnimplementedCommand);

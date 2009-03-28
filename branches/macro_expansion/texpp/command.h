@@ -73,9 +73,14 @@ protected:
 class Macro: public Command
 {
 public:
+    typedef shared_ptr<Macro> ptr;
+
     Macro(const string& name = string()): Command(name) {}
 
     virtual bool expand(Parser&, shared_ptr<Node>) { return false; }
+
+protected:
+    vector<shared_ptr<Token> > stringToTokens(const string& str);
 };
 
 } // namespace texpp

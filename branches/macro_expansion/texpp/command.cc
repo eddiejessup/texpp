@@ -119,5 +119,20 @@ bool TokenCommand::execute(Parser&, Node::ptr)
     return true;
 }
 
+Token::list Macro::stringToTokens(const string& str)
+{
+    Token::list ret;
+
+    BOOST_FOREACH(char ch, str) {
+        Token::CatCode catcode = Token::CC_OTHER;
+        if(ch == ' ') catcode = Token::CC_SPACE;
+
+        ret.push_back(Token::ptr(new Token(
+            Token::TOK_CHARACTER, catcode, string(1, ch))));
+    }
+
+    return ret;
+}
+
 } // namespace texpp
 

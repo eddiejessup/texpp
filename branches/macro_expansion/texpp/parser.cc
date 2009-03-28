@@ -261,14 +261,42 @@ void Parser::endGroup()
     --m_groupLevel;
 }
 
-inline Token::ptr Parser::rawNextToken()
+Token::ptr Parser::rawNextToken()
 {
+    Token::ptr token;
+
     if(!m_tokenQueue.empty()) {
-        Token::ptr token = m_tokenQueue.front();
-        m_tokenQueue.pop_front(); return token;
+        token = m_tokenQueue.front();
+        m_tokenQueue.pop_front();
     } else {
-        return m_lexer->nextToken();
+        token = m_lexer->nextToken();
     }
+
+    Macro::ptr macro = symbolCommand<Macro>(token);
+    if(macro) {
+        Node::ptr node(new Node("macro"));
+        Node::ptr child(new Node("control_token"));
+        child->tokens().push_back(token);
+        child->setValue(token);
+        node->appendChild("control_sequence", child);
+
+        // At this point the rawNextToken may be called recursively
+        macro->expand(*this, node);
+        m_token.reset();
+
+        token = Token::ptr(new Token(Token::TOK_SKIPPED,
+                    Token::CC_ESCAPE, "", node->source()));
+
+        Token::list newTokens = node->value(Token::list());
+        Token::list::reverse_iterator rend = newTokens.rend();
+        for(Token::list::reverse_iterator it = newTokens.rbegin();
+                    it != rend; ++it) {
+            (*it)->setSource(string());
+            m_tokenQueue.push_front(*it);
+        }
+    }
+
+    return token;
 }
 
 Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
@@ -347,6 +375,23 @@ Token::ptr Parser::peekToken()
     if(m_token/* && n==1*/) return m_token; // cached token
    // m_token.reset();
 
+    Token::list tokens;
+    while(true) {
+        Token::ptr token = rawNextToken();
+        if(!token) break;
+
+        tokens.push_back(token);
+        if(!token->isSkipped()) {
+            m_lastToken = m_token = token;
+            break;
+        }
+    }
+
+    std::copy(tokens.rbegin(), tokens.rend(),
+            std::front_inserter(m_tokenQueue));
+    return m_token;
+
+    #if 0
     // check the queue
     std::deque<Token::ptr >::iterator end = m_tokenQueue.end();
     for(std::deque<Token::ptr >::iterator it = m_tokenQueue.begin();
@@ -374,6 +419,7 @@ Token::ptr Parser::peekToken()
     }
 
     return Token::ptr();
+    #endif
 }
 
 void Parser::pushBack(vector< Token::ptr >* tokens)
@@ -402,7 +448,7 @@ bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
 Node::ptr Parser::parseCommand(Command::ptr command)
 {
     Node::ptr node(new Node("command"));
-    node->appendChild("control_token", parseToken());
+    node->appendChild("control_sequence", parseControlSequence());
     bool prefix = command->checkPrefixes(*this);
     command->invoke(*this, node); // XXX check errors
     if(prefix) m_activePrefixes.clear();
