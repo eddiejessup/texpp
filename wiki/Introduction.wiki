@@ -1,6 +1,4 @@
-#summary HOWTO.
 #labels Featured
-
 = Using the library =
 
 The basic example of using !TeXpp is available in [http://code.google.com/p/texpp/source/browse/trunk/tests/texpp.cc texpp.cc]. The same example but based on python bindings can be found in [http://code.google.com/p/texpp/source/browse/trunk/hrefkeywords/texpp.py texpp.py].
