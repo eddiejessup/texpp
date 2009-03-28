@@ -61,9 +61,6 @@ public:
     const shared_ptr<Token>& token() const { return m_token; }
 
     string texRepr(char escape = '\\') const;
-    bool parseArgs(Parser&, shared_ptr<Node>);
-    bool execute(Parser&, shared_ptr<Node>);
-
     bool invoke(Parser& parser, shared_ptr<Node> node);
 
 protected:

@@ -107,18 +107,6 @@ bool TokenCommand::invoke(Parser&, shared_ptr<Node> node)
     return true;
 }
 
-bool TokenCommand::parseArgs(Parser&, Node::ptr node)
-{
-    node->setValue(m_token);
-    return true;
-}
-
-bool TokenCommand::execute(Parser&, Node::ptr)
-{
-    // XXX: TODO
-    return true;
-}
-
 Token::list Macro::stringToTokens(const string& str)
 {
     Token::list ret;
