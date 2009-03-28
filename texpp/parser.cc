@@ -274,11 +274,13 @@ inline Token::ptr Parser::rawNextToken()
 Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
 {
     if(m_end) {
-        // Return the rest of the document as skipped tokens
-        Token::ptr token;
-        while(token = rawNextToken()) {
-            token->setType(Token::TOK_SKIPPED);
-            if(tokens) tokens->push_back(token);
+        if(!m_lexer->interactive()) {
+            // Return the rest of the document as skipped tokens
+            Token::ptr token;
+            while(token = rawNextToken()) {
+                token->setType(Token::TOK_SKIPPED);
+                if(tokens) tokens->push_back(token);
+            }
         }
         return Token::ptr();
     }
