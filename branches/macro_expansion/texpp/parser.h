@@ -117,8 +117,9 @@ public:
 
     //////// Tokens
     Token::ptr lastToken();
-    Token::ptr peekToken();
-    Token::ptr nextToken(vector< Token::ptr >* tokens = NULL);
+    Token::ptr peekToken(bool expand = true);
+    Token::ptr nextToken(vector< Token::ptr >* tokens = NULL,
+                         bool expand = true);
     void pushBack(vector< Token::ptr >* tokens);
 
     void end() { m_end = true; }
@@ -131,7 +132,7 @@ public:
 
     Node::ptr parseCommand(Command::ptr command);
 
-    Node::ptr parseToken();
+    Node::ptr parseToken(bool expand = true);
     Node::ptr parseMMathToken();
     Node::ptr parseControlSequence();
     Node::ptr parseCharacter(const string& type = string("character"));
@@ -202,7 +203,7 @@ public:
     shared_ptr<Lexer> lexer() { return m_lexer; }
 
 protected:
-    Token::ptr rawNextToken();
+    Token::ptr rawNextToken(bool expand = true);
     void setSpecialSymbol(const string& name, const any& value);
 
     typedef std::deque<

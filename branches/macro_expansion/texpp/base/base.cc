@@ -52,6 +52,8 @@ void initSymbols(Parser& parser)
     // macros
     __TEXPP_SET_COMMAND("number", NumberMacro);
     __TEXPP_SET_COMMAND("romannumeral", Romannumeral);
+
+    __TEXPP_SET_COMMAND("noexpand", Noexpand);
     
     // various commands
     __TEXPP_SET_COMMAND("end", End);
@@ -404,7 +406,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("csname", UnimplementedCommand);
     __TEXPP_SET_COMMAND("endcsname", UnimplementedCommand);
     __TEXPP_SET_COMMAND("expandafter", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("noexpand", UnimplementedCommand);
     __TEXPP_SET_COMMAND("the", UnimplementedCommand);
     __TEXPP_SET_COMMAND("string", UnimplementedCommand);
     __TEXPP_SET_COMMAND("fontname", UnimplementedCommand);

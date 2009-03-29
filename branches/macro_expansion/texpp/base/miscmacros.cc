@@ -60,6 +60,18 @@ bool Romannumeral::expand(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
+bool Noexpand::expand(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr child = parser.parseToken(false);
+    node->appendChild("token", child);
+
+    Token::ptr token = child->value(Token::ptr());
+    token->setCatCode(Token::CC_OTHER);
+    node->setValue(Token::list(1, token));
+
+    return true;
+}
+
 } // namespace base
 } // namespace texpp
 

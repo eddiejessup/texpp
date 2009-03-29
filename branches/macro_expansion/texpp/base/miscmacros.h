@@ -39,6 +39,15 @@ public:
     bool expand(Parser& parser, shared_ptr<Node> node);
 };
 
+class Noexpand: public Macro
+{
+public:
+    explicit Noexpand(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
+};
+
+
+
 } // namespace base
 } // namespace texpp
 

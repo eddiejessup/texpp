@@ -261,7 +261,7 @@ void Parser::endGroup()
     --m_groupLevel;
 }
 
-Token::ptr Parser::rawNextToken()
+Token::ptr Parser::rawNextToken(bool expand)
 {
     Token::ptr token;
 
@@ -272,40 +272,42 @@ Token::ptr Parser::rawNextToken()
         token = m_lexer->nextToken();
     }
 
-    Macro::ptr macro = symbolCommand<Macro>(token);
-    if(macro) {
-        Node::ptr node(new Node("macro"));
-        Node::ptr child(new Node("control_token"));
-        child->tokens().push_back(token);
-        child->setValue(token);
-        node->appendChild("control_sequence", child);
+    if(token && token->catCode() == Token::CC_ESCAPE && expand) {
+        Macro::ptr macro = symbolCommand<Macro>(token);
+        if(macro) {
+            Node::ptr node(new Node("macro"));
+            Node::ptr child(new Node("control_token"));
+            child->tokens().push_back(token);
+            child->setValue(token);
+            node->appendChild("control_sequence", child);
 
-        // At this point the rawNextToken may be called recursively
-        macro->expand(*this, node);
-        m_token.reset();
+            // At this point the rawNextToken may be called recursively
+            macro->expand(*this, node);
+            m_token.reset();
 
-        token = Token::ptr(new Token(Token::TOK_SKIPPED,
-                    Token::CC_ESCAPE, "", node->source()));
+            token = Token::ptr(new Token(Token::TOK_SKIPPED,
+                        Token::CC_ESCAPE, "", node->source()));
 
-        Token::list newTokens = node->value(Token::list());
-        Token::list::reverse_iterator rend = newTokens.rend();
-        for(Token::list::reverse_iterator it = newTokens.rbegin();
-                    it != rend; ++it) {
-            (*it)->setSource(string());
-            m_tokenQueue.push_front(*it);
+            Token::list newTokens = node->value(Token::list());
+            Token::list::reverse_iterator rend = newTokens.rend();
+            for(Token::list::reverse_iterator it = newTokens.rbegin();
+                        it != rend; ++it) {
+                (*it)->setSource(string());
+                m_tokenQueue.push_front(*it);
+            }
         }
     }
 
     return token;
 }
 
-Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
+Token::ptr Parser::nextToken(vector< Token::ptr >* tokens, bool expand)
 {
     if(m_end) {
         if(!m_lexer->interactive()) {
             // Return the rest of the document as skipped tokens
             Token::ptr token;
-            while(token = rawNextToken()) {
+            while(token = rawNextToken(expand)) {
                 token->setType(Token::TOK_SKIPPED);
                 if(tokens) tokens->push_back(token);
             }
@@ -316,7 +318,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
     m_token.reset();
 
     // skip ignored tokens
-    Token::ptr token = rawNextToken();
+    Token::ptr token = rawNextToken(expand);
     while(token && token->isSkipped()) {
         if(token->catCode() == Token::CC_INVALID) {
             m_logger->log(Logger::ERROR,
@@ -324,7 +326,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
         }
 
         if(tokens) tokens->push_back(token);
-        token = rawNextToken();
+        token = rawNextToken(expand);
     }
 
     // real token
@@ -335,7 +337,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
     // skip ignored tokens until EOL
     if(token && !token->isLastInLine()) {
         while(true) {
-            token = rawNextToken();
+            token = rawNextToken(expand);
             if(!token) {
                 break;
             } else if(!token->isSkipped()) {
@@ -369,7 +371,7 @@ Token::ptr Parser::lastToken()
     return m_lastToken;
 }
 
-Token::ptr Parser::peekToken()
+Token::ptr Parser::peekToken(bool expand)
 {
     //int n = 1; // XXX
     if(m_end) return Token::ptr();
@@ -379,7 +381,7 @@ Token::ptr Parser::peekToken()
 
     Token::list tokens;
     while(true) {
-        Token::ptr token = rawNextToken();
+        Token::ptr token = rawNextToken(expand);
         if(!token) break;
 
         tokens.push_back(token);
@@ -457,13 +459,13 @@ Node::ptr Parser::parseCommand(Command::ptr command)
     return node;
 }
 
-Node::ptr Parser::parseToken()
+Node::ptr Parser::parseToken(bool expand)
 {
     Node::ptr node(new Node("token"));
-    Token::ptr token = peekToken();
+    Token::ptr token = peekToken(expand);
 
     if(token) {
-        node->setValue(nextToken(&node->tokens()));
+        node->setValue(nextToken(&node->tokens(), expand));
     } else {
         logger()->log(Logger::ERROR, "Missing token inserted", *this, token);
         node->setValue(Token::ptr(new Token(Token::TOK_CONTROL,
