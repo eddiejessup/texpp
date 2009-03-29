@@ -75,13 +75,16 @@ def unpack_article_from_arxiv(filename, outdir, fileobj=None):
                 return False
         tarobj.extractall(outdir)
 
-    except tarfile.TarError:
+    except (tarfile.TarError, IOError):
         # Single file
-        gzipobj.seek(0)
-        outfile = file(os.path.join(outdir, 'main.tex'), 'w')
-        outfile.write(gzipobj.read())
-        outfile.close()
-        gzipobj.close()
+        try:
+            gzipobj.seek(0)
+            outfile = file(os.path.join(outdir, 'main.tex'), 'w')
+            outfile.write(gzipobj.read())
+            outfile.close()
+            gzipobj.close()
+        except IOError:
+            return False
 
     return True
 
@@ -284,8 +287,6 @@ def main(argv):
     cmd_default = './hrefkeywords.py -c ./concepts4.txt ' + \
                 '-s -m %(macro)s -o %(output)s %(source)s'
 
-    optparser.add_option('-d', '--download', metavar='NUM', type='int',
-                help='Download NUM articles from arxiv.org to TEX_DIR')
     optparser.add_option('-t', '--tex-dir', default='tex',
                 help='Directory with original articles from arxiv.org')
     optparser.add_option('-w', '--work-dir', default='work',
@@ -307,10 +308,6 @@ def main(argv):
 
     os.environ['TEXINPUTS'] = os.environ.get('TEXINPUTS', '.:') + ':' + \
                                 os.path.abspath(opt.macros_dir)
-
-    if opt.download is not None:
-        for x in xrange(opt.download):
-            download_random_from_arxiv(opt.tex_dir, sys.stdout)
 
     if opt.cmd_log_file:
         try:
