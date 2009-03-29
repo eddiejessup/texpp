@@ -46,9 +46,12 @@ def initLaTeXstyle(parser):
                             texpy.Token.CatCode.MATHSHIFT, '$')
     parser.setSymbol('\\(', texpy.TokenCommand(mathToken))
     parser.setSymbol('\\)', texpy.TokenCommand(mathToken))
+    parser.setSymbol('\\[', texpy.TokenCommand(mathToken))
+    parser.setSymbol('\\]', texpy.TokenCommand(mathToken))
 
 whitelistEnvironments = frozenset((
     'environment_document',
+    'environment_abstract',
     'environment_itemize',
     'environment_enumerate',
     'environment_description',
