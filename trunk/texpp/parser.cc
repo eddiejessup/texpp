@@ -24,6 +24,7 @@
 #include <texpp/base/integer.h>
 #include <texpp/base/dimen.h>
 #include <texpp/base/glue.h>
+#include <texpp/base/parshape.h>
 
 #include <iostream>
 #include <sstream>
@@ -402,6 +403,15 @@ void Parser::processTextCharacter(char ch)
             spacefactor = 1000;
         setSymbol("spacefactor", spacefactor, true);
     }
+}
+
+void Parser::resetParagraphIndent()
+{
+    setSymbol("parshape", base::ParshapeInfo());
+    setSymbol("hangindent", int(0));
+    setSymbol("hangafter", int(1));
+    setSymbol("looseness", int(0));
+    setSymbol("spacefactor", int(1000));
 }
 
 bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
