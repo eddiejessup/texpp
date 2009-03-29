@@ -73,7 +73,6 @@ def unpack_article_from_arxiv(filename, outdir, fileobj=None):
             nname = os.path.normpath(name)
             if os.path.isabs(nname) or nname.startswith('..'):
                 return False
-                #raise tarfile.TarError('Downloaded archive contains bad file names')
         tarobj.extractall(outdir)
 
     except tarfile.TarError:
@@ -115,7 +114,8 @@ def fix_latex_hyperref(filename, testhref=False):
 
     # Check wether hyperref is already included
     hyperref_found = False
-    hyperref_re = re.compile(r'^([^%]*\\usepackage\s*)(?:\[([^]]*)\])?(\s*{\s*hyperref\s*})')
+    hyperref_re = re.compile(
+        r'^([^%]*\\usepackage\s*)(?:\[([^]]*)\])?(\s*{\s*hyperref\s*})')
     end_re = re.compile(r'^[^%]*\\end\s*{\s*document\s*}')
     for line in fobj:
         m = hyperref_re.match(line)
@@ -137,7 +137,8 @@ def fix_latex_hyperref(filename, testhref=False):
         fobj.seek(0)
         dobj.seek(0)
         dobj.truncate()
-        documentclass_re = re.compile(r'^[^%]*\\documentclass\s*([^]]*])?\s*{\s*[^}]*\s*}')
+        documentclass_re = re.compile(
+            r'^[^%]*\\documentclass\s*([^]]*])?\s*{\s*[^}]*\s*}')
         for line in fobj:
             dobj.write(line)
             if documentclass_re.match(line):
@@ -163,7 +164,8 @@ def compile_latex(filename, verbose=False):
     if verbose:
         latex_cmd = 'latex -interaction=nonstopmode "%s"' % (basename,)
     else:
-        latex_cmd = 'latex -interaction=batchmode "%s" > /dev/null' % (basename,)
+        latex_cmd = 'latex -interaction=batchmode "%s" > /dev/null' % (
+                                                             basename,)
     ret = os.system(latex_cmd)
         
     os.chdir(oldcwd)
@@ -233,60 +235,73 @@ def test_one_file(fname, opt):
     try:
         compile_latex(origfile, opt.verbose)
     except CommandError, e:
-        raise TestError('Can not compile original document %s: %s' % (origfile, e),
-                        TestError.ORIG_LATEX_FAILED, TestError.ET_ERROR)
+        raise TestError('Can not compile original document %s: %s' % (
+            origfile, e), TestError.ORIG_LATEX_FAILED, TestError.ET_ERROR)
 
     # Compile replaced
     try:
         compile_latex(replfile, opt.verbose)
     except CommandError, e:
-        raise TestError('Can not compile modified document %s: %s' % (replfile, e),
-                        TestError.REPL_LATEX_FAILED, TestError.ET_FAIL)
+        raise TestError('Can not compile modified document %s: %s' % (
+            replfile, e), TestError.REPL_LATEX_FAILED, TestError.ET_FAIL)
 
-    # Read DVIs
-    try:
-        origdvi = file(os.path.splitext(origfile)[0] + '.dvi', 'r')
-    except IOError,e:
-        raise TestError('Can not open original dvi file for %s: %s' % (origfile, e),
-                        TestError.ORIG_NO_DVI, TestError.ET_ERROR)
-    try:
-        repldvi = file(os.path.splitext(replfile)[0] + '.dvi', 'r')
-    except IOError,e:
-        raise TestError('Can not open modified dvi file for %s: %s' % (origfile, e),
-                        TestError.REPL_NO_DVI, TestError.ET_FAIL)
+    # Compare DVIs only in testhref mode
+    if not opt.real_href:
+        # Read DVIs
+        try:
+            origdvi = file(os.path.splitext(origfile)[0] + '.dvi', 'r')
+        except IOError,e:
+            raise TestError('Can not open original dvi file for %s: %s' % (
+                origfile, e), TestError.ORIG_NO_DVI, TestError.ET_ERROR)
+        try:
+            repldvi = file(os.path.splitext(replfile)[0] + '.dvi', 'r')
+        except IOError,e:
+            raise TestError('Can not open modified dvi file for %s: %s' % (
+                origfile, e), TestError.REPL_NO_DVI, TestError.ET_FAIL)
 
-    # Skip the first 100 bytes (it contains a timestamp)
-    origdvi.read(100)
-    repldvi.read(100)
+        # Skip the first 100 bytes (it contains a timestamp)
+        origdvi.read(100)
+        repldvi.read(100)
 
-    # Compile DVIs
-    while 1:
-        odata = origdvi.read(1024)
-        rdata = repldvi.read(1024)
-        if odata != rdata:
-            raise TestError('Generated dvi files differ', TestError.DVI_DIFFERS, TestError.ET_FAIL)
-        if not odata:
-            break
+        # Compile DVIs
+        while 1:
+            odata = origdvi.read(1024)
+            rdata = repldvi.read(1024)
+            if odata != rdata:
+                raise TestError('Generated dvi files differ',
+                    TestError.DVI_DIFFERS, TestError.ET_FAIL)
+            if not odata:
+                break
 
-    origdvi.close()
-    repldvi.close()
+        origdvi.close()
+        repldvi.close()
 
     return 'success'
 
 def main(argv):
     optparser = optparse.OptionParser()
 
-    cmd_default = './hrefkeywords.py -c ./concepts4.txt -s -m %(macro)s -o %(output)s %(source)s'
+    cmd_default = './hrefkeywords.py -c ./concepts4.txt ' + \
+                '-s -m %(macro)s -o %(output)s %(source)s'
 
-    optparser.add_option('-d', '--download', metavar='NUM', type='int', help='Download NUM articles from arxiv.org to TEX_DIR')
-    optparser.add_option('-t', '--tex-dir', default='tex', help='Directory with original articles from arxiv.org')
-    optparser.add_option('-w', '--work-dir', default='work', help='Directory for working files')
-    optparser.add_option('-l', '--log-file', default='test.log', help='File to log test results')
-    optparser.add_option('-L', '--cmd-log-file', default='test_cmd.log', help='Log file for command output')
-    optparser.add_option('-m', '--macros-dir', default='texmacros', help='Folder with extra TeX macros from arxiv.org')
-    optparser.add_option('-r', '--real-href', action='store_true', help='Use real href instead of a fake macro')
-    optparser.add_option('-v', '--verbose', action='store_true', help='Show program output')
-    optparser.add_option('-c', '--cmd', default=cmd_default, help='Replacer command (default=%s)' % (cmd_default,))
+    optparser.add_option('-d', '--download', metavar='NUM', type='int',
+                help='Download NUM articles from arxiv.org to TEX_DIR')
+    optparser.add_option('-t', '--tex-dir', default='tex',
+                help='Directory with original articles from arxiv.org')
+    optparser.add_option('-w', '--work-dir', default='work',
+                help='Directory for working files')
+    optparser.add_option('-l', '--log-file', default='test.log',
+                help='File to log test results')
+    optparser.add_option('-L', '--cmd-log-file', default='test_cmd.log',
+                help='Log file for command output')
+    optparser.add_option('-m', '--macros-dir', default='texmacros',
+                help='Folder with extra TeX macros from arxiv.org')
+    optparser.add_option('-r', '--real-href', action='store_true',
+                help='Use real href instead of a fake macro')
+    optparser.add_option('-v', '--verbose', action='store_true',
+                help='Show program output')
+    optparser.add_option('-c', '--cmd', default=cmd_default,
+                help='Replacer command (default=%s)' % (cmd_default,))
 
     opt, args = optparser.parse_args(argv)
 
@@ -345,7 +360,8 @@ def main(argv):
         elif etype == TestError.ET_FAIL:
             testfail += 1
 
-    msg = '%d (of %d) tests failed, %d tests broken' % (testfail, testcount - testerror, testerror)
+    msg = '%d (of %d) tests failed, %d tests broken' % (
+            testfail, testcount - testerror, testerror)
     if logfile:
         logfile.write(msg + '\n')
 
