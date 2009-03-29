@@ -60,8 +60,8 @@ bool Message::invoke(Parser& parser, Node::ptr node)
             }
         }
     }
-    parser.logger()->log(Logger::MESSAGE, str, parser, 
-                node->child("right_brace")->value(Token::ptr()));
+    parser.logger()->log(Logger::MESSAGE, str, parser, parser.lastToken());
+                //text->child("right_brace")->value(Token::ptr()));
     return true;
 }
 
