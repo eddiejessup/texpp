@@ -148,9 +148,37 @@ bool SpecialInteger::invokeOperation(Parser& parser,
         node->setValue(rvalue->valueAny());
         parser.setSymbol(name, rvalue->valueAny(), true); // global
         return true;
+    } else if(op == GET) {
+        string name = parseName(parser, node);
+        const any& ret = parser.symbolAny(name, true); // global
+        node->setValue(ret.empty() ? m_initValue : ret);
+        return true;
+    } else if(op == EXPAND) {
+        string name = parseName(parser, node);
+        int val = parser.symbol(name, int(0), true); // global
+        node->setValue(boost::lexical_cast<string>(val));
+        return true;
     } else {
         return InternalInteger::invokeOperation(parser, node, op);
     }
+}
+
+bool Spacefactor::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op)
+{
+    if(parser.mode() != Parser::HORIZONTAL &&
+            parser.mode() != Parser::RHORIZONTAL) {
+        parser.logger()->log(Logger::ERROR,
+            op == GET || op == EXPAND ? "Improper " + texRepr() :
+            "You can't use `" + texRepr() +
+            "' in " + parser.modeName() + " mode",
+            parser, parser.lastToken());
+        if(op == GET) node->setValue(int(0));
+        else if(op == EXPAND) node->setValue(string("0"));
+        return true;
+    }
+
+    return SpecialInteger::invokeOperation(parser, node, op);
 }
 
 } // namespace base

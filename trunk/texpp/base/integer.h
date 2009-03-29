@@ -76,6 +76,16 @@ public:
                         shared_ptr<Node> node, Operation op);
 };
 
+class Spacefactor: public SpecialInteger
+{
+public:
+    Spacefactor(const string& name, const any& initValue = any(0))
+        : SpecialInteger(name, initValue) {}
+
+    bool invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op);
+};
+
 } // namespace base
 } // namespace texpp
 

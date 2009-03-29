@@ -99,8 +99,12 @@ void test_tex(const char* testfile)
     vector<string> log_tex_l = read_log_file(log_tex);
     vector<string> log_texpp_l = read_log_file(log_texpp);
 
-    BOOST_CHECK_EQUAL_COLLECTIONS(log_tex_l.begin(), log_tex_l.end(),
+    if(jobname.substr(0, 5) == "fail_") {
+        BOOST_CHECK(log_tex_l != log_texpp_l);
+    } else {
+        BOOST_CHECK_EQUAL_COLLECTIONS(log_tex_l.begin(), log_tex_l.end(),
                               log_texpp_l.begin(), log_texpp_l.end());
+    }
 }
 
 boost::unit_test::test_suite*
