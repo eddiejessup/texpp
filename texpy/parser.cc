@@ -131,6 +131,7 @@ void export_parser()
         .def("lastToken", &Parser::lastToken)
 
         // parse*
+        .def("parseToken", &Parser::parseToken)
         .def("parseGroup", &Parser::parseGroup,
             Parser_parseGroup_overloads())
         .def("parseGeneralText", &Parser::parseGeneralText,
