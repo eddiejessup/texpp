@@ -31,76 +31,62 @@ class EndCommand(texpy.Command):
         parser.endCustomGroup()
         return True
 
+def parseOptionalArgs(parser):
+    node = texpy.Node('optional_args')
+    node.appendChild('optional_spaces', parser.parseOptionalSpaces())
+    
+    if parser.peekToken() and parser.peekToken().isCharacter('['):
+        args = texpy.Node('args')
+        node.appendChild('args', args)
+        while parser.peekToken():
+            parser.nextToken(args.tokens())
+            if parser.lastToken().isCharacter(']'):
+                break
+
+    return node
+
+def parseArg(parser):
+    node = texpy.Node('args')
+    node.appendChild('optional_spaces', parser.parseOptionalSpaces())
+    if parser.peekToken() and parser.peekToken().isCharacter('{'):
+        node.appendChild('group', parser.parseGeneralText())
+    else:
+        node.appendChild('token', parser.parseToken())
+
+    return node
+
 class Newcommand(texpy.Command):
     def invoke(self, parser, node):
-        node.appendChild('cmd', parser.parseGeneralText())
-
-        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
-        if parser.peekToken() and parser.peekToken().isCharacter('['):
-            args = texpy.Node('args')
-            node.appendChild('args', args)
-            while parser.peekToken():
-                parser.nextToken(args.tokens())
-                if parser.lastToken().isCharacter(']'):
-                    break
-        
-        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
-        if parser.peekToken() and parser.peekToken().isCharacter('['):
-            opt = texpy.Node('args')
-            node.appendChild('opt', opt)
-            while parser.peekToken():
-                parser.nextToken(opt.tokens())
-                if parser.lastToken().isCharacter(']'):
-                    break
-
-        node.appendChild('def', parser.parseGeneralText())
+        node.appendChild('cmd', parseArg(parser))
+        node.appendChild('args', parseOptionalArgs(parser))
+        node.appendChild('opt', parseOptionalArgs(parser))
+        node.appendChild('def', parseArg(parser))
 
         return True
 
 class Newenvironment(texpy.Command):
     def invoke(self, parser, node):
-        node.appendChild('nam', parser.parseGeneralText())
-
-        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
-        if parser.peekToken() and parser.peekToken().isCharacter('['):
-            args = texpy.Node('args')
-            node.appendChild('args', args)
-            while parser.peekToken():
-                parser.nextToken(args.tokens())
-                if parser.lastToken().isCharacter(']'):
-                    break
-        
-        node.appendChild('begdef', parser.parseGeneralText())
-        node.appendChild('enddef', parser.parseGeneralText())
+        node.appendChild('nam', parseArg(parser))
+        node.appendChild('args', parseOptionalArgs(parser))
+        node.appendChild('begdef', parseArg(parser))
+        node.appendChild('enddef', parseArg(parser)) 
 
         return True
 
 class Newtheorem(texpy.Command):
     def invoke(self, parser, node):
-        node.appendChild('env_nam', parser.parseGeneralText())
+        if parser.peekToken().isCharacter('*'):
+            node.appendChild('star', parser.parseToken())
+
+        node.appendChild('env_nam', parseArg(parser))
 
         node.appendChild('optional_spaces', parser.parseOptionalSpaces())
         if parser.peekToken() and parser.peekToken().isCharacter('['):
-            args = texpy.Node('args')
-            node.appendChild('numbered_like', args)
-            while parser.peekToken():
-                parser.nextToken(args.tokens())
-                if parser.lastToken().isCharacter(']'):
-                    break
-
-            node.appendChild('caption', parser.parseGeneralText())
-        
+            node.appendChild('numbered_like', parseOptionalArgs(parser))
+            node.appendChild('caption', parseArg(parser))
         else:
-            node.appendChild('caption', parser.parseGeneralText())
-
-            node.appendChild('optional_spaces', parser.parseOptionalSpaces())
-            if parser.peekToken() and parser.peekToken().isCharacter('['):
-                args = texpy.Node('args')
-                node.appendChild('within', args)
-                while parser.peekToken():
-                    parser.nextToken(args.tokens())
-                    if parser.lastToken().isCharacter(']'):
-                        break
+            node.appendChild('caption', parseArg(parser))
+            node.appendChild('within', parseOptionalArgs(parser))
 
         return True
 
