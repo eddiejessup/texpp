@@ -32,7 +32,7 @@ def loadConcepts(conceptsfile):
             item = item.setdefault(word, {})
 
         # a special item that marks the end of the sequence
-        item[True] = line
+        item[True] = line1
 
     return concepts
 
