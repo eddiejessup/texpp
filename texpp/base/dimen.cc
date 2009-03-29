@@ -152,6 +152,16 @@ bool SpecialDimen::invokeOperation(Parser& parser,
         node->setValue(rvalue->valueAny());
         parser.setSymbol(name, rvalue->valueAny(), true); // global
         return true;
+    } else if(op == GET) {
+        string name = parseName(parser, node);
+        const any& ret = parser.symbolAny(name, true); // global
+        node->setValue(ret.empty() ? m_initValue : ret);
+        return true;
+    } else if(op == EXPAND) {
+        string name = parseName(parser, node);
+        int val = parser.symbol(name, int(0), true); // global
+        node->setValue(dimenToString(val));
+        return true;
     } else {
         return InternalDimen::invokeOperation(parser, node, op);
     }

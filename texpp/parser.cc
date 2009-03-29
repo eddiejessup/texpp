@@ -386,6 +386,24 @@ void Parser::pushBack(vector< Token::ptr >* tokens)
     // NOTE: lastToken is NOT changed
 }
 
+void Parser::processTextCharacter(char ch)
+{
+    if(m_mode == RVERTICAL)
+        setMode(RHORIZONTAL);
+    else if(m_mode != RHORIZONTAL)
+        setMode(HORIZONTAL);
+
+    int prevSpacefactor = symbol("spacefactor", true);
+    int spacefactor = symbol(
+        "sfcode" + boost::lexical_cast<string>(int(ch)), int(0));
+
+    if(spacefactor != 0) {
+        if(prevSpacefactor > 1000 && spacefactor < 1000)
+            spacefactor = 1000;
+        setSymbol("spacefactor", spacefactor, true);
+    }
+}
+
 bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
 {
     if(peekToken()) {
@@ -462,6 +480,7 @@ Node::ptr Parser::parseCharacter(const string& type)
 {
     Node::ptr node(new Node(type));
     if(peekToken() && peekToken()->isCharacter()) {
+        processTextCharacter(peekToken()->value()[0]);
         node->setValue(peekToken()->value());
         nextToken(&node->tokens());
     } else {
@@ -1316,6 +1335,7 @@ Node::ptr Parser::parseTextWord()
     Node::ptr node(new Node("text_word"));
     string value;
     while(peekToken() && peekToken()->isCharacterCat(Token::CC_LETTER)) {
+        processTextCharacter(peekToken()->value()[0]);
         value += peekToken()->value();
         nextToken(&node->tokens());
     }

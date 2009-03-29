@@ -43,6 +43,8 @@ bool End::invoke(Parser& parser, shared_ptr<Node>)
 bool Par::invoke(Parser& parser, shared_ptr<Node>)
 {
     parser.setSymbol("parshape", ParshapeInfo());
+    parser.setSymbol("hangindent", int(0));
+    parser.setSymbol("spacefactor", int(1000));
     if(parser.mode() == Parser::RHORIZONTAL)
         parser.setMode(Parser::RVERTICAL);
     else if(parser.mode() == Parser::HORIZONTAL)

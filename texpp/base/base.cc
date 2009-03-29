@@ -264,7 +264,7 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("errhelp", ToksVariable, Token::list());
 
     // special
-    __TEXPP_SET_COMMAND("spacefactor", SpecialInteger, int(0));
+    __TEXPP_SET_COMMAND("spacefactor", Spacefactor, int(0));
     __TEXPP_SET_COMMAND("prevgraf", SpecialInteger, int(0));
     __TEXPP_SET_COMMAND("deadcycles", SpecialInteger, int(0));
     __TEXPP_SET_COMMAND("insertpenalties", SpecialInteger, int(0));

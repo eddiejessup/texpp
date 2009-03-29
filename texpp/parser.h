@@ -157,6 +157,8 @@ public:
 
     Node::ptr parseTextWord();
 
+    void processTextCharacter(char ch);
+
     //////// Symbols
     void setSymbol(const string& name, const any& value, bool global = false);
     void setSymbol(Token::ptr token, const any& value, bool global = false) {
