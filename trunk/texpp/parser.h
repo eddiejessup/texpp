@@ -152,7 +152,7 @@ public:
 
     Node::ptr parseFiller();
     Node::ptr parseBalancedText();
-    Node::ptr parseGeneralText(bool implicit_rbrace = false);
+    Node::ptr parseGeneralText(bool implicit_rbrace = true);
 
     Node::ptr parseFileName();
 
