@@ -34,18 +34,19 @@ class EndCommand(texpy.Command):
 class Newcommand(texpy.Command):
     def invoke(self, parser, node):
         node.appendChild('cmd', parser.parseGeneralText())
-        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
 
+        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
         if parser.peekToken() and parser.peekToken().isCharacter('['):
-            args = texpy.Node('newcommand_args')
+            args = texpy.Node('args')
             node.appendChild('args', args)
             while parser.peekToken():
                 parser.nextToken(args.tokens())
                 if parser.lastToken().isCharacter(']'):
                     break
         
+        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
         if parser.peekToken() and parser.peekToken().isCharacter('['):
-            opt = texpy.Node('newcommand_opt')
+            opt = texpy.Node('args')
             node.appendChild('opt', opt)
             while parser.peekToken():
                 parser.nextToken(opt.tokens())
@@ -53,6 +54,53 @@ class Newcommand(texpy.Command):
                     break
 
         node.appendChild('def', parser.parseGeneralText())
+
+        return True
+
+class Newenvironment(texpy.Command):
+    def invoke(self, parser, node):
+        node.appendChild('nam', parser.parseGeneralText())
+
+        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
+        if parser.peekToken() and parser.peekToken().isCharacter('['):
+            args = texpy.Node('args')
+            node.appendChild('args', args)
+            while parser.peekToken():
+                parser.nextToken(args.tokens())
+                if parser.lastToken().isCharacter(']'):
+                    break
+        
+        node.appendChild('begdef', parser.parseGeneralText())
+        node.appendChild('enddef', parser.parseGeneralText())
+
+        return True
+
+class Newtheorem(texpy.Command):
+    def invoke(self, parser, node):
+        node.appendChild('env_nam', parser.parseGeneralText())
+
+        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
+        if parser.peekToken() and parser.peekToken().isCharacter('['):
+            args = texpy.Node('args')
+            node.appendChild('numbered_like', args)
+            while parser.peekToken():
+                parser.nextToken(args.tokens())
+                if parser.lastToken().isCharacter(']'):
+                    break
+
+            node.appendChild('caption', parser.parseGeneralText())
+        
+        else:
+            node.appendChild('caption', parser.parseGeneralText())
+
+            node.appendChild('optional_spaces', parser.parseOptionalSpaces())
+            if parser.peekToken() and parser.peekToken().isCharacter('['):
+                args = texpy.Node('args')
+                node.appendChild('within', args)
+                while parser.peekToken():
+                    parser.nextToken(args.tokens())
+                    if parser.lastToken().isCharacter(']'):
+                        break
 
         return True
 
@@ -90,9 +138,15 @@ def initLaTeXstyle(parser):
 
     createCommand(parser, 'begin', BeginCommand)
     createCommand(parser, 'end', EndCommand)
+
     createCommand(parser, 'newcommand', Newcommand)
     createCommand(parser, 'renewcommand', Newcommand)
     createCommand(parser, 'providecommand', Newcommand)
+
+    createCommand(parser, 'newenvironment', Newenvironment)
+    createCommand(parser, 'renewenvironment', Newenvironment)
+
+    createCommand(parser, 'newtheorem', Newtheorem)
 
     createCommand(parser, 'def', DefCommand)
     createCommand(parser, 'edef', DefCommand)
