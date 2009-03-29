@@ -34,7 +34,8 @@ class TestError(Exception):
 
     ET_SUCCESS = 0
     ET_ERROR = 1
-    ET_FAIL = 2
+    ET_WARNING = 2
+    ET_FAIL = 3
 
     def __init__(self, message, code, etype):
         super(TestError, self).__init__(message)
@@ -46,6 +47,8 @@ class TestError(Exception):
             return 'success'
         elif self.etype == self.ET_ERROR:
             return 'error'
+        elif self.etype == self.ET_WARNING:
+            return 'warning'
         elif self.etype == self.ET_FAIL:
             return 'fail'
 
@@ -272,7 +275,7 @@ def test_one_file(fname, opt):
             rdata = repldvi.read(1024)
             if odata != rdata:
                 raise TestError('Generated dvi files differ',
-                    TestError.DVI_DIFFERS, TestError.ET_FAIL)
+                    TestError.DVI_DIFFERS, TestError.ET_WARNING)
             if not odata:
                 break
 
@@ -318,6 +321,7 @@ def main(argv):
     testcount = 0
     testerror = 0
     testfail = 0
+    testwarning = 0
     logfile = file(opt.log_file, 'w')
 
     files = os.listdir(opt.tex_dir)
@@ -354,11 +358,13 @@ def main(argv):
     
         if etype == TestError.ET_ERROR:
             testerror += 1
+        elif etype == TestError.ET_WARNING:
+            testwarning += 1
         elif etype == TestError.ET_FAIL:
             testfail += 1
 
-    msg = '%d (of %d) tests failed, %d tests broken' % (
-            testfail, testcount - testerror, testerror)
+    msg = '%d (of %d) tests failed, %d warnings, %d tests broken' % (
+            testfail, testcount - testerror, testwarning, testerror)
     if logfile:
         logfile.write(msg + '\n')
 
