@@ -21,32 +21,20 @@ class CommandError(Exception):
     pass
 
 class TestError(Exception):
-    SUCCESS = 0
-    UNPACK_FAILED = 1
-    NO_TEX_FILE = 2
-    AUTO_HYPERREF_FAILED = 3
-    TEST_PROGRAM_FAILED = 4
-    ORIG_LATEX_FAILED = 5
-    REPL_LATEX_FAILED = 6
-    ORIG_NO_DVI = 7
-    REPL_NO_DVI = 8
-    DVI_DIFFERS = 9
-
     ET_SUCCESS = 0
-    ET_ERROR = 1
+    ET_TEST_ERROR = 1
     ET_WARNING = 2
     ET_FAIL = 3
 
-    def __init__(self, message, code, etype):
+    def __init__(self, message, etype):
         super(TestError, self).__init__(message)
-        self.code = code
         self.etype = etype
 
     def result(self):
         if self.etype == self.ET_SUCCESS:
             return 'success'
-        elif self.etype == self.ET_ERROR:
-            return 'error'
+        elif self.etype == self.ET_TEST_ERROR:
+            return 'test_error'
         elif self.etype == self.ET_WARNING:
             return 'warning'
         elif self.etype == self.ET_FAIL:
@@ -178,6 +166,37 @@ def compile_latex(filename, verbose=False):
     if ret:
         raise CommandError('latex error: %d' % (ret,))
 
+def compare_files(origfile, replfile, ftype, skip_bytes=0):
+    # Open files
+    try:
+        origobj = file(origfile, 'r')
+    except IOError,e:
+        raise TestError('Can not open original %s file for %s: %s' % (
+            ftype, origfile, e), TestError.ET_TEST_ERROR)
+    try:
+        replobj = file(replfile, 'r')
+    except IOError,e:
+        raise TestError('Can not open modified %s file for %s: %s' % (
+            ftype, origfile, e), TestError.ET_FAIL)
+
+    # Skip first bytes
+    origobj.read(skip_bytes)
+    replobj.read(skip_bytes)
+
+    # Compile files
+    while 1:
+        odata = origobj.read(1024)
+        rdata = replobj.read(1024)
+        if odata != rdata:
+            return False
+        if not odata:
+            break
+
+    origobj.close()
+    replobj.close()
+
+    return True
+
 def test_one_file(fname, opt):
     # Prepare the work dir
     wdir = os.path.join(opt.work_dir, fname)
@@ -191,13 +210,13 @@ def test_one_file(fname, opt):
     if not unpack_article_from_arxiv(
                 os.path.join(opt.tex_dir, fname), unpackdir):
         raise TestError('Can not unpack the article',
-                        TestError.UNPACK_FAILED, TestError.ET_ERROR)
+                                    TestError.ET_TEST_ERROR)
 
     # Find main tex file
     texfile = find_main_latex_file(unpackdir)
     if not texfile:
         raise TestError('Can not find main TeX file in the archive',
-                        TestError.NO_TEX_FILE, TestError.ET_ERROR)
+                                    TestError.ET_TEST_ERROR)
 
     # Prepare dirs for test
     origdir = os.path.join(wdir, 'orig')
@@ -213,7 +232,7 @@ def test_one_file(fname, opt):
         fix_latex_hyperref(origfile, not opt.real_href)
     except CommandError, e:
         raise TestError('Can not automatically insert hyperref package',
-                        TestError.AUTO_HYPERREF_FAILED, TestError.ET_ERROR)
+                                    TestError.ET_TEST_ERROR)
 
     # Prepare replacer command
     if opt.real_href:
@@ -235,52 +254,33 @@ def test_one_file(fname, opt):
     ret = os.system(replacer_cmd)
     if ret:
         raise TestError('Error running test program',
-                        TestError.TEST_PROGRAM_FAILED, TestError.ET_FAIL)
+                                    TestError.ET_FAIL)
 
     # Compile original
     try:
         compile_latex(origfile, opt.verbose)
     except CommandError, e:
         raise TestError('Can not compile original document %s: %s' % (
-            origfile, e), TestError.ORIG_LATEX_FAILED, TestError.ET_ERROR)
+            origfile, e), TestError.ET_TEST_ERROR)
+
+    # Check whether the file was actually changed
+    if compare_files(origfile, replfile, 'tex'):
+        raise TestError('No replacements was made', TestError.ET_WARNING)
 
     # Compile replaced
     try:
         compile_latex(replfile, opt.verbose)
     except CommandError, e:
         raise TestError('Can not compile modified document %s: %s' % (
-            replfile, e), TestError.REPL_LATEX_FAILED, TestError.ET_FAIL)
+            replfile, e), TestError.ET_FAIL)
 
     # Compare DVIs only in testhref mode
     if not opt.real_href:
-        # Read DVIs
-        try:
-            origdvi = file(os.path.splitext(origfile)[0] + '.dvi', 'r')
-        except IOError,e:
-            raise TestError('Can not open original dvi file for %s: %s' % (
-                origfile, e), TestError.ORIG_NO_DVI, TestError.ET_ERROR)
-        try:
-            repldvi = file(os.path.splitext(replfile)[0] + '.dvi', 'r')
-        except IOError,e:
-            raise TestError('Can not open modified dvi file for %s: %s' % (
-                origfile, e), TestError.REPL_NO_DVI, TestError.ET_FAIL)
-
-        # Skip the first 100 bytes (it contains a timestamp)
-        origdvi.read(100)
-        repldvi.read(100)
-
-        # Compile DVIs
-        while 1:
-            odata = origdvi.read(1024)
-            rdata = repldvi.read(1024)
-            if odata != rdata:
-                raise TestError('Generated dvi files differ',
-                    TestError.DVI_DIFFERS, TestError.ET_WARNING)
-            if not odata:
-                break
-
-        origdvi.close()
-        repldvi.close()
+        if not compare_files(os.path.splitext(origfile)[0] + '.dvi',
+                      os.path.splitext(replfile)[0] + '.dvi',
+                      'dvi', 100):
+            raise TestError('Generated DVI files differ',
+                                TestError.ET_WARNING)
 
     return 'success'
 
@@ -356,7 +356,7 @@ def main(argv):
 
         sys.stdout.write(' %s\n' % (result,))
     
-        if etype == TestError.ET_ERROR:
+        if etype == TestError.ET_TEST_ERROR:
             testerror += 1
         elif etype == TestError.ET_WARNING:
             testwarning += 1
