@@ -31,16 +31,73 @@ class EndCommand(texpy.Command):
         parser.endCustomGroup()
         return True
 
+class Newcommand(texpy.Command):
+    def invoke(self, parser, node):
+        node.appendChild('cmd', parser.parseGeneralText())
+        node.appendChild('optional_spaces', parser.parseOptionalSpaces())
+
+        if parser.peekToken() and parser.peekToken().isCharacter('['):
+            args = texpy.Node('newcommand_args')
+            node.appendChild('args', args)
+            while parser.peekToken():
+                parser.nextToken(args.tokens())
+                if parser.lastToken().isCharacter(']'):
+                    break
+        
+        if parser.peekToken() and parser.peekToken().isCharacter('['):
+            opt = texpy.Node('newcommand_opt')
+            node.appendChild('opt', opt)
+            while parser.peekToken():
+                parser.nextToken(opt.tokens())
+                if parser.lastToken().isCharacter(']'):
+                    break
+
+        node.appendChild('def', parser.parseGeneralText())
+
+        return True
+
+class DefCommand(texpy.Command):
+    def invoke(self, parser, node):
+        node.appendChild('token', parser.parseControlSequence())
+        args = texpy.Node('def_args')
+        node.appendChild('args', args)
+        while parser.peekToken() and \
+                not parser.peekToken().isCharacterCat(
+                            texpy.Token.CatCode.BGROUP):
+            parser.nextToken(args.tokens())
+        
+        node.appendChild('def', parser.parseGeneralText(False))
+
+        return True
+
+    def checkPrefixes(self, parser):
+        return True
+
+def createCommand(parser, name, cmd, *args):
+    parser.setSymbol('\\' + name, cmd('\\' + name, *args))
+
 def initLaTeXstyle(parser):
     """ Defines the most important aspects of LaTeX style """
 
-    parser.setSymbol('\\end', None)
-    parser.setSymbol('catcode'+str(ord('{')), 1)
-    parser.setSymbol('catcode'+str(ord('}')), 2)
-    parser.setSymbol('catcode'+str(ord('$')), 3)
+    parser.setSymbol('catcode'+str(ord('{')),
+                int(texpy.Token.CatCode.BGROUP))
+    parser.setSymbol('catcode'+str(ord('}')),
+                int(texpy.Token.CatCode.EGROUP))
+    parser.setSymbol('catcode'+str(ord('$')),
+                int(texpy.Token.CatCode.MATHSHIFT))
+    parser.setSymbol('catcode'+str(ord('\t')),
+                int(texpy.Token.CatCode.SPACE))
 
-    parser.setSymbol('\\begin', BeginCommand('\\begin'))
-    parser.setSymbol('\\end', EndCommand('\\end'))
+    createCommand(parser, 'begin', BeginCommand)
+    createCommand(parser, 'end', EndCommand)
+    createCommand(parser, 'newcommand', Newcommand)
+    createCommand(parser, 'renewcommand', Newcommand)
+    createCommand(parser, 'providecommand', Newcommand)
+
+    createCommand(parser, 'def', DefCommand)
+    createCommand(parser, 'edef', DefCommand)
+    createCommand(parser, 'gdef', DefCommand)
+    createCommand(parser, 'xdef', DefCommand)
 
     mathToken = texpy.Token(texpy.Token.Type.CHARACTER,
                             texpy.Token.CatCode.MATHSHIFT, '$')

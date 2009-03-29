@@ -10,6 +10,8 @@ def main():
     optparser = OptionParser(usage='%prog [options] texfile')
     optparser.add_option('-t', '--print-tree', action='store_true',
                                     help='print document tree before exit')
+    optparser.add_option('-s', '--use-stubs', action='store_true',
+                                    help='load stubs from latexstubs.py')
 
     # Parse command line options
     opt, args = optparser.parse_args()
@@ -34,6 +36,12 @@ def main():
     # Create the parser
     parser = texpy.Parser(filename, fileobj, interactive,
                             texpy.ConsoleLogger())
+
+    if opt.use_stubs:
+        # Mimic the most important parts of LaTeX style
+        import latexstubs
+        latexstubs.initLaTeXstyle(parser)
+
     doc = parser.parse()
     
     # Print tree

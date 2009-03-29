@@ -136,6 +136,8 @@ public:
     Node::ptr parseControlSequence();
     Node::ptr parseCharacter(const string& type = string("character"));
 
+    Node::ptr parseOptionalSpaces();
+
     Node::ptr parseKeyword(const vector<string>& keywords);
     Node::ptr parseOptionalKeyword(const vector<string>& keywords);
 
@@ -150,8 +152,7 @@ public:
 
     Node::ptr parseFiller();
     Node::ptr parseBalancedText();
-    Node::ptr parseGeneralText(
-            Node::ptr node = Node::ptr());
+    Node::ptr parseGeneralText(bool implicit_rbrace = false);
 
     Node::ptr parseFileName();
 
