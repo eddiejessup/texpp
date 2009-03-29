@@ -34,7 +34,8 @@ class TestError(Exception):
 
     ET_SUCCESS = 0
     ET_ERROR = 1
-    ET_FAIL = 2
+    ET_WARNING = 2
+    ET_FAIL = 3
 
     def __init__(self, message, code, etype):
         super(TestError, self).__init__(message)
@@ -46,6 +47,8 @@ class TestError(Exception):
             return 'success'
         elif self.etype == self.ET_ERROR:
             return 'error'
+        elif self.etype == self.ET_WARNING:
+            return 'warning'
         elif self.etype == self.ET_FAIL:
             return 'fail'
 
@@ -67,7 +70,7 @@ def unpack_article_from_arxiv(filename, outdir, fileobj=None):
         return False 
         
     try:
-        tarobj = tarfile.TarFile(fileobj=gzipobj)
+        tarobj = tarfile.TarFile(fileobj=gzipobj, name=filename)
         # Mutliple files
         for name in tarobj.getnames():
             nname = os.path.normpath(name)
@@ -75,13 +78,16 @@ def unpack_article_from_arxiv(filename, outdir, fileobj=None):
                 return False
         tarobj.extractall(outdir)
 
-    except tarfile.TarError:
+    except (tarfile.TarError, IOError):
         # Single file
-        gzipobj.seek(0)
-        outfile = file(os.path.join(outdir, 'main.tex'), 'w')
-        outfile.write(gzipobj.read())
-        outfile.close()
-        gzipobj.close()
+        try:
+            gzipobj.seek(0)
+            outfile = file(os.path.join(outdir, 'main.tex'), 'w')
+            outfile.write(gzipobj.read())
+            outfile.close()
+            gzipobj.close()
+        except IOError:
+            return False
 
     return True
 
@@ -269,7 +275,7 @@ def test_one_file(fname, opt):
             rdata = repldvi.read(1024)
             if odata != rdata:
                 raise TestError('Generated dvi files differ',
-                    TestError.DVI_DIFFERS, TestError.ET_FAIL)
+                    TestError.DVI_DIFFERS, TestError.ET_WARNING)
             if not odata:
                 break
 
@@ -284,8 +290,6 @@ def main(argv):
     cmd_default = './hrefkeywords.py -c ./concepts4.txt ' + \
                 '-s -m %(macro)s -o %(output)s %(source)s'
 
-    optparser.add_option('-d', '--download', metavar='NUM', type='int',
-                help='Download NUM articles from arxiv.org to TEX_DIR')
     optparser.add_option('-t', '--tex-dir', default='tex',
                 help='Directory with original articles from arxiv.org')
     optparser.add_option('-w', '--work-dir', default='work',
@@ -308,10 +312,6 @@ def main(argv):
     os.environ['TEXINPUTS'] = os.environ.get('TEXINPUTS', '.:') + ':' + \
                                 os.path.abspath(opt.macros_dir)
 
-    if opt.download is not None:
-        for x in xrange(opt.download):
-            download_random_from_arxiv(opt.tex_dir, sys.stdout)
-
     if opt.cmd_log_file:
         try:
             os.remove(opt.cmd_log_file)
@@ -321,6 +321,7 @@ def main(argv):
     testcount = 0
     testerror = 0
     testfail = 0
+    testwarning = 0
     logfile = file(opt.log_file, 'w')
 
     files = os.listdir(opt.tex_dir)
@@ -357,11 +358,13 @@ def main(argv):
     
         if etype == TestError.ET_ERROR:
             testerror += 1
+        elif etype == TestError.ET_WARNING:
+            testwarning += 1
         elif etype == TestError.ET_FAIL:
             testfail += 1
 
-    msg = '%d (of %d) tests failed, %d tests broken' % (
-            testfail, testcount - testerror, testerror)
+    msg = '%d (of %d) tests failed, %d warnings, %d tests broken' % (
+            testfail, testcount - testerror, testwarning, testerror)
     if logfile:
         logfile.write(msg + '\n')
 
