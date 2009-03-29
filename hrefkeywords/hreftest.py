@@ -67,7 +67,7 @@ def unpack_article_from_arxiv(filename, outdir, fileobj=None):
         return False 
         
     try:
-        tarobj = tarfile.TarFile(fileobj=gzipobj)
+        tarobj = tarfile.TarFile(fileobj=gzipobj, name=filename)
         # Mutliple files
         for name in tarobj.getnames():
             nname = os.path.normpath(name)
