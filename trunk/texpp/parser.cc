@@ -501,6 +501,14 @@ Node::ptr Parser::parseCharacter(const string& type)
     return node;
 }
 
+Node::ptr Parser::parseOptionalSpaces()
+{
+    Node::ptr node(new Node("optional_spaces"));
+    while(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&node->tokens());
+    return node;
+}
+
 Node::ptr Parser::parseKeyword(const vector<string>& keywords)
 {
     Node::ptr node(new Node("keyword"));
@@ -1288,17 +1296,19 @@ Node::ptr Parser::parseFiller()
     return filler;
 }
 
-Node::ptr Parser::parseGeneralText(Node::ptr node)
+Node::ptr Parser::parseGeneralText(bool implicit_lbrace)
 {
-    if(!node) node = Node::ptr(new Node("general_text"));
+    Node::ptr node(new Node("general_text"));
 
     // parse filler
     node->appendChild("filler", parseFiller());
 
-    // parse left_brace_i
-    Node::ptr left_brace(new Node("left_brace_i"));
+    // parse left_brace
+    Node::ptr left_brace(new Node("left_brace"));
     node->appendChild("left_brace", left_brace);
-    if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
+    if(peekToken() && (
+       (implicit_lbrace && helperIsImplicitCharacter(Token::CC_BGROUP)) ||
+       (!implicit_lbrace && peekToken()->isCharacterCat(Token::CC_BGROUP)))) {
         left_brace->setValue(nextToken(&left_brace->tokens()));
     } else {
         logger()->log(Logger::ERROR, "Missing { inserted", *this,lastToken());
