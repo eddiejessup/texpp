@@ -503,6 +503,8 @@ void initSymbols(Parser& parser)
     parser.setSymbol("month", int(1+time->tm_mon));
     parser.setSymbol("day", int(time->tm_mday));
     parser.setSymbol("time", int(time->tm_hour*60 + time->tm_min));
+
+    parser.setSymbol("hangafter", int(1));
 }
 
 } // namespace base

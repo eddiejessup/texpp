@@ -141,6 +141,7 @@ bool BoxSpec::invokeOperation(Parser& parser,
 
         parser.beginGroup();
         parser.setMode(m_mode);
+        parser.resetParagraphIndent();
         Node::ptr group = parser.parseGroup(Parser::GROUP_NORMAL);
         parser.setMode(prevMode);
         parser.endGroup();
