@@ -66,7 +66,7 @@ bool Noexpand::expand(Parser& parser, shared_ptr<Node> node)
     node->appendChild("token", child);
 
     Token::ptr token = child->value(Token::ptr());
-    token->setCatCode(Token::CC_OTHER);
+    parser.setNoexpand(token);
     node->setValue(Token::list(1, token));
 
     return true;

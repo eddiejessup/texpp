@@ -120,6 +120,8 @@ public:
     Token::ptr peekToken(bool expand = true);
     Token::ptr nextToken(vector< Token::ptr >* tokens = NULL,
                          bool expand = true);
+    void setNoexpand(Token::ptr token) { m_noexpandToken = token; }
+    void resetNoexpand() { m_noexpandToken.reset(); m_token.reset(); }
     void pushBack(vector< Token::ptr >* tokens);
 
     void end() { m_end = true; }
@@ -218,6 +220,7 @@ protected:
 
     Token::ptr      m_token;
     Token::ptr      m_lastToken;
+    Token::ptr      m_noexpandToken;
     TokenQueue      m_tokenQueue;
 
     int             m_groupLevel;

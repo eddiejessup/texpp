@@ -273,7 +273,7 @@ Token::ptr Parser::rawNextToken(bool expand)
         token = m_lexer->nextToken();
     }
 
-    if(token && token->catCode() == Token::CC_ESCAPE && expand) {
+    if(token && token->isControl() && expand && token != m_noexpandToken) {
         Macro::ptr macro = symbolCommand<Macro>(token);
         if(macro) {
             Node::ptr node(new Node("macro"));
@@ -338,7 +338,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens, bool expand)
     // skip ignored tokens until EOL
     if(token && !token->isLastInLine()) {
         while(true) {
-            token = rawNextToken(expand);
+            token = rawNextToken(false);
             if(!token) {
                 break;
             } else if(!token->isSkipped()) {
@@ -484,6 +484,7 @@ Node::ptr Parser::parseCommand(Command::ptr command)
     bool prefix = command->checkPrefixes(*this);
     command->invoke(*this, node); // XXX check errors
     if(prefix) m_activePrefixes.clear();
+    resetNoexpand();
     return node;
 }
 
@@ -500,6 +501,7 @@ Node::ptr Parser::parseToken(bool expand)
                             Token::CC_ESCAPE, "inaccessible")));
     }
 
+    resetNoexpand();
     return node;
 }
 
@@ -515,6 +517,7 @@ Node::ptr Parser::parseMMathToken()
         nextToken(&node->tokens());
     }
 
+    resetNoexpand();
     return node;
 }
 
@@ -531,6 +534,8 @@ Node::ptr Parser::parseControlSequence()
         node->setValue(Token::ptr(new Token(Token::TOK_CONTROL,
                             Token::CC_ESCAPE, "inaccessible")));
     }
+
+    resetNoexpand();
     return node;
 }
 
@@ -546,6 +551,8 @@ Node::ptr Parser::parseCharacter(const string& type)
             "Missing character inserted", *this, lastToken());
         node->setValue(string(""));
     }
+
+    resetNoexpand();
     return node;
 }
 
@@ -571,11 +578,14 @@ Node::ptr Parser::parseKeyword(const vector<string>& keywords)
             break;
         } else if(kw->size() == n) {
             node->setValue(value);
+            resetNoexpand();
             return node;
         }
     }
 
     pushBack(&node->tokens());
+
+    resetNoexpand();
     return Node::ptr();
 }
 
@@ -587,6 +597,7 @@ Node::ptr Parser::parseOptionalKeyword(const vector<string>& keywords)
         while(helperIsImplicitCharacter(Token::CC_SPACE))
             nextToken(&node->tokens());
         node->setValue(string());
+        resetNoexpand();
     }
     return node;
 }
@@ -604,6 +615,7 @@ Node::ptr Parser::parseOptionalEquals(bool oneSpaceAfter)
     if(oneSpaceAfter && helperIsImplicitCharacter(Token::CC_SPACE))
         nextToken(&node->tokens());
 
+    resetNoexpand();
     return node;
 }
 
@@ -633,7 +645,8 @@ Node::ptr Parser::parseNormalInteger()
         logger()->log(Logger::ERROR,
             "Missing number, treated as zero", *this, Token::ptr());
         node->setValue(int(0));
-
+        resetNoexpand();
+        return node;
     }
 
     Node::ptr integer =
@@ -641,6 +654,7 @@ Node::ptr Parser::parseNormalInteger()
     if(integer) {
         node->appendChild("internal_integer", integer);
         node->setValue(integer->valueAny());
+        resetNoexpand();
         return node;
     }
 
@@ -661,6 +675,7 @@ Node::ptr Parser::parseNormalInteger()
         if(helperIsImplicitCharacter(Token::CC_SPACE))
             nextToken(&node->tokens());
 
+        resetNoexpand();
         return node;
     }
     
@@ -744,6 +759,7 @@ Node::ptr Parser::parseNormalInteger()
     if(helperIsImplicitCharacter(Token::CC_SPACE))
         nextToken(&node->tokens());
 
+    resetNoexpand();
     return node;
 }
 
@@ -762,6 +778,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     if(dimen) {
         node->appendChild("internal_dimen", dimen);
         node->setValue(dimen->valueAny());
+        resetNoexpand();
         return node;
     }
 
@@ -900,6 +917,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         } else {
             node->setValue(int(0));
         }
+        resetNoexpand();
         return node;
     }
 
@@ -1021,6 +1039,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             } else {
                 node->setValue(int(0));
             }
+            resetNoexpand();
             return node;
         }
 
@@ -1047,6 +1066,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
 
     node->setValue(v);
 
+    resetNoexpand();
     return node;
 }
 
@@ -1109,11 +1129,13 @@ Node::ptr Parser::parseDimenFactor()
         }
         
         node->setValue(std::make_pair(int(result), frac));
+        resetNoexpand();
         return node;
 
     } else {
         Node::ptr node = parseNormalInteger();
         node->setValue(std::make_pair(node->value(int(0)), 0));
+        resetNoexpand();
         return node;
     }
 }
@@ -1158,6 +1180,8 @@ Node::ptr Parser::parseNumber()
     }
 
     node->setValue(node->child(0)->value(int(0)) * unsigned_value);
+
+    resetNoexpand();
     return node;
 }
 
@@ -1201,6 +1225,8 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
     }
 
     node->setValue(node->child(0)->value(int(0)) * unsigned_value);
+
+    resetNoexpand();
     return node;
 }
 
@@ -1244,6 +1270,8 @@ Node::ptr Parser::parseGlue(bool mu)
         glue.shrink *= sign;
 
         node->setValue(glue);
+
+        resetNoexpand();
         return node;
     }
 
@@ -1295,6 +1323,8 @@ Node::ptr Parser::parseGlue(bool mu)
     }
 
     node->setValue(glue);
+
+    resetNoexpand();
     return node;
 }
 
@@ -1333,6 +1363,8 @@ Node::ptr Parser::parseFiller()
         }
         break;
     }
+
+    resetNoexpand();
     return filler;
 }
 
@@ -1367,6 +1399,7 @@ Node::ptr Parser::parseGeneralText(Node::ptr node)
                     Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
     }
 
+    resetNoexpand();
     return node;
 }
 
@@ -1385,6 +1418,8 @@ Node::ptr Parser::parseFileName()
     }
 
     node->setValue(fileName);
+
+    resetNoexpand();
     return node;
 }
 
@@ -1398,6 +1433,7 @@ Node::ptr Parser::parseTextWord()
         nextToken(&node->tokens());
     }
     node->setValue(value);
+
     return node;
 }
 

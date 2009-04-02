@@ -1,0 +1,14 @@
+\catcode`{=1
+\catcode`}=2
+
+\newlinechar=`@
+\message{@}
+\message{~ \noexpand\number--25@}
+\message{~ \noexpand\noexpand\number--25@}
+
+\count\noexpand\number=10
+\count1=\noexpand\romannumeral33 % \romannumeral is executed here !
+\year=12\noexpand\romannumeral34 % and here
+
+\end
+
