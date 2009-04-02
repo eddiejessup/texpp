@@ -127,7 +127,8 @@ public:
     void end() { m_end = true; }
 
     //////// Parse helpers
-    bool helperIsImplicitCharacter(Token::CatCode catCode);
+    bool helperIsImplicitCharacter(Token::CatCode catCode,
+                                        bool expand = true);
 
     Node::ptr parseGroup(GroupType groupType,
                                 bool parseBeginEnd = true);

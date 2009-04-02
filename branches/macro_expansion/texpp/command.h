@@ -74,6 +74,7 @@ public:
 
     Macro(const string& name = string()): Command(name) {}
 
+    bool checkPrefixes(Parser&) { return false; }
     virtual bool expand(Parser&, shared_ptr<Node>) { return false; }
 
 protected:

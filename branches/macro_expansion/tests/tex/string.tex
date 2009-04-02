@@ -1,0 +1,19 @@
+\catcode`{=1
+\catcode`}=2
+
+\count`\string a=10
+\showthe\count`a
+
+\newlinechar=`@
+\message{~ \string abc@}
+\message{~ \string 123@}
+\message{~ \string\count1@}
+
+\message{~ \string\relax @}
+\message{~ \string\end @}
+
+% double expansion
+\message{~ \string\string125@}
+\message{~ \string\string\string\relax @}
+
+\end

@@ -32,17 +32,24 @@ public:
     bool expand(Parser& parser, shared_ptr<Node> node);
 };
 
-class Romannumeral: public Macro
+class RomannumeralMacro: public Macro
 {
 public:
-    explicit Romannumeral(const string& name): Macro(name) {}
+    explicit RomannumeralMacro(const string& name): Macro(name) {}
     bool expand(Parser& parser, shared_ptr<Node> node);
 };
 
-class Noexpand: public Macro
+class StringMacro: public Macro
 {
 public:
-    explicit Noexpand(const string& name): Macro(name) {}
+    explicit StringMacro(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
+};
+
+class NoexpandMacro: public Macro
+{
+public:
+    explicit NoexpandMacro(const string& name): Macro(name) {}
     bool expand(Parser& parser, shared_ptr<Node> node);
 };
 

@@ -36,7 +36,7 @@ bool NumberMacro::expand(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
-bool Romannumeral::expand(Parser& parser, shared_ptr<Node> node)
+bool RomannumeralMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
     Node::ptr number = parser.parseNumber();
     node->appendChild("number", number);
@@ -60,7 +60,24 @@ bool Romannumeral::expand(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
-bool Noexpand::expand(Parser& parser, shared_ptr<Node> node)
+bool StringMacro::expand(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr tokenNode = parser.parseToken(false);
+    Token::ptr token = tokenNode->value(Token::ptr());
+    node->appendChild("token", tokenNode);
+
+    string str;
+    if(token->isControl()) {
+        str = token->value();
+    } else {
+        str = token->texRepr(parser.symbol("escapechar", int(0)));
+    }
+
+    node->setValue(stringToTokens(str));
+    return true;
+}
+
+bool NoexpandMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
     Node::ptr child = parser.parseToken(false);
     node->appendChild("token", child);

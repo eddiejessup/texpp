@@ -333,7 +333,8 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens, bool expand)
     // real token
     if(tokens && token) tokens->push_back(token);
     Token::ptr ret = token;
-    m_lastToken = token;
+    if(token->lineNo())
+        m_lastToken = token;
 
     // skip ignored tokens until EOL
     if(token && !token->isLastInLine()) {
@@ -387,7 +388,9 @@ Token::ptr Parser::peekToken(bool expand)
 
         tokens.push_back(token);
         if(!token->isSkipped()) {
-            m_lastToken = m_token = token;
+            m_token = token;
+            if(token->lineNo())
+                m_lastToken = token;
             break;
         }
     }
@@ -462,14 +465,14 @@ void Parser::resetParagraphIndent()
     setSymbol("spacefactor", int(1000));
 }
 
-bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
+bool Parser::helperIsImplicitCharacter(Token::CatCode catCode, bool expand)
 {
-    if(peekToken()) {
-        if(peekToken()->isCharacterCat(catCode)) {
+    if(peekToken(expand)) {
+        if(peekToken(expand)->isCharacterCat(catCode)) {
             return true;
-        } else if(peekToken()->isControl()) {
+        } else if(peekToken(expand)->isControl()) {
             shared_ptr<TokenCommand> c =
-                symbolCommand<TokenCommand>(peekToken());
+                symbolCommand<TokenCommand>(peekToken(expand));
             if(c && c->token()->isCharacterCat(catCode))
                 return true;
         }
@@ -510,7 +513,7 @@ Node::ptr Parser::parseMMathToken()
     Node::ptr node(new Node("mmath_token"));
     nextToken(&node->tokens());
 
-    if(!helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
+    if(!helperIsImplicitCharacter(Token::CC_MATHSHIFT, false)) {
         logger()->log(Logger::ERROR,
             "Display math should end with $$", *this, lastToken());
     } else {
@@ -668,13 +671,13 @@ Node::ptr Parser::parseNormalInteger()
 
     if(peekToken()->isCharacter('`', Token::CC_OTHER)) {
         nextToken(&node->tokens());
-        if(peekToken() && peekToken()->isCharacter()) {
-            node->setValue(int(peekToken()->value()[0]));
-            nextToken(&node->tokens());
-        } else if(peekToken() && peekToken()->isControl() &&
+        if(peekToken(false) && peekToken(false)->isCharacter()) {
+            node->setValue(int(peekToken(false)->value()[0]));
+            nextToken(&node->tokens(), false);
+        } else if(peekToken(false) && peekToken(false)->isControl() &&
                     peekToken()->value().size() == 2) {
-            node->setValue(int(peekToken()->value()[1]));
-            nextToken(&node->tokens());
+            node->setValue(int(peekToken(false)->value()[1]));
+            nextToken(&node->tokens(), false);
         } else {
             logger()->log(Logger::ERROR,
                 "Improper alphabetic constant", *this, lastToken());
@@ -1528,7 +1531,8 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
         } else if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
             Node::ptr t1 = parseToken();
             // XXX: is the following line correct ?
-            bool mmath = helperIsImplicitCharacter(Token::CC_MATHSHIFT);
+            bool mmath = helperIsImplicitCharacter(Token::CC_MATHSHIFT,
+                                                                false);
             pushBack(&t1->tokens());
 
             beginGroup();
