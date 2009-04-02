@@ -292,6 +292,10 @@ def main(argv):
 
     optparser.add_option('-t', '--tex-dir', default='tex',
                 help='Directory with original articles from arxiv.org')
+    optparser.add_option('-f', '--tex-file', action='append',
+                help='Select test files to process ' + \
+                     '(can be specified multiple times, ' + \
+                     'default: all files in TEX_DIR)')
     optparser.add_option('-w', '--work-dir', default='work',
                 help='Directory for working files')
     optparser.add_option('-l', '--log-file', default='test.log',
@@ -312,6 +316,9 @@ def main(argv):
     os.environ['TEXINPUTS'] = os.environ.get('TEXINPUTS', '.:') + ':' + \
                                 os.path.abspath(opt.macros_dir)
 
+    if not os.path.exists(opt.work_dir):
+        os.mkdir(opt.work_dir)
+
     if opt.cmd_log_file:
         try:
             os.remove(opt.cmd_log_file)
@@ -324,7 +331,11 @@ def main(argv):
     testwarning = 0
     logfile = file(opt.log_file, 'w')
 
-    files = os.listdir(opt.tex_dir)
+    if opt.tex_file:
+        files = opt.tex_file
+    else:
+        files = os.listdir(opt.tex_dir)
+
     filescount = len(files)
     filenum = 0
 
@@ -369,6 +380,8 @@ def main(argv):
         logfile.write(msg + '\n')
 
     sys.stdout.write(msg + '\n')
+
+    sys.exit(testfail)
 
 if __name__ == '__main__':
     main(sys.argv)

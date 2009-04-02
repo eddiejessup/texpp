@@ -11,6 +11,10 @@ target_link_libraries(test_parser libtexpp)
 add_test(test_parser ${EXECUTABLE_OUTPUT_PATH}/test_parser)
 
 if(TEX_FOUND)
-add_subdirectory(tex)
+    add_subdirectory(tex)
 endif(TEX_FOUND)
+
+if(BOOST_PYTHON_FOUND AND PYTHONINTERP_FOUND AND TEX_FOUND)
+    add_subdirectory(hrefkeywords)
+endif(BOOST_PYTHON_FOUND AND PYTHONINTERP_FOUND AND TEX_FOUND)
 
