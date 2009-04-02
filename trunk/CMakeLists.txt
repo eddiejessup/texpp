@@ -21,7 +21,7 @@ if(NOT BOOST_PYTHON_FOUND)
     message("boost.python NOT found - texpy will NOT be build.")
 endif(NOT BOOST_PYTHON_FOUND)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wunused -Woverloaded-virtual -Wwrite-strings")
 include_directories(${CMAKE_SOURCE_DIR})
 
 add_subdirectory(texpp)
