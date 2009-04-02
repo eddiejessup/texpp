@@ -18,5 +18,7 @@ add_library(libtexpy SHARED ${libtexpy_SOURCES})
 target_link_libraries(libtexpy libtexpp ${BOOST_PYTHON_LIBS})
 set_target_properties(libtexpy PROPERTIES PREFIX "" OUTPUT_NAME texpy)
 
+set(TEXPY_SO_DIR ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
+
 install(TARGETS libtexpy LIBRARY DESTINATION bin)
 

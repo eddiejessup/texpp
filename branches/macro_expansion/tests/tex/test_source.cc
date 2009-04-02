@@ -84,7 +84,7 @@ void test_source(const char* testfile)
     if(n != jobname.npos)
         jobname = jobname.substr(0, n);
 
-    std::istream* file = new std::ifstream(testfile, std::fstream::in);
+    shared_ptr<std::istream> file(new std::ifstream(testfile, std::fstream::in));
     BOOST_REQUIRE_MESSAGE( !file->fail(), "Can not open input file" );
 
     file->seekg(0, std::ios::end);
@@ -121,7 +121,7 @@ void test_source(const char* testfile)
     std::ofstream outFile((jobname+".src.pp").c_str());
     outFile.write(source.c_str(), source.size());
 
-    delete buf;
+    delete[] buf;
     /*
     string cmd1 = string(tex_executable)
                     + " -ini -interaction nonstopmode"
