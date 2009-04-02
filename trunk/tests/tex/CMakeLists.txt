@@ -9,10 +9,10 @@ foreach(_tex_file ${TEX_TEST_FILES})
 
     add_test(test_tex_${_tex_file_name} ${EXECUTABLE_OUTPUT_PATH}/test_tex
          ${TEX_EXECUTABLE} ${TEXPP_EXECUTABLE} ${_tex_file})
-    set_property(TEST test_tex_${_tex_file_name} PROPERTY TIMEOUT 10)
+    set_property(TEST test_tex_${_tex_file_name} PROPERTY TIMEOUT 30)
 
     add_test(test_source_${_tex_file_name} ${EXECUTABLE_OUTPUT_PATH}/test_source
          ${_tex_file})
-    set_property(TEST test_source_${_tex_file_name} PROPERTY TIMEOUT 10)
+    set_property(TEST test_source_${_tex_file_name} PROPERTY TIMEOUT 30)
 endforeach(_tex_file ${TEX_TEST_FILES})
 
