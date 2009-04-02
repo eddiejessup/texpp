@@ -62,15 +62,6 @@ public:
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Node_treeRepr_overloads, treeRepr, 0, 1)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_symbol_overloads, symbol, 1, 2)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_setSymbol_overloads, setSymbol, 2, 3)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_parseGroup_overloads, parseGroup, 1, 2)
-
 void export_node()
 {
     using namespace boost::python;
@@ -107,6 +98,18 @@ void export_node()
 
 }
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
+    Parser_symbol_overloads, symbol, 1, 2)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
+    Parser_setSymbol_overloads, setSymbol, 2, 3)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
+    Parser_parseGroup_overloads, parseGroup, 1, 2)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
+    Parser_parseGeneralText_overloads, parseGeneralText, 0, 1)
+
 void export_parser()
 {
     using namespace boost::python;
@@ -125,10 +128,16 @@ void export_parser()
         // Tokens
         .def("peekToken", &Parser::peekToken)
         .def("nextToken", &Parser::nextToken)
+        .def("lastToken", &Parser::lastToken)
 
         // parse*
+        .def("parseToken", &Parser::parseToken)
         .def("parseGroup", &Parser::parseGroup,
             Parser_parseGroup_overloads())
+        .def("parseGeneralText", &Parser::parseGeneralText,
+            Parser_parseGeneralText_overloads())
+        .def("parseOptionalSpaces", &Parser::parseOptionalSpaces)
+        .def("parseControlSequence", &Parser::parseControlSequence)
 
         // Symbols
         .def("symbol", (const any& (Parser::*)(const string&, bool) const)(

@@ -30,11 +30,12 @@ namespace base {
 bool Message::invoke(Parser& parser, Node::ptr node)
 {
     using boost::lexical_cast;
-    parser.parseGeneralText(node);
-
+    Node::ptr text = parser.parseGeneralText();
+    node->appendChild("text", text);
+    
     string str;
     Token::list_ptr tokens =
-        node->child("balanced_text")->value(Token::list_ptr());
+        text->child("balanced_text")->value(Token::list_ptr());
 
     if(tokens) {
         char newlinechar = parser.symbol("newlinechar", int(0));
@@ -59,8 +60,8 @@ bool Message::invoke(Parser& parser, Node::ptr node)
             }
         }
     }
-    parser.logger()->log(Logger::MESSAGE, str, parser, 
-                node->child("right_brace")->value(Token::ptr()));
+    parser.logger()->log(Logger::MESSAGE, str, parser, parser.lastToken());
+                //text->child("right_brace")->value(Token::ptr()));
     return true;
 }
 
