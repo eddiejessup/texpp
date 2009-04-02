@@ -18,7 +18,7 @@
 
 #include <texpp/base/miscmacros.h>
 #include <texpp/parser.h>
-#include <texpp/logger.h>
+#include <texpp/lexer.h>
 
 #include <boost/lexical_cast.hpp>
 
@@ -86,6 +86,12 @@ bool NoexpandMacro::expand(Parser& parser, shared_ptr<Node> node)
     parser.setNoexpand(token);
     node->setValue(Token::list(1, token));
 
+    return true;
+}
+
+bool JobnameMacro::expand(Parser& parser, shared_ptr<Node> node)
+{
+    node->setValue(stringToTokens(parser.lexer()->jobName()));
     return true;
 }
 

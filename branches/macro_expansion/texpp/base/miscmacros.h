@@ -53,6 +53,12 @@ public:
     bool expand(Parser& parser, shared_ptr<Node> node);
 };
 
+class JobnameMacro: public Macro
+{
+public:
+    explicit JobnameMacro(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
+};
 
 
 } // namespace base

@@ -69,6 +69,19 @@ void Lexer::init()
     m_catcode['%'] = Token::CC_COMMENT;
 }
 
+string Lexer::jobName() const
+{
+    string jobname(m_fileName);
+
+    size_t n = jobname.rfind(PATH_SEP);
+    if(n != jobname.npos)
+        jobname = jobname.substr(n+1);
+    n = jobname.rfind(".tex");
+    if(n != jobname.npos)
+        jobname = jobname.substr(0, n);
+    return jobName();
+}
+
 const string& Lexer::line(size_t n) const
 {
     static string EMPTY_LINE;
