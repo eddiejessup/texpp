@@ -333,7 +333,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens, bool expand)
     // real token
     if(tokens && token) tokens->push_back(token);
     Token::ptr ret = token;
-    if(token->lineNo())
+    if(token && token->lineNo())
         m_lastToken = token;
 
     // skip ignored tokens until EOL

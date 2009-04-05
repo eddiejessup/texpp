@@ -55,6 +55,8 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("string", StringMacro);
 
     __TEXPP_SET_COMMAND("noexpand", NoexpandMacro);
+
+    __TEXPP_SET_COMMAND("fontname", FontnameMacro);
     
     // various commands
     __TEXPP_SET_COMMAND("end", End);
@@ -408,7 +410,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("endcsname", UnimplementedCommand);
     __TEXPP_SET_COMMAND("expandafter", UnimplementedCommand);
     __TEXPP_SET_COMMAND("the", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("fontname", UnimplementedCommand);
     __TEXPP_SET_COMMAND("jobname", UnimplementedCommand);
     __TEXPP_SET_COMMAND("meaning", UnimplementedCommand);
     __TEXPP_SET_COMMAND("topmark", UnimplementedCommand);

@@ -29,6 +29,15 @@ string FontSelector::texRepr(char) const
     return "select font " + initFontInfo()->file;
 }
 
+string FontVariable::fontToString(const FontInfo& fontInfo)
+{
+    string str(fontInfo.file);
+    if(fontInfo.at) {
+        str += " at " + InternalDimen::dimenToString(fontInfo.at);
+    }
+    return str;
+}
+
 bool FontSelector::invokeOperation(Parser& parser,
                         shared_ptr<Node> node, Operation op)
 {
@@ -78,23 +87,49 @@ bool Font::invokeOperation(Parser& parser,
         Node::ptr fileName = parser.parseFileName();
         node->appendChild("file_name", fileName);
 
+        int at = 0;
         static vector<string> kw_at;
         if(kw_at.empty()) {
             kw_at.push_back("at");
             kw_at.push_back("scaled");
         }
 
-        Node::ptr at = parser.parseOptionalKeyword(kw_at);
-        node->appendChild("at_clause", at);
+        Node::ptr atKw = parser.parseOptionalKeyword(kw_at);
+        node->appendChild("at_clause", atKw);
 
-        if(at->value(string()) == "at") {
-            node->appendChild("at", parser.parseDimen());
-        } else if(at->value(string()) == "scaled") {
-            node->appendChild("scaled", parser.parseNumber());
+        if(atKw->value(string()) == "at") {
+            Node::ptr atNode = parser.parseDimen();
+            node->appendChild("at", atNode);
+
+            at = atNode->value(int(0));
+            if(at <= 0 || at >= 0x8000000) {
+                parser.logger()->log(Logger::ERROR,
+                    "Improper `at' size (" +
+                    InternalDimen::dimenToString(at) +
+                    + "), replaced by 10pt",
+                    parser, parser.lastToken());
+                at = 655360;
+            }
+
+        } else if(atKw->value(string()) == "scaled") {
+            Node::ptr scaledNode = parser.parseNumber();
+            node->appendChild("scaled", scaledNode);
+
+            int scaled = scaledNode->value(int(0));
+            if(scaled <= 0 || scaled > 32768) {
+                parser.logger()->log(Logger::ERROR,
+                    "Illegal magnification has been changed to 1000 (" +
+                    boost::lexical_cast<string>(scaled) + ")",
+                    parser, parser.lastToken());
+                scaled = 1000;
+            }
+
+            // TODO: take actual font size into account !
+            at = InternalDimen::multiplyIntFrac(655360, scaled, 1000).get<0>();
         }
 
         FontInfo::ptr fontInfo(new FontInfo(ltoken->value(),
-                                fileName->value(string())));
+                                fileName->value(string()), at));
         
         node->setValue(fontInfo);
         parser.setSymbol(ltoken->value(),
@@ -241,6 +276,25 @@ bool FontDimen::invokeOperation(Parser& parser,
     } else {
         return SpecialDimen::invokeOperation(parser, node, op);
     }
+}
+
+bool FontnameMacro::expand(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr font =
+        Variable::tryParseVariableValue<base::FontVariable>(parser);
+    if(!font) {
+        parser.logger()->log(Logger::ERROR,
+            "Missing font identifier",
+            parser, parser.lastToken());
+        font = Node::ptr(new Node("error_missing_font"));
+        font->setValue(defaultFontInfo);
+    }
+    node->appendChild("font", font);
+
+    node->setValue(stringToTokens(
+        FontVariable::fontToString(*font->value(defaultFontInfo))));
+
+    return true;
 }
 
 } // namespace base

@@ -278,9 +278,11 @@ BOOST_AUTO_TEST_CASE( parser_expansion )
 
     token = Token(Token::TOK_CHARACTER, Token::CC_OTHER, "8", "", 0, 0, 0);
     BOOST_CHECK_EQUAL(parser->peekToken()->repr(), token.repr());
-    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(),
+            Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9).repr());
     BOOST_CHECK_EQUAL(parser->nextToken(&tokens)->repr(), token.repr());
-    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(),
+            Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9).repr());
 
     BOOST_CHECK_EQUAL(tokens.size(), 2);
     if(tokens.size() == 2) {
@@ -303,9 +305,11 @@ BOOST_AUTO_TEST_CASE( parser_expansion )
     tokens.clear();
     token = Token(Token::TOK_CHARACTER, Token::CC_OTHER, "9", "", 0, 0, 0);
     BOOST_CHECK_EQUAL(parser->peekToken()->repr(), token.repr());
-    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(),
+            Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9).repr());
     BOOST_CHECK_EQUAL(parser->nextToken(&tokens)->repr(), token.repr());
-    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(),
+            Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9).repr());
 
     BOOST_CHECK_EQUAL(tokens.size(), 1);
     if(tokens.size() == 1)
