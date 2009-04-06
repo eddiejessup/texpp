@@ -68,23 +68,47 @@ bool Let::invoke(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
-bool FutureLet::parseArgs(Parser&, Node::ptr)
+bool Futurelet::invoke(Parser& parser, Node::ptr node)
 {
-    /*
-    node->appendChild("lvalue", parser.parseControlSequence());
-    Node::ptr equals = parser.parseOptionalEquals();
-    node->appendChild("equals", equals);
+    Node::ptr lvalue = parser.parseControlSequence(false);
+    node->appendChild("lvalue", lvalue);
 
-    if(helperIsImplicitCharacter(Token::CC_SPACE, false))
-        parser.nextToken(&equals->tokens());
+    Node::ptr tokenNode = parser.parseToken(false);
+    node->appendChild("token", tokenNode);
 
-    node->appendChild("rvalue", parser.parseToken());*/
+    Node::ptr rvalue = parser.parseToken(false);
+    node->appendChild("rvalue", rvalue);
 
-    // XXX TODO: push tokens back
+    Token::ptr ltoken = lvalue->value(Token::ptr());
+    Token::ptr rtoken = rvalue->value(Token::ptr());
+    Token::ptr token = tokenNode->value(Token::ptr());
+
+    if(rtoken->isControl()) {
+        parser.setSymbol(
+            ltoken, parser.symbol(rtoken, Command::ptr()),
+            parser.isPrefixActive("\\global")
+            );
+    } else {
+        parser.setSymbol(
+            ltoken, Command::ptr(new TokenCommand(rtoken)),
+            parser.isPrefixActive("\\global")
+            );
+    }
+
+    Token::list tokens;
+    if(token)
+        tokens.push_back(Token::ptr(new Token(token->type(),
+                        token->catCode(), token->value())));
+    if(rtoken)
+        tokens.push_back(Token::ptr(new Token(rtoken->type(),
+                        rtoken->catCode(), rtoken->value())));
+
+    parser.pushBack(&tokens);
 
     return true;
 }
 
+/*
 bool FutureLet::execute(Parser& parser, Node::ptr node)
 {
     parser.setSymbol(
@@ -97,7 +121,7 @@ bool FutureLet::execute(Parser& parser, Node::ptr node)
     );
     return true;
 }
-
+*/
 
 } // namespace base
 } // namespace texpp

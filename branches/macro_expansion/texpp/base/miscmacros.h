@@ -60,6 +60,13 @@ public:
     bool invoke(Parser& parser, shared_ptr<Node> node);
 };
 
+class ExpandafterMacro: public Macro
+{
+public:
+    explicit ExpandafterMacro(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
+};
+
 class NoexpandMacro: public Macro
 {
 public:

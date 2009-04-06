@@ -47,13 +47,14 @@ public:
     }
 };
 
-class FutureLet: public Command
+class Futurelet: public Command
 {
 public:
-    explicit FutureLet(const string& name): Command(name) {}
-
-    bool parseArgs(Parser& parser, shared_ptr<Node> node);
-    bool execute(Parser&, shared_ptr<Node>);
+    explicit Futurelet(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool checkPrefixes(Parser& parser) {
+        return checkPrefixesGlobal(parser);
+    }
 };
 
 template<class Cmd>

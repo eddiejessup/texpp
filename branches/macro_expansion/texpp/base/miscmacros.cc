@@ -123,6 +123,29 @@ bool EndcsnameMacro::invoke(Parser& parser, shared_ptr<Node>)
     return true;
 }
 
+bool ExpandafterMacro::expand(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr child1 = parser.parseToken(false); // don't expand
+    node->appendChild("token1", child1);
+
+    Node::ptr child2 = parser.parseToken(true); // expand
+    node->appendChild("token2", child2);
+
+    Token::ptr token1 = child1->value(Token::ptr());
+    Token::ptr token2 = child2->value(Token::ptr());
+    Token::list tokens;
+    if(token1)
+        tokens.push_back(Token::ptr(new Token(token1->type(),
+                        token1->catCode(), token1->value())));
+    if(token2)
+        tokens.push_back(Token::ptr(new Token(token2->type(),
+                        token2->catCode(), token2->value())));
+
+    parser.pushBack(&tokens);
+
+    return true;
+}
+
 bool NoexpandMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
     Node::ptr child = parser.parseToken(false);
