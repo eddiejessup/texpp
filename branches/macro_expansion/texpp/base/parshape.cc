@@ -31,7 +31,7 @@ bool Parshape::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
 
         Node::ptr countNode = parser.parseNumber();
         node->appendChild("count", countNode);

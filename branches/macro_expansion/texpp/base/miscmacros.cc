@@ -18,7 +18,10 @@
 
 #include <texpp/base/miscmacros.h>
 #include <texpp/parser.h>
+#include <texpp/logger.h>
 #include <texpp/lexer.h>
+
+#include <texpp/base/misc.h>
 
 #include <boost/lexical_cast.hpp>
 
@@ -74,6 +77,49 @@ bool StringMacro::expand(Parser& parser, shared_ptr<Node> node)
     }
 
     node->setValue(stringToTokens(str));
+    return true;
+}
+
+bool CsnameMacro::expand(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr child(new Node("args"));
+    node->appendChild("args", child);
+
+    string name(1, '\\');
+    while(parser.peekToken() && parser.peekToken()->isCharacter()) {
+        name += parser.peekToken()->value();
+        parser.nextToken(&child->tokens());
+    }
+
+    Command::ptr cmd =
+        parser.symbolCommand<EndcsnameMacro>(parser.peekToken());
+    if(cmd) {
+        parser.nextToken(&child->tokens());
+    } else {
+        char escape = parser.symbol("escapechar", int(0));
+        parser.logger()->log(Logger::ERROR,
+            "Missing " + string(1, escape) + "endcsname inserted",
+            parser, parser.lastToken());
+    }
+
+    if(!parser.symbol(name, Command::ptr())) {
+        // TODO: Do not create new "\\relax", use exising one instead!
+        parser.setSymbol(name, Command::ptr(new Relax("\\relax")));
+    }
+
+    node->setValue(Token::list(1, Token::ptr(
+        new Token(Token::TOK_CONTROL, Token::CC_ESCAPE, name))));
+
+    return true;
+}
+
+bool EndcsnameMacro::invoke(Parser& parser, shared_ptr<Node>)
+{
+    char escape = parser.symbol("escapechar", int(0));
+    parser.logger()->log(Logger::ERROR,
+        "Extra " + texRepr(escape),
+        parser, parser.lastToken());
+
     return true;
 }
 

@@ -31,7 +31,7 @@ bool InternalDimen::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 
@@ -145,7 +145,7 @@ bool SpecialDimen::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 
@@ -189,7 +189,7 @@ bool BoxDimen::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 

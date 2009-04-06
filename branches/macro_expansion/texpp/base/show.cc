@@ -27,12 +27,13 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace texpp {
-namespace base {
+namespace {
 
-bool Show::invoke(Parser& parser, shared_ptr<Node> node)
+using namespace texpp;
+
+bool parseMeaning(Parser& parser, shared_ptr<Node> node, bool show)
 {
-    Node::ptr tokenNode = parser.parseToken();
+    Node::ptr tokenNode = parser.parseToken(false);
     Token::ptr token = tokenNode->value(Token::ptr());
     node->appendChild("token", tokenNode);
 
@@ -41,27 +42,47 @@ bool Show::invoke(Parser& parser, shared_ptr<Node> node)
         str = token->meaning();
     } else {
         char escape = parser.symbol("escapechar", int(0));
-        str = token->texRepr(escape) + '=';
+        if(show)
+            str = token->texRepr(escape) + '=';
 
         Command::ptr c = parser.symbol(token, Command::ptr());
         if(c) str += c->texRepr(escape);
         else str += "undefined";
     }
-    parser.logger()->log(Logger::SHOW, str, parser, parser.lastToken());
+
+    if(show)
+        parser.logger()->log(Logger::SHOW, str, parser, parser.lastToken());
+    else
+        node->setValue(Macro::stringToTokens(str));
+
     return true;
 }
 
-bool ShowThe::invoke(Parser& parser, Node::ptr node)
+bool parseThe(Parser& parser, shared_ptr<Node> node, bool show)
 {
     Node::ptr tokenNode = parser.parseToken();
     Token::ptr token = tokenNode->value(Token::ptr());
     node->appendChild("token", tokenNode);
 
     string str;
-    shared_ptr<Variable> var = parser.symbolCommand<Variable>(token);
-    if(var) {
-        bool ok = var->invokeOperation(parser, node, Variable::EXPAND);
+    shared_ptr<base::Variable> var =
+        parser.symbolCommand<base::Variable>(token);
+
+    if(!show && dynamic_pointer_cast<base::ToksVariable>(var)) {
+        var->invokeOperation(parser, node, base::Variable::GET);
+        Token::list toks = node->value(Token::list());
+        Token::list toks_copy(toks.size());
+        for(size_t n=0; n<toks.size(); ++n) {
+            toks_copy[n] = Token::ptr(new Token(
+                toks[n]->type(), toks[n]->catCode(), toks[n]->value()));
+        }
+        node->setValue(toks_copy);
+        return true;
+
+    } else if(var) {
+        bool ok = var->invokeOperation(parser, node, base::Variable::EXPAND);
         if(ok) str = node->value(string());
+
     } else {
         string tname = token->texRepr();
         Command::ptr cmd = parser.symbol(token, Command::ptr());
@@ -73,10 +94,38 @@ bool ShowThe::invoke(Parser& parser, Node::ptr node)
         str = "0";
     }
 
-    parser.logger()->log(Logger::SHOW, str,
-        parser, parser.lastToken());
+    if(show)
+        parser.logger()->log(Logger::SHOW, str,
+            parser, parser.lastToken());
+    else
+        node->setValue(Macro::stringToTokens(str));
 
-    return bool(var);
+    return true;
+}
+
+} // namespace
+
+namespace texpp {
+namespace base {
+
+bool Show::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    return parseMeaning(parser, node, true);
+}
+
+bool MeaningMacro::expand(Parser& parser, shared_ptr<Node> node)
+{
+    return parseMeaning(parser, node, false);
+}
+
+bool ShowThe::invoke(Parser& parser, Node::ptr node)
+{
+    return parseThe(parser, node, true);
+}
+
+bool TheMacro::expand(Parser& parser, shared_ptr<Node> node)
+{
+    return parseThe(parser, node, false);
 }
 
 } // namespace base

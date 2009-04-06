@@ -46,6 +46,20 @@ public:
     bool expand(Parser& parser, shared_ptr<Node> node);
 };
 
+class CsnameMacro: public Macro
+{
+public:
+    explicit CsnameMacro(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
+};
+
+class EndcsnameMacro: public Command
+{
+public:
+    explicit EndcsnameMacro(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
 class NoexpandMacro: public Macro
 {
 public:

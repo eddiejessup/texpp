@@ -39,6 +39,20 @@ public:
     bool invoke(Parser& parser, shared_ptr<Node> node);
 };
 
+class MeaningMacro: public Macro
+{
+public:
+    explicit MeaningMacro(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
+};
+
+class TheMacro: public Macro
+{
+public:
+    explicit TheMacro(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 

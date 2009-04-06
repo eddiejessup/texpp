@@ -32,7 +32,7 @@ bool InternalInteger::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseNumber();
         node->appendChild("rvalue", rvalue);
 
@@ -112,7 +112,7 @@ bool CharcodeVariable::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseNumber();
         node->appendChild("rvalue", rvalue);
 
@@ -141,7 +141,7 @@ bool SpecialInteger::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseNumber();
         node->appendChild("rvalue", rvalue);
 

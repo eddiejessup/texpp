@@ -88,7 +88,7 @@ bool Setbox::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         node->appendChild("filler", parser.parseFiller());
 
         Node::ptr rvalue =

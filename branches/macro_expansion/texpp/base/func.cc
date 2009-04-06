@@ -30,11 +30,24 @@ bool Prefix::invoke(Parser& parser, shared_ptr<Node>)
 
 bool Let::invoke(Parser& parser, shared_ptr<Node> node)
 {
-    Node::ptr lvalue = parser.parseControlSequence();
+    Node::ptr lvalue = parser.parseControlSequence(false);
     node->appendChild("lvalue", lvalue);
-    node->appendChild("equals", parser.parseOptionalEquals(true));
 
-    Node::ptr rvalue = parser.parseToken();
+    Node::ptr equals(new Node("optional_equals"));
+    node->appendChild("equals", equals);
+
+    while(parser.helperIsImplicitCharacter(Token::CC_SPACE, false))
+        parser.nextToken(&equals->tokens());
+
+    if(parser.peekToken(false) && \
+            parser.peekToken(false)->isCharacter('=', Token::CC_OTHER)) {
+        equals->setValue(parser.nextToken(&equals->tokens()));
+    }
+
+    if(parser.helperIsImplicitCharacter(Token::CC_SPACE, false))
+        parser.nextToken(&equals->tokens());
+
+    Node::ptr rvalue = parser.parseToken(false);
     node->appendChild("rvalue", rvalue);
 
     Token::ptr ltoken = lvalue->value(Token::ptr());
@@ -55,11 +68,17 @@ bool Let::invoke(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
-bool FutureLet::parseArgs(Parser& parser, Node::ptr node)
+bool FutureLet::parseArgs(Parser&, Node::ptr)
 {
+    /*
     node->appendChild("lvalue", parser.parseControlSequence());
-    node->appendChild("token", parser.parseOptionalEquals(true));
-    node->appendChild("rvalue", parser.parseToken());
+    Node::ptr equals = parser.parseOptionalEquals();
+    node->appendChild("equals", equals);
+
+    if(helperIsImplicitCharacter(Token::CC_SPACE, false))
+        parser.nextToken(&equals->tokens());
+
+    node->appendChild("rvalue", parser.parseToken());*/
 
     // XXX TODO: push tokens back
 

@@ -137,7 +137,7 @@ public:
 
     Node::ptr parseToken(bool expand = true);
     Node::ptr parseMMathToken();
-    Node::ptr parseControlSequence();
+    Node::ptr parseControlSequence(bool expand = true);
     Node::ptr parseCharacter(const string& type = string("character"));
 
     Node::ptr parseOptionalSpaces();
@@ -145,7 +145,7 @@ public:
     Node::ptr parseKeyword(const vector<string>& keywords);
     Node::ptr parseOptionalKeyword(const vector<string>& keywords);
 
-    Node::ptr parseOptionalEquals(bool oneSpaceAfter);
+    Node::ptr parseOptionalEquals();
     Node::ptr parseOptionalSigns();
     Node::ptr parseNormalInteger();
     Node::ptr parseNumber();

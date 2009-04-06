@@ -79,7 +79,7 @@ string Lexer::jobName() const
     n = jobname.rfind(".tex");
     if(n != jobname.npos)
         jobname = jobname.substr(0, n);
-    return jobName();
+    return jobname;
 }
 
 const string& Lexer::line(size_t n) const

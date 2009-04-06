@@ -524,16 +524,16 @@ Node::ptr Parser::parseMMathToken()
     return node;
 }
 
-Node::ptr Parser::parseControlSequence()
+Node::ptr Parser::parseControlSequence(bool expand)
 {
     Node::ptr node(new Node("control_sequence"));
-    Token::ptr token = peekToken();
+    Token::ptr token = peekToken(expand);
 
     if(token && token->isControl()) {
-        node->setValue(nextToken(&node->tokens()));
+        node->setValue(nextToken(&node->tokens(), expand));
     } else {
         logger()->log(Logger::ERROR,
-            "Missing control sequence inserted", *this, token);
+            "Missing control sequence inserted", *this, lastToken());
         node->setValue(Token::ptr(new Token(Token::TOK_CONTROL,
                             Token::CC_ESCAPE, "inaccessible")));
     }
@@ -613,7 +613,7 @@ Node::ptr Parser::parseOptionalKeyword(const vector<string>& keywords)
     return node;
 }
 
-Node::ptr Parser::parseOptionalEquals(bool oneSpaceAfter)
+Node::ptr Parser::parseOptionalEquals()
 {
     Node::ptr node(new Node("optional_equals"));
     while(helperIsImplicitCharacter(Token::CC_SPACE))
@@ -623,8 +623,10 @@ Node::ptr Parser::parseOptionalEquals(bool oneSpaceAfter)
         node->setValue(nextToken(&node->tokens()));
     }
 
+    /*
     if(oneSpaceAfter && helperIsImplicitCharacter(Token::CC_SPACE))
         nextToken(&node->tokens());
+    */
 
     resetNoexpand();
     return node;

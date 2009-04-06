@@ -53,10 +53,16 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("number", NumberMacro);
     __TEXPP_SET_COMMAND("romannumeral", RomannumeralMacro);
     __TEXPP_SET_COMMAND("string", StringMacro);
+    __TEXPP_SET_COMMAND("meaning", MeaningMacro);
+    __TEXPP_SET_COMMAND("the", TheMacro);
 
     __TEXPP_SET_COMMAND("noexpand", NoexpandMacro);
 
     __TEXPP_SET_COMMAND("fontname", FontnameMacro);
+    __TEXPP_SET_COMMAND("jobname", JobnameMacro);
+
+    __TEXPP_SET_COMMAND("csname", CsnameMacro);
+    __TEXPP_SET_COMMAND("endcsname", EndcsnameMacro);
     
     // various commands
     __TEXPP_SET_COMMAND("end", End);
@@ -406,12 +412,7 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("abovewithdelims", UnimplementedCommand);
 
     // unimplemented macros
-    __TEXPP_SET_COMMAND("csname", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("endcsname", UnimplementedCommand);
     __TEXPP_SET_COMMAND("expandafter", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("the", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("jobname", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("meaning", UnimplementedCommand);
     __TEXPP_SET_COMMAND("topmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("firstmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("botmark", UnimplementedCommand);

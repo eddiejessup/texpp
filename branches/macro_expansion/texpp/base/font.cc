@@ -82,7 +82,7 @@ bool Font::invokeOperation(Parser& parser,
         Token::ptr ltoken = lvalue->value(Token::ptr());
 
         node->appendChild("lvalue", lvalue);
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
 
         Node::ptr fileName = parser.parseFileName();
         node->appendChild("file_name", fileName);
@@ -165,7 +165,7 @@ bool FontFamily::invokeOperation(Parser& parser,
     } else if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
 
         Node::ptr rvalue =
             Variable::tryParseVariableValue<base::FontVariable>(parser);
@@ -265,7 +265,7 @@ bool FontDimen::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 

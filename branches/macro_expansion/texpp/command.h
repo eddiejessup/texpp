@@ -77,8 +77,7 @@ public:
     bool checkPrefixes(Parser&) { return false; }
     virtual bool expand(Parser&, shared_ptr<Node>) { return false; }
 
-protected:
-    vector<shared_ptr<Token> > stringToTokens(const string& str);
+    static vector<shared_ptr<Token> > stringToTokens(const string& str);
 };
 
 } // namespace texpp

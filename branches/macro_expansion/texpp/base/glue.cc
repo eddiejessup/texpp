@@ -33,7 +33,7 @@ bool invokeGlueOperation(Variable& var, Parser& parser,
     if(op == Variable::ASSIGN) {
         string name = var.parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseGlue(mu);
         node->appendChild("rvalue", rvalue);
 

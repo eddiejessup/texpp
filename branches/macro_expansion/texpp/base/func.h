@@ -79,7 +79,7 @@ bool RegisterDef<Cmd>::invoke(Parser& parser, shared_ptr<Node> node)
 {
     Node::ptr lvalue = parser.parseControlSequence();
     node->appendChild("lvalue", lvalue);
-    node->appendChild("equals", parser.parseOptionalEquals(true));
+    node->appendChild("equals", parser.parseOptionalEquals());
 
     Node::ptr rvalue = parser.parseNumber();
     node->appendChild("rvalue", rvalue);

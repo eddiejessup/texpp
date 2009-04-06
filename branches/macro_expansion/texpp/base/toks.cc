@@ -32,7 +32,7 @@ bool InternalToks::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
 
         Node::ptr internal =
             Variable::tryParseVariableValue<base::InternalToks>(parser);
