@@ -24,7 +24,7 @@ namespace base {
 
 shared_ptr<FontInfo> defaultFontInfo(new FontInfo("\\nullfont", "nullfont"));
 
-string FontSelector::texRepr(char) const
+string FontSelector::texRepr(Parser*) const
 {
     return "select font " + initFontInfo()->file;
 }

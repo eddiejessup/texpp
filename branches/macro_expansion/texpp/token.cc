@@ -17,9 +17,14 @@
 */
 
 #include <texpp/token.h>
+#include <texpp/parser.h>
+#include <texpp/logger.h>
 
 #include <sstream>
 #include <iomanip>
+
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace {
 const texpp::string catCodeLongNames[] = {
@@ -68,8 +73,32 @@ const texpp::string catCodeNames[] = {
 
 namespace texpp {
 
-string Token::texRepr(char escape) const
+string Token::texReprList(const Token::list& tokens, Parser* parser)
 {
+    string str;
+    char newlinechar = parser ? parser->symbol("newlinechar", int(0)) : -1;
+    BOOST_FOREACH(Token::ptr token, tokens) {
+        if(token->isControl()) {
+            str += token->texRepr(parser);
+            if(token->value().size() > 1 &&
+                    token->value()[0] == '\\') {
+                 int ccode = parser ? parser->symbol("catcode" +
+                    boost::lexical_cast<string>(
+                        int(token->value()[1])), int(0)) : -1;
+                if(ccode == Token::CC_LETTER) str += ' ';
+            }
+        } else if(token->isCharacter(newlinechar)) {
+            str += '\n';
+        } else if(token->isCharacter()) {
+            str += token->value();
+        }
+    }
+    return str;
+}
+
+string Token::texRepr(Parser* parser) const
+{
+    char escape = parser ? parser->symbol("escapechar", int(0)) : '\\';
     if(isControl()) {
         if(m_value[0] == '\\') {
             if(m_value.size() == 1) {
@@ -88,12 +117,12 @@ string Token::texRepr(char escape) const
     }
 }
 
-string Token::meaning() const
+string Token::meaning(Parser* parser) const
 {
     if(isCharacter()) {
         return catCodeLongNames[m_catCode] + " " + m_value;
     } else if(isControl()) {
-        return "control sequence " + texRepr('\\');
+        return "control sequence " + texRepr(parser);
     } else if(isSkipped()) {
         return "skipped characters";
     }

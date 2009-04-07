@@ -61,7 +61,8 @@ bool InternalToks::invokeOperation(Parser& parser,
 
 string InternalToks::toksToString(Parser& parser, const Token::list& toks)
 {
-    string str;
+    return Token::texReprList(toks, &parser);
+    /*
     char newlinechar = parser.symbol("newlinechar", int(0));
     char escapechar = parser.symbol("escapechar", int(0));
     BOOST_FOREACH(Token::ptr token, toks) {
@@ -81,6 +82,7 @@ string InternalToks::toksToString(Parser& parser, const Token::list& toks)
         }
     }
     return str;
+    */
 }
 
 } // namespace base

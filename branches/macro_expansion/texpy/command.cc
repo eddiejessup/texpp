@@ -31,14 +31,14 @@ public:
     CommandWrap(const string& name = string())
         : Cmd(name) {}
 
-    string texRepr(char escape) const {
+    string texRepr(Parser* parser) const {
         if(override f = this->get_override("texRepr"))
-            return f(escape);
-        return this->Cmd::texRepr();
+            return f(parser);
+        return this->Cmd::texRepr(parser);
     }
 
-    string default_texRepr(char escape) const {
-        return this->Cmd::texRepr(escape);
+    string default_texRepr(Parser* parser) const {
+        return this->Cmd::texRepr(parser);
     }
 
     bool invoke(Parser& p, Node::ptr n) {

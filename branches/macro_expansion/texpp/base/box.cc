@@ -41,7 +41,7 @@ bool Lastbox::invokeOperation(Parser& parser,
     if(parser.mode() == Parser::VERTICAL ||
                 parser.mode() == Parser::MATH) {
         parser.logger()->log(Logger::ERROR,
-            "You can't use `" + texRepr() + "' in " +
+            "You can't use `" + texRepr(&parser) + "' in " +
             parser.modeName() + " mode",
             parser, parser.lastToken());
         return true;

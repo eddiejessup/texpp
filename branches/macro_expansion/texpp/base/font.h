@@ -70,7 +70,7 @@ public:
     bool invokeOperation(Parser& parser,
                         shared_ptr<Node> node, Operation op);
 
-    string texRepr(char escape = '\\') const;
+    string texRepr(Parser* parser = NULL) const;
 };
 
 class Font: public FontVariable

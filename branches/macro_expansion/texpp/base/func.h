@@ -91,6 +91,33 @@ bool RegisterDef<Cmd>::invoke(Parser& parser, shared_ptr<Node> node)
     return m_group->createDef(parser, ltoken, num);
 }
 
+class Def: public Command
+{
+public:
+    explicit Def(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool checkPrefixes(Parser& parser) {
+        return checkPrefixesMacro(parser);
+    }
+};
+
+class UserMacro: public Macro
+{
+public:
+    explicit UserMacro(const string& name,
+        Token::list_ptr params, Token::list_ptr definition)
+        : Macro(name), m_params(params), m_definition(definition) {}
+
+    Token::list params() { return *m_params; }
+    Token::list definition() { return *m_definition; }
+
+    string texRepr(Parser* parser = NULL) const;
+
+protected:
+    Token::list_ptr m_params;
+    Token::list_ptr m_definition;
+};
+
 } // namespace base
 } // namespace texpp
 

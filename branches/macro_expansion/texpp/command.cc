@@ -24,11 +24,11 @@
 
 namespace texpp {
 
-string Command::texRepr(char escape) const
+string Command::texRepr(Parser* parser) const
 {
     if(!m_name.empty() && m_name[0] == '\\') {
         string ret = m_name;
-        ret[0] = escape;
+        ret[0] = parser ? parser->symbol("escapechar", int(0)) : '\\';
         return ret;
     }
     return m_name;
@@ -44,7 +44,7 @@ bool Command::checkPrefixes(Parser& parser)
 {
     if(!parser.activePrefixes().empty()) {
         parser.logger()->log(Logger::ERROR,
-            "You can't use a prefix with `" + texRepr() + "'",
+            "You can't use a prefix with `" + texRepr(&parser) + "'",
             parser, parser.lastToken());
         parser.activePrefixes().clear();
     }
@@ -62,7 +62,7 @@ bool Command::checkPrefixesGlobal(Parser& parser)
         char escape = parser.symbol("escapechar", int('\\'));
         parser.logger()->log(Logger::ERROR,
             string("You can't use `") + escape + "long' or `" +
-            escape + "outer' with `" + texRepr() + "'",
+            escape + "outer' with `" + texRepr(&parser) + "'",
             parser, parser.lastToken());
 
         bool global = parser.isPrefixActive("\\global");
@@ -82,7 +82,7 @@ bool Command::checkPrefixesMacro(Parser& parser)
 
     if(!ok) {
         parser.logger()->log(Logger::ERROR,
-            "You can't use such a prefix with `" + texRepr() + "'",
+            "You can't use such a prefix with `" + texRepr(&parser) + "'",
             parser, parser.lastToken());
 
         bool global = parser.isPrefixActive("\\global");
@@ -96,7 +96,7 @@ bool Command::checkPrefixesMacro(Parser& parser)
     return true;
 }
 
-string TokenCommand::texRepr(char) const
+string TokenCommand::texRepr(Parser*) const
 {
     return m_token->meaning();
 }

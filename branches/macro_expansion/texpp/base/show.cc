@@ -41,12 +41,11 @@ bool parseMeaning(Parser& parser, shared_ptr<Node> node, bool show)
     if(token->isCharacter()) {
         str = token->meaning();
     } else {
-        char escape = parser.symbol("escapechar", int(0));
         if(show)
-            str = token->texRepr(escape) + '=';
+            str = token->texRepr(&parser) + '=';
 
         Command::ptr c = parser.symbol(token, Command::ptr());
-        if(c) str += c->texRepr(escape);
+        if(c) str += c->texRepr(&parser);
         else str += "undefined";
     }
 
@@ -84,9 +83,9 @@ bool parseThe(Parser& parser, shared_ptr<Node> node, bool show)
         if(ok) str = node->value(string());
 
     } else {
-        string tname = token->texRepr();
+        string tname = token->texRepr(&parser);
         Command::ptr cmd = parser.symbol(token, Command::ptr());
-        if(cmd) tname = cmd->texRepr();
+        if(cmd) tname = cmd->texRepr(&parser);
         parser.logger()->log(Logger::ERROR,
             "You can't use `" + tname +
             "' after " + char(parser.symbol("escapechar", int(0))) + "the",

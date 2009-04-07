@@ -147,7 +147,7 @@ bool ReadOnlyVariable<Var>::invokeOperation(Parser& parser,
 {
     if(op == Variable::ASSIGN) {
         parser.logger()->log(Logger::ERROR, "You can't use `" +
-            this->texRepr() + "' in " + parser.modeName() + " mode",
+            this->texRepr(&parser) + "' in " + parser.modeName() + " mode",
             parser, parser.lastToken());
         return true;
     } else {

@@ -108,20 +108,85 @@ bool Futurelet::invoke(Parser& parser, Node::ptr node)
     return true;
 }
 
-/*
-bool FutureLet::execute(Parser& parser, Node::ptr node)
+bool Def::invoke(Parser& parser, shared_ptr<Node> node)
 {
-    parser.setSymbol(
-        node->child(1)->value(Token::ptr()),
-        parser.symbol(
-            node->child(3)->value(Token::ptr()),
-            Command::ptr()
-        ),
-        parser.isPrefixActive("\\global")
-    );
+    Node::ptr lvalue = parser.parseControlSequence(false);
+    node->appendChild("lvalue", lvalue);
+
+    Node::ptr paramsNode(new Node("params"));
+    node->appendChild("params", paramsNode);
+
+    int paramNum = 0;
+    Token::list_ptr params(new Token::list);
+    while(parser.peekToken(false)) {
+        if(parser.peekToken(false)->isCharacterCat(Token::CC_BGROUP)) {
+            break;
+        } else if(parser.peekToken(false)->isCharacterCat(Token::CC_EGROUP)) {
+            break;
+        } else if(parser.peekToken(false)->isCharacterCat(Token::CC_PARAM)) {
+            int curParamNum = 0;
+            params->push_back(parser.nextToken(&paramsNode->tokens(), false));
+            if(parser.peekToken(false) &&
+                    parser.peekToken(false)->isCharacter()) {
+                char ch = parser.peekToken(false)->value()[0];
+                if(std::isdigit(ch)) curParamNum = ch - '0';
+            }
+            if(curParamNum != ++paramNum) {
+                parser.logger()->log(Logger::ERROR,
+                    "Parameters must be numbered consecutively",
+                    parser, parser.lastToken());
+            }
+        } else {
+            params->push_back(parser.nextToken(&paramsNode->tokens(), false));
+        }
+    }
+
+    paramsNode->setValue(params);
+
+    Node::ptr left_brace(new Node("left_brace"));
+    node->appendChild("left_brace", left_brace);
+
+    if(parser.peekToken(false) && 
+            parser.peekToken(false)->isCharacterCat(Token::CC_BGROUP)) {
+        left_brace->setValue(parser.nextToken(&left_brace->tokens(), false));
+    } else {
+        parser.logger()->log(Logger::ERROR, "Missing { inserted",
+            parser, parser.lastToken());
+        left_brace->setValue(Token::ptr(new Token(
+                    Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
+    }
+
+    Node::ptr definition = parser.parseBalancedText();
+    node->appendChild("definition", definition);
+
+    Node::ptr right_brace(new Node("right_brace"));
+    node->appendChild("right_brace", right_brace);
+    if(parser.peekToken(false) &&
+            parser.peekToken(false)->isCharacterCat(Token::CC_EGROUP)) {
+        right_brace->setValue(parser.nextToken(&right_brace->tokens()));
+    } else {
+        // TODO: error
+        right_brace->setValue(Token::ptr(new Token(
+                    Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
+    }
+
+    Token::ptr ltoken = lvalue->value(Token::ptr());
+    parser.setSymbol(ltoken,
+        Command::ptr(new UserMacro(ltoken ? ltoken->value() : "\\undefined",
+            paramsNode->value(Token::list_ptr()),
+            definition->value(Token::list_ptr()))));
+
     return true;
 }
-*/
+
+string UserMacro::texRepr(Parser* parser) const
+{
+    string str = "macro:\n";
+    if(m_params) str += Token::texReprList(*m_params, parser);
+    str += "->";
+    if(m_definition) str += Token::texReprList(*m_definition, parser);
+    return str;
+}
 
 } // namespace base
 } // namespace texpp

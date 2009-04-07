@@ -169,8 +169,8 @@ bool Spacefactor::invokeOperation(Parser& parser,
     if(parser.mode() != Parser::HORIZONTAL &&
             parser.mode() != Parser::RHORIZONTAL) {
         parser.logger()->log(Logger::ERROR,
-            op == GET || op == EXPAND ? "Improper " + texRepr() :
-            "You can't use `" + texRepr() +
+            op == GET || op == EXPAND ? "Improper " + texRepr(&parser) :
+            "You can't use `" + texRepr(&parser) +
             "' in " + parser.modeName() + " mode",
             parser, parser.lastToken());
         if(op == GET) node->setValue(int(0));

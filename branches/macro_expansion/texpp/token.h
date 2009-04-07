@@ -23,6 +23,8 @@
 
 namespace texpp {
 
+class Parser;
+
 class Token
 {
 public:
@@ -104,9 +106,12 @@ public:
         return last == '\r' || last == '\n';
     }
 
-    string texRepr(char escape = '\\') const;
+    string texRepr(Parser* parser = NULL) const;
+    string meaning(Parser* parser = NULL) const;
     string repr() const;
-    string meaning() const;
+
+    static string texReprList(const Token::list& tokens,
+                                Parser* parser = NULL);
 
 protected:
     Type        m_type;

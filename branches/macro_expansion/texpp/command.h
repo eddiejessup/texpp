@@ -40,7 +40,7 @@ public:
     const string& name() const { return m_name; }
 
     virtual string repr() const;
-    virtual string texRepr(char escape = '\\') const;
+    virtual string texRepr(Parser* parser = NULL) const;
 
     virtual bool checkPrefixes(Parser&);
     virtual bool invoke(Parser&, shared_ptr<Node>) { return true; }
@@ -60,7 +60,7 @@ public:
 
     const shared_ptr<Token>& token() const { return m_token; }
 
-    string texRepr(char escape = '\\') const;
+    string texRepr(Parser* parser = NULL) const;
     bool invoke(Parser& parser, shared_ptr<Node> node);
 
 protected:

@@ -73,7 +73,7 @@ bool StringMacro::expand(Parser& parser, shared_ptr<Node> node)
     if(token->isControl()) {
         str = token->value();
     } else {
-        str = token->texRepr(parser.symbol("escapechar", int(0)));
+        str = token->texRepr(&parser);
     }
 
     node->setValue(stringToTokens(str));
@@ -115,9 +115,8 @@ bool CsnameMacro::expand(Parser& parser, shared_ptr<Node> node)
 
 bool EndcsnameMacro::invoke(Parser& parser, shared_ptr<Node>)
 {
-    char escape = parser.symbol("escapechar", int(0));
     parser.logger()->log(Logger::ERROR,
-        "Extra " + texRepr(escape),
+        "Extra " + texRepr(&parser),
         parser, parser.lastToken());
 
     return true;

@@ -38,27 +38,17 @@ bool Message::invoke(Parser& parser, Node::ptr node)
         text->child("balanced_text")->value(Token::list_ptr());
 
     if(tokens) {
-        char newlinechar = parser.symbol("newlinechar", int(0));
-        char escapechar = parser.symbol("escapechar", int(0));
+        Token::list tokens_show;
         BOOST_FOREACH(Token::ptr token, *tokens) {
             Command::ptr cmd = parser.symbol(token, Command::ptr());
-            if(cmd) {
-                str += token->texRepr(escapechar);
-                if(token->value().size() > 1 &&
-                        token->value()[0] == '\\') {
-                     int ccode = parser.symbol("catcode" +
-                        lexical_cast<string>(int(token->value()[1])), int(0));
-                    if(ccode == Token::CC_LETTER) str += ' ';
-                }
-            } else if(token->isControl()) {
+            if(token->isControl() && !cmd) {
                 parser.logger()->log(Logger::ERROR,
                     "Undefined control sequence", parser, token);
-            } else if(token->isCharacter(newlinechar)) {
-                str += '\n';
-            } else if(token->isCharacter()) {
-                str += token->value();
+            } else {
+                tokens_show.push_back(token);
             }
         }
+        str = Token::texReprList(tokens_show, &parser);
     }
     parser.logger()->log(Logger::MESSAGE, str, parser, parser.lastToken());
                 //text->child("right_brace")->value(Token::ptr()));

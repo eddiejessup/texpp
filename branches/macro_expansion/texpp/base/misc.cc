@@ -28,7 +28,7 @@ bool UnimplementedCommand::invoke(Parser& parser, shared_ptr<Node> node)
 {
     parser.logger()->log(Logger::UNIMPLEMENTED,
         "Command " +
-        node->child("control_token")->value(Token::ptr())->texRepr() +
+        node->child("control_token")->value(Token::ptr())->texRepr(&parser) +
         " is not yet implemented in TeXpp",
         parser, parser.lastToken());
     return true;
