@@ -105,17 +105,23 @@ class UserMacro: public Macro
 {
 public:
     explicit UserMacro(const string& name,
-        Token::list_ptr params, Token::list_ptr definition)
-        : Macro(name), m_params(params), m_definition(definition) {}
+        Token::list_ptr params, Token::list_ptr definition,
+        bool outerAttr = false, bool longAttr = false)
+        : Macro(name), m_params(params), m_definition(definition),
+          m_outerAttr(outerAttr), m_longAttr(longAttr) {}
 
     Token::list params() { return *m_params; }
     Token::list definition() { return *m_definition; }
+    bool outerAttr() const { return m_outerAttr; }
+    bool longAttr() const { return m_longAttr; }
 
     string texRepr(Parser* parser = NULL) const;
 
 protected:
     Token::list_ptr m_params;
     Token::list_ptr m_definition;
+    bool m_outerAttr;
+    bool m_longAttr;
 };
 
 } // namespace base

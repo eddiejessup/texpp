@@ -124,18 +124,33 @@ bool Def::invoke(Parser& parser, shared_ptr<Node> node)
         } else if(parser.peekToken(false)->isCharacterCat(Token::CC_EGROUP)) {
             break;
         } else if(parser.peekToken(false)->isCharacterCat(Token::CC_PARAM)) {
-            int curParamNum = 0;
-            params->push_back(parser.nextToken(&paramsNode->tokens(), false));
+            ++paramNum;
+            int curParamNum = -1;
+            params->push_back(
+                parser.nextToken(&paramsNode->tokens(), false));
             if(parser.peekToken(false) &&
                     parser.peekToken(false)->isCharacter()) {
                 char ch = parser.peekToken(false)->value()[0];
                 if(std::isdigit(ch)) curParamNum = ch - '0';
             }
-            if(curParamNum != ++paramNum) {
+
+            if(paramNum > 9) {
+                parser.logger()->log(Logger::ERROR,
+                    "You already have nine parameters",
+                    parser, parser.lastToken());
+                params->pop_back();
+            } else if(curParamNum != paramNum) {
                 parser.logger()->log(Logger::ERROR,
                     "Parameters must be numbered consecutively",
                     parser, parser.lastToken());
+                params->push_back(Token::ptr(
+                    new Token(Token::TOK_CHARACTER, Token::CC_OTHER,
+                                boost::lexical_cast<string>(paramNum))));
+            } else {
+                params->push_back(
+                    parser.nextToken(&paramsNode->tokens(), false));
             }
+
         } else {
             params->push_back(parser.nextToken(&paramsNode->tokens(), false));
         }
@@ -174,17 +189,28 @@ bool Def::invoke(Parser& parser, shared_ptr<Node> node)
     parser.setSymbol(ltoken,
         Command::ptr(new UserMacro(ltoken ? ltoken->value() : "\\undefined",
             paramsNode->value(Token::list_ptr()),
-            definition->value(Token::list_ptr()))));
+            definition->value(Token::list_ptr()),
+            parser.isPrefixActive("\\outer"),
+            parser.isPrefixActive("\\long"))),
+        parser.isPrefixActive("\\global"));
 
     return true;
 }
 
 string UserMacro::texRepr(Parser* parser) const
 {
-    string str = "macro:\n";
+    string str;
+
+    char escape = parser ? parser->symbol("escapechar", int(0)) : '\\';
+    if(m_longAttr) str = str + escape + "long";
+    if(m_outerAttr) str = str + escape + "outer";
+    if(!str.empty()) str += ' ';
+
+    str += "macro:\n";
     if(m_params) str += Token::texReprList(*m_params, parser);
     str += "->";
     if(m_definition) str += Token::texReprList(*m_definition, parser);
+
     return str;
 }
 

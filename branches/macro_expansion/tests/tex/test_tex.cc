@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <cstring>
 
 using namespace std;
 
@@ -57,10 +58,13 @@ vector<string> read_log_file(const string& fname)
         buf[0] = 0;
         file.getline(buf, sizeof(buf));
 
-        if(buf[0] == '>' || buf[0] == '!' || buf[0] == '~') {
-            n = 1;
+        if(buf[0] == '>' && std::strlen(buf) >= 9 &&
+                    std::strcmp(buf+std::strlen(buf)-6, "macro:") == 0) {
+            n = 2;
         } else if(buf[0] == 'l' && buf[1] == '.') {
             n = 2;
+        } else if(buf[0] == '>' || buf[0] == '!' || buf[0] == '~') {
+            n = 1;
         }
 
         if(n) {

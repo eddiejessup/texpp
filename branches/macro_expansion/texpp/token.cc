@@ -76,7 +76,6 @@ namespace texpp {
 string Token::texReprList(const Token::list& tokens, Parser* parser)
 {
     string str;
-    char newlinechar = parser ? parser->symbol("newlinechar", int(0)) : -1;
     BOOST_FOREACH(Token::ptr token, tokens) {
         if(token->isControl()) {
             str += token->texRepr(parser);
@@ -87,8 +86,6 @@ string Token::texReprList(const Token::list& tokens, Parser* parser)
                         int(token->value()[1])), int(0)) : -1;
                 if(ccode == Token::CC_LETTER) str += ' ';
             }
-        } else if(token->isCharacter(newlinechar)) {
-            str += '\n';
         } else if(token->isCharacter()) {
             str += token->value();
         }
