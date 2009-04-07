@@ -27,7 +27,7 @@ namespace texpp {
 namespace base {
 
 bool InternalToks::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -45,8 +45,7 @@ bool InternalToks::invokeOperation(Parser& parser,
             node->setValue(tokens ? *tokens : Token::list());
         }
         node->appendChild("rvalue", internal);
-        parser.setSymbol(name, node->valueAny(),
-                    parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, node->valueAny(), global);
         return true;
 
     } else if(op == EXPAND) {
@@ -56,7 +55,7 @@ bool InternalToks::invokeOperation(Parser& parser,
         return true;
 
     }
-    return Variable::invokeOperation(parser, node, op);
+    return Variable::invokeOperation(parser, node, op, global);
 }
 
 string InternalToks::toksToString(Parser& parser, const Token::list& toks)

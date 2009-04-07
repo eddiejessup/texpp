@@ -33,51 +33,67 @@ class Prefix: public Command
 {
 public:
     explicit Prefix(const string& name): Command(name) {}
-    bool invoke(Parser& parser, shared_ptr<Node> node);
-    bool checkPrefixes(Parser&) { return false; }
+    bool invoke(Parser&, shared_ptr<Node>) { return false; }
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>& prefixes);
 };
 
-class Let: public Command
+class AssignmentPrefix: public Prefix
 {
 public:
-    explicit Let(const string& name): Command(name) {}
-    bool invoke(Parser& parser, shared_ptr<Node> node);
-    bool checkPrefixes(Parser& parser) {
-        return checkPrefixesGlobal(parser);
-    }
+    explicit AssignmentPrefix(const string& name = string()): Prefix(name) {}
 };
 
-class Futurelet: public Command
+class Assignment: public Command
 {
 public:
-    explicit Futurelet(const string& name): Command(name) {}
+    explicit Assignment(const string& name = string()): Command(name) {}
     bool invoke(Parser& parser, shared_ptr<Node> node);
-    bool checkPrefixes(Parser& parser) {
-        return checkPrefixesGlobal(parser);
-    }
+
+protected:
+    bool checkPrefixes(Parser& parser,
+            std::set<string> prefixes, bool macro = false);
+};
+
+class Let: public Assignment
+{
+public:
+    explicit Let(const string& name): Assignment(name) {}
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>& prefixes);
+};
+
+class Futurelet: public Assignment
+{
+public:
+    explicit Futurelet(const string& name): Assignment(name) {}
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>& prefixes);
 };
 
 template<class Cmd>
-class RegisterDef: public Command
+class RegisterDef: public Assignment
 {
 public:
     RegisterDef(const string& name, shared_ptr<Cmd> group)
-        : Command(name), m_group(group) {}
+        : Assignment(name), m_group(group) {}
 
     shared_ptr<Cmd> group() { return m_group; }
 
-    bool invoke(Parser& parser, shared_ptr<Node> node);
-    bool checkPrefixes(Parser& parser) {
-        return checkPrefixesGlobal(parser);
-    }
+    bool invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
+                                std::set<string>& prefixes);
 
 protected:
     shared_ptr<Cmd> m_group;
 };
 
 template<class Cmd>
-bool RegisterDef<Cmd>::invoke(Parser& parser, shared_ptr<Node> node)
+bool RegisterDef<Cmd>::invokeWithPrefixes(Parser& parser,
+                shared_ptr<Node> node, std::set<string>& prefixes)
 {
+    bool global = checkPrefixes(parser, prefixes);
+    prefixes.clear();
+
     Node::ptr lvalue = parser.parseControlSequence();
     node->appendChild("lvalue", lvalue);
     node->appendChild("equals", parser.parseOptionalEquals());
@@ -88,17 +104,15 @@ bool RegisterDef<Cmd>::invoke(Parser& parser, shared_ptr<Node> node)
     Token::ptr ltoken = lvalue->value(Token::ptr());
     int num = rvalue->value(int(0));
 
-    return m_group->createDef(parser, ltoken, num);
+    return m_group->createDef(parser, ltoken, num, global);
 }
 
-class Def: public Command
+class Def: public Assignment
 {
 public:
-    explicit Def(const string& name): Command(name) {}
-    bool invoke(Parser& parser, shared_ptr<Node> node);
-    bool checkPrefixes(Parser& parser) {
-        return checkPrefixesMacro(parser);
-    }
+    explicit Def(const string& name): Assignment(name) {}
+    bool invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
+                                std::set<string>& prefixes);
 };
 
 class UserMacro: public Macro

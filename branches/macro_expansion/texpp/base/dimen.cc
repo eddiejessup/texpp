@@ -26,7 +26,7 @@ namespace texpp {
 namespace base {
 
 bool InternalDimen::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -36,8 +36,7 @@ bool InternalDimen::invokeOperation(Parser& parser,
         node->appendChild("rvalue", rvalue);
 
         node->setValue(rvalue->valueAny());
-        parser.setSymbol(name, rvalue->valueAny(),
-                    parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, rvalue->valueAny(), global);
         return true;
     } else if(op == EXPAND) {
         string name = parseName(parser, node);
@@ -45,12 +44,12 @@ bool InternalDimen::invokeOperation(Parser& parser,
         node->setValue(dimenToString(val));
         return true;
     } else {
-        return Variable::invokeOperation(parser, node, op);
+        return Variable::invokeOperation(parser, node, op, global);
     }
 }
 
 bool DimenVariable::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     static vector<string> kw_by(1, "by");
     if(op == ADVANCE) {
@@ -65,7 +64,7 @@ bool DimenVariable::invokeOperation(Parser& parser,
         v += rvalue->value(int(0));
 
         node->setValue(v);
-        parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, v, global);
         return true;
 
     } else if(op == MULTIPLY || op == DIVIDE) {
@@ -94,12 +93,12 @@ bool DimenVariable::invokeOperation(Parser& parser,
                 parser, parser.lastToken());
         } else {
             node->setValue(v);
-            parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
+            parser.setSymbol(name, v, global);
         }
         return true;
     }
 
-    return InternalDimen::invokeOperation(parser, node, op);
+    return InternalDimen::invokeOperation(parser, node, op, global);
 }
 
 tuple<int,int,bool> InternalDimen::multiplyIntFrac(int x, int n, int d)
@@ -140,7 +139,7 @@ string InternalDimen::dimenToString(int n, int o, bool mu)
 }
 
 bool SpecialDimen::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -163,7 +162,7 @@ bool SpecialDimen::invokeOperation(Parser& parser,
         node->setValue(dimenToString(val));
         return true;
     } else {
-        return InternalDimen::invokeOperation(parser, node, op);
+        return InternalDimen::invokeOperation(parser, node, op, global);
     }
 }
 
@@ -184,7 +183,7 @@ string BoxDimen::parseName(Parser& parser, shared_ptr<Node> node)
 }
 
 bool BoxDimen::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -196,7 +195,7 @@ bool BoxDimen::invokeOperation(Parser& parser,
         node->setValue(rvalue->valueAny());
         return true;
     } else {
-        return InternalDimen::invokeOperation(parser, node, op);
+        return InternalDimen::invokeOperation(parser, node, op, global);
     }
 }
 

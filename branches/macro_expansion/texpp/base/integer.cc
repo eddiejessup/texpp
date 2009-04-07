@@ -27,7 +27,7 @@ namespace texpp {
 namespace base {
 
 bool InternalInteger::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -37,8 +37,7 @@ bool InternalInteger::invokeOperation(Parser& parser,
         node->appendChild("rvalue", rvalue);
 
         node->setValue(rvalue->valueAny());
-        parser.setSymbol(name, rvalue->valueAny(),
-                    parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, rvalue->valueAny(), global);
         return true;
     } else if(op == Variable::EXPAND) {
         string name = parseName(parser, node);
@@ -46,12 +45,12 @@ bool InternalInteger::invokeOperation(Parser& parser,
         node->setValue(boost::lexical_cast<string>(val));
         return true;
     } else {
-        return Variable::invokeOperation(parser, node, op);
+        return Variable::invokeOperation(parser, node, op, global);
     }
 }
 
 bool IntegerVariable::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ADVANCE || op == MULTIPLY || op == DIVIDE) {
         string name = parseName(parser, node);
@@ -82,12 +81,12 @@ bool IntegerVariable::invokeOperation(Parser& parser,
                 parser, parser.lastToken());
         } else {
             node->setValue(v);
-            parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
+            parser.setSymbol(name, v, global);
         }
         return true;
     }
 
-    return InternalInteger::invokeOperation(parser, node, op);
+    return InternalInteger::invokeOperation(parser, node, op, global);
 }
 
 string CharcodeVariable::parseName(Parser& parser, shared_ptr<Node> node)
@@ -107,7 +106,7 @@ string CharcodeVariable::parseName(Parser& parser, shared_ptr<Node> node)
 }
 
 bool CharcodeVariable::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -128,15 +127,15 @@ bool CharcodeVariable::invokeOperation(Parser& parser,
         }
 
         node->setValue(n);
-        parser.setSymbol(name, n, parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, n, global);
         return true;
     } else {
-        return InternalInteger::invokeOperation(parser, node, op);
+        return InternalInteger::invokeOperation(parser, node, op, global);
     }
 }
 
 bool SpecialInteger::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -159,12 +158,12 @@ bool SpecialInteger::invokeOperation(Parser& parser,
         node->setValue(boost::lexical_cast<string>(val));
         return true;
     } else {
-        return InternalInteger::invokeOperation(parser, node, op);
+        return InternalInteger::invokeOperation(parser, node, op, global);
     }
 }
 
 bool Spacefactor::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(parser.mode() != Parser::HORIZONTAL &&
             parser.mode() != Parser::RHORIZONTAL) {
@@ -178,7 +177,7 @@ bool Spacefactor::invokeOperation(Parser& parser,
         return true;
     }
 
-    return SpecialInteger::invokeOperation(parser, node, op);
+    return SpecialInteger::invokeOperation(parser, node, op, global);
 }
 
 } // namespace base

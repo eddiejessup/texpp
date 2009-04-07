@@ -1,3 +1,6 @@
+\tracingonline=2
+\tracingcommands=2
+
 \catcode`{=1
 \catcode`}=2
 
@@ -41,7 +44,9 @@ bb
 @}
 
 %undefined token
+\tracingcommands=0 % TODO XXX
 \message{~\z@}
+\tracingcommands=2
 
 %missing {
 \message aa@ }

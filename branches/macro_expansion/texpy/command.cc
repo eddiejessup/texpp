@@ -51,14 +51,16 @@ public:
         return this->Cmd::invoke(p, n);
     }
 
-    bool checkPrefixes(Parser& p) {
-        if(override f = this->get_override("checkPrefixes"))
-            return f(boost::ref(p));
-        return Cmd::checkPrefixes(p);
+    bool invokeWithPrefixes(Parser& p, Node::ptr n,
+                            std::set<string>& prefixes) {
+        if(override f = this->get_override("invokeWithPrefixes"))
+            return f(boost::ref(p), n, boost::ref(prefixes));
+        return Cmd::invokeWithPrefixes(p, n, prefixes);
     }
 
-    bool default_checkPrefixes(Parser& p) {
-        return Cmd::checkPrefixes(p);
+    bool default_invokeWithPrefixes(Parser& p, Node::ptr n,
+                                std::set<string>& prefixes) {
+        return Cmd::invokeWithPrefixes(p, n, prefixes);
     }
 };
 
@@ -77,8 +79,8 @@ inline void export_derived_command(const char* name)
                     &CommandWrap<Cmd>::default_texRepr)
         .def("invoke", &Command::invoke,
                     &CommandWrap<Cmd>::default_invoke)
-        .def("checkPrefixes", &Command::checkPrefixes,
-                    &CommandWrap<Cmd>::default_checkPrefixes)
+        .def("invokeWithPrefixes", &Command::invokeWithPrefixes,
+                    &CommandWrap<Cmd>::default_invokeWithPrefixes)
         ;
 }
 
@@ -96,8 +98,8 @@ void export_command()
                     &CommandWrap<Command>::default_texRepr)
         .def("invoke", &Command::invoke,
                     &CommandWrap<Command>::default_invoke)
-        .def("checkPrefixes", &Command::checkPrefixes,
-                    &CommandWrap<Command>::default_checkPrefixes)
+        .def("invokeWithPrefixes", &Command::invokeWithPrefixes,
+                    &CommandWrap<Command>::default_invokeWithPrefixes)
         ;
 
     export_derived_command<TokenCommand, bases<Command>,

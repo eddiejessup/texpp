@@ -31,9 +31,14 @@ class Logger
 public:
     typedef shared_ptr<Logger> ptr;
 
-    enum Level { MESSAGE = 0, SHOW = 30,
-           ERROR = 40, CRITICAL = 50,
-           UNIMPLEMENTED = 100 };
+    enum Level {
+        TRACING = 10,
+        MESSAGE = 20,
+        SHOW = 30,
+        ERROR = 40,
+        CRITICAL = 50,
+        UNIMPLEMENTED = 100
+    };
 
     Logger() {}
     virtual ~Logger() {}

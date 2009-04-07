@@ -24,7 +24,7 @@ namespace texpp {
 namespace base {
 
 bool Hyphenation::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                        shared_ptr<Node> node, Operation op, bool)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);

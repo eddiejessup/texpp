@@ -21,6 +21,7 @@
 
 #include <texpp/common.h>
 
+#include <set>
 #include <boost/lexical_cast.hpp>
 
 namespace texpp {
@@ -42,13 +43,11 @@ public:
     virtual string repr() const;
     virtual string texRepr(Parser* parser = NULL) const;
 
-    virtual bool checkPrefixes(Parser&);
     virtual bool invoke(Parser&, shared_ptr<Node>) { return true; }
+    virtual bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>&) { return false; }
 
 protected:
-    bool checkPrefixesGlobal(Parser&);
-    bool checkPrefixesMacro(Parser&);
-
     string m_name;
 };
 
@@ -74,7 +73,8 @@ public:
 
     Macro(const string& name = string()): Command(name) {}
 
-    bool checkPrefixes(Parser&) { return false; }
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>&) { return true; }
     virtual bool expand(Parser&, shared_ptr<Node>) { return false; }
 
     static vector<shared_ptr<Token> > stringToTokens(const string& str);

@@ -68,7 +68,7 @@ bool parseThe(Parser& parser, shared_ptr<Node> node, bool show)
         parser.symbolCommand<base::Variable>(token);
 
     if(!show && dynamic_pointer_cast<base::ToksVariable>(var)) {
-        var->invokeOperation(parser, node, base::Variable::GET);
+        var->invokeOperation(parser, node, base::Variable::GET, false);
         Token::list toks = node->value(Token::list());
         Token::list toks_copy(toks.size());
         for(size_t n=0; n<toks.size(); ++n) {
@@ -79,7 +79,8 @@ bool parseThe(Parser& parser, shared_ptr<Node> node, bool show)
         return true;
 
     } else if(var) {
-        bool ok = var->invokeOperation(parser, node, base::Variable::EXPAND);
+        bool ok = var->invokeOperation(parser, node,
+                            base::Variable::EXPAND, false);
         if(ok) str = node->value(string());
 
     } else {

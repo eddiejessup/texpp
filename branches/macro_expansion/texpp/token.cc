@@ -38,7 +38,7 @@ const texpp::string catCodeLongNames[] = {
     "superscript character",
     "subscript character",
     "ignored character",
-    "space character",
+    "blank space",
     "the letter",
     "the character",
     "active character",
@@ -119,7 +119,7 @@ string Token::meaning(Parser* parser) const
     if(isCharacter()) {
         return catCodeLongNames[m_catCode] + " " + m_value;
     } else if(isControl()) {
-        return "control sequence " + texRepr(parser);
+        return texRepr(parser);
     } else if(isSkipped()) {
         return "skipped characters";
     }

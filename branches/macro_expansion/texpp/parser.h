@@ -91,11 +91,12 @@ protected:
 class Parser
 {
 public:
-    enum Mode { VERTICAL, HORIZONTAL,
+    enum Mode { NULLMODE,
+                VERTICAL, HORIZONTAL,
                 RVERTICAL, RHORIZONTAL,
-                MATH };
+                MATH, DMATH };
     enum GroupType { GROUP_DOCUMENT, GROUP_NORMAL,
-                     GROUP_MATH, GROUP_MMATH,
+                     GROUP_MATH, GROUP_DMATH,
                      GROUP_CUSTOM };
 
     Parser(const string& fileName, std::istream* file,
@@ -112,8 +113,9 @@ public:
     Mode mode() const { return m_mode; }
     void setMode(Mode mode) { m_mode = mode; }
 
-    std::set<string>& activePrefixes() { return m_activePrefixes; }
-    bool isPrefixActive(const string& prefix);
+    bool hasOutput() const { return m_hasOutput; }
+
+    void traceCommand(Token::ptr token);
 
     //////// Tokens
     Token::ptr lastToken();
@@ -136,9 +138,8 @@ public:
     Node::ptr parseCommand(Command::ptr command);
 
     Node::ptr parseToken(bool expand = true);
-    Node::ptr parseMMathToken();
+    Node::ptr parseDMathToken();
     Node::ptr parseControlSequence(bool expand = true);
-    Node::ptr parseCharacter(const string& type = string("character"));
 
     Node::ptr parseOptionalSpaces();
 
@@ -161,8 +162,9 @@ public:
     Node::ptr parseFileName();
 
     Node::ptr parseTextWord();
+    Node::ptr parseTextCharacter();
 
-    void processTextCharacter(char ch);
+    void processTextCharacter(char ch, Token::ptr token);
     void resetParagraphIndent();
 
     //////// Symbols
@@ -243,9 +245,11 @@ protected:
 
     size_t          m_lineNo;
     Mode            m_mode;
-    GroupType       m_currentGroupType;
+    Mode            m_prevMode;
 
-    std::set<string> m_activePrefixes;
+    bool            m_hasOutput;
+
+    GroupType       m_currentGroupType;
 
     string  m_customGroupType;
     bool    m_customGroupBegin;

@@ -42,7 +42,8 @@ class Relax: public Command
 {
 public:
     explicit Relax(const string& name): Command(name) {}
-    bool checkPrefixes(Parser&) { return false; }
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                        std::set<string>&) { return true; }
 };
 
 class End: public Command

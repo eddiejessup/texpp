@@ -25,6 +25,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include <boost/foreach.hpp>
+
 namespace {
 texpp::string loggerLevelNames[] = {
     "message", "show", "error", "critical"
@@ -75,22 +77,33 @@ bool ConsoleLogger::log(Level level, const string& message,
 {
     std::ostringstream r;
     
-    if(level <= MESSAGE) {
-        if(!m_atNewline) std::cout << ' '; 
+    if(level <= TRACING) {
+        if(!m_atNewline) r << std::endl;
+        r << '{' << message << '}' << std::endl;
+    } else if(level <= MESSAGE) {
+        if(!m_atNewline) r << ' '; 
         r << message;
     } else {
-        if(!m_atNewline) std::cout << std::endl;
+        if(!m_atNewline) r << std::endl;
         if(level <= SHOW) r << "> " << message << ".\n";
         else r << "! " << message << ".\n";
         if(token && token->lineNo())
             r << tokenLines(parser, token) << "\n";
     }
 
-    string msg(r.str());
+    std::ostringstream r1;
     int newlinechar = parser.symbol("newlinechar", int(0));
-    if(newlinechar >= 0 && newlinechar < 256)
-        std::replace(msg.begin(), msg.end(), char(newlinechar), '\n');
+    BOOST_FOREACH(unsigned char ch, r.str()) {
+        if(ch == newlinechar) {
+            r1 << '\n';
+        } else if(ch >= 0x7f) {
+            r1 << "^^" << std::hex << int(ch);
+        } else {
+            r1 << ch;
+        }
+    }
 
+    string msg(r1.str());
     std::cout << msg;
 
     if(!msg.empty()) m_atNewline = msg[msg.size()-1] == '\n';

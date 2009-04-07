@@ -68,7 +68,7 @@ public:
     }
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
     string texRepr(Parser* parser = NULL) const;
 };
@@ -81,7 +81,7 @@ public:
         : FontVariable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class FontFamily: public FontVariable
@@ -92,7 +92,7 @@ public:
         : FontVariable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
     string parseName(Parser& parser, shared_ptr<Node> node);
 };
 
@@ -112,7 +112,7 @@ public:
         : SpecialDimen(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
     string parseName(Parser& parser, shared_ptr<Node> node);
 };
 

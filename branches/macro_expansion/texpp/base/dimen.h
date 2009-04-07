@@ -38,7 +38,7 @@ public:
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
     static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
     static string dimenToString(int n, int o=0, bool mu=false);
@@ -51,7 +51,7 @@ public:
         : InternalDimen(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class SpecialDimen: public InternalDimen
@@ -61,7 +61,7 @@ public:
         : InternalDimen(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class BoxDimen: public InternalDimen
@@ -73,7 +73,7 @@ public:
 
     string parseName(Parser& parser, shared_ptr<Node> node);
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 } // namespace base

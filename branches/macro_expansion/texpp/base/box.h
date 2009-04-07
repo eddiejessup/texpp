@@ -37,7 +37,7 @@ public:
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class Lastbox: public Box
@@ -48,7 +48,7 @@ public:
         : Box(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class Vsplit: public Register<Box>
@@ -70,7 +70,7 @@ public:
 
     string parseName(Parser& parser, shared_ptr<Node> node);
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class BoxSpec: public Box
@@ -80,7 +80,7 @@ public:
         : Box(name, Token::list()), m_mode(mode) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 protected:
     Parser::Mode m_mode;
 };

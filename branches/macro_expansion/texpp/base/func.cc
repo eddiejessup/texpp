@@ -22,14 +22,56 @@
 namespace texpp {
 namespace base {
 
-bool Prefix::invoke(Parser& parser, shared_ptr<Node>)
+bool Prefix::invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>& prefixes)
 {
-    parser.activePrefixes().insert(name());
+    prefixes.insert(name());
     return true;
 }
 
-bool Let::invoke(Parser& parser, shared_ptr<Node> node)
+bool Assignment::invoke(Parser& parser, shared_ptr<Node> node)
 {
+    std::set<string> prefixes;
+    return invokeWithPrefixes(parser, node, prefixes);
+}
+
+bool Assignment::checkPrefixes(Parser& parser,
+        std::set<string> prefixes, bool macro)
+{
+    size_t ok = prefixes.count("\\global");
+    bool global = ok;
+    if(macro) {
+        ok += prefixes.count("\\outer");
+        ok += prefixes.count("\\long");
+    }
+
+    if(prefixes.size() != ok) {
+        char escape = parser.symbol("escapechar", int('\\'));
+        if(macro) {
+            parser.logger()->log(Logger::ERROR,
+                "You can't use such a prefix with `" + texRepr(&parser) + "'",
+                parser, parser.lastToken());
+        } else {
+            parser.logger()->log(Logger::ERROR,
+                string("You can't use `") + escape + "long' or `" +
+                escape + "outer' with `" + texRepr(&parser) + "'",
+                parser, parser.lastToken());
+        }
+    }
+
+    int globaldefs = parser.symbol("globaldefs", int(0));
+    if(globaldefs > 0) global = true;
+    else if(globaldefs < 0) global = false;
+
+    return global;
+}
+
+bool Let::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
+                                std::set<string>& prefixes)
+{
+    bool global = checkPrefixes(parser, prefixes);
+    prefixes.clear();
+
     Node::ptr lvalue = parser.parseControlSequence(false);
     node->appendChild("lvalue", lvalue);
 
@@ -55,21 +97,21 @@ bool Let::invoke(Parser& parser, shared_ptr<Node> node)
 
     if(rtoken->isControl()) {
         parser.setSymbol(
-            ltoken, parser.symbol(rtoken, Command::ptr()),
-            parser.isPrefixActive("\\global")
-            );
+            ltoken, parser.symbol(rtoken, Command::ptr()), global);
     } else {
         parser.setSymbol(
-            ltoken, Command::ptr(new TokenCommand(rtoken)),
-            parser.isPrefixActive("\\global")
-            );
+            ltoken, Command::ptr(new TokenCommand(rtoken)), global);
     }
 
     return true;
 }
 
-bool Futurelet::invoke(Parser& parser, Node::ptr node)
+bool Futurelet::invokeWithPrefixes(Parser& parser, Node::ptr node,
+                                    std::set<string>& prefixes)
 {
+    bool global = checkPrefixes(parser, prefixes);
+    prefixes.clear();
+
     Node::ptr lvalue = parser.parseControlSequence(false);
     node->appendChild("lvalue", lvalue);
 
@@ -85,14 +127,10 @@ bool Futurelet::invoke(Parser& parser, Node::ptr node)
 
     if(rtoken->isControl()) {
         parser.setSymbol(
-            ltoken, parser.symbol(rtoken, Command::ptr()),
-            parser.isPrefixActive("\\global")
-            );
+            ltoken, parser.symbol(rtoken, Command::ptr()), global);
     } else {
         parser.setSymbol(
-            ltoken, Command::ptr(new TokenCommand(rtoken)),
-            parser.isPrefixActive("\\global")
-            );
+            ltoken, Command::ptr(new TokenCommand(rtoken)), global);
     }
 
     Token::list tokens;
@@ -108,8 +146,14 @@ bool Futurelet::invoke(Parser& parser, Node::ptr node)
     return true;
 }
 
-bool Def::invoke(Parser& parser, shared_ptr<Node> node)
+bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
+                                std::set<string>& prefixes)
 {
+    bool global = checkPrefixes(parser, prefixes, true);
+    bool longAttr = prefixes.count("\\long");
+    bool outerAttr = prefixes.count("\\outer");
+    prefixes.clear();
+
     Node::ptr lvalue = parser.parseControlSequence(false);
     node->appendChild("lvalue", lvalue);
 
@@ -190,9 +234,7 @@ bool Def::invoke(Parser& parser, shared_ptr<Node> node)
         Command::ptr(new UserMacro(ltoken ? ltoken->value() : "\\undefined",
             paramsNode->value(Token::list_ptr()),
             definition->value(Token::list_ptr()),
-            parser.isPrefixActive("\\outer"),
-            parser.isPrefixActive("\\long"))),
-        parser.isPrefixActive("\\global"));
+            outerAttr, longAttr)), global);
 
     return true;
 }

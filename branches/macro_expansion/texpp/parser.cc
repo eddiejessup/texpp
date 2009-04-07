@@ -20,6 +20,7 @@
 #include <texpp/logger.h>
 
 #include <texpp/base/base.h>
+#include <texpp/base/func.h>
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
 #include <texpp/base/dimen.h>
@@ -38,11 +39,13 @@
 namespace {
 
 const texpp::string modeNames[] = {
+    "nullmode",
     "vertical",
     "horizontal",
-    "restricted vertical",
+    "internal vertical",
     "restricted horizontal",
     "math",
+    "display math",
     "unknown"
 };
 } // namespace
@@ -116,7 +119,8 @@ string Node::source() const
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false),
-      m_lineNo(1), m_mode(VERTICAL), m_currentGroupType(GROUP_DOCUMENT),
+      m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
+      m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false)
 {
     if(!m_logger)
@@ -130,7 +134,8 @@ Parser::Parser(const string& fileName, std::istream* file,
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false),
-      m_lineNo(1), m_mode(VERTICAL), m_currentGroupType(GROUP_DOCUMENT),
+      m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
+      m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false)
 {
     if(!m_logger)
@@ -143,8 +148,8 @@ Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
 
 const string& Parser::modeName() const
 {
-    if(m_mode < VERTICAL || m_mode > MATH)
-        return modeNames[5];
+    if(m_mode < VERTICAL || m_mode > DMATH)
+        return modeNames[DMATH+1];
     return modeNames[m_mode];
 }
 
@@ -210,16 +215,6 @@ void Parser::setSpecialSymbol(const string& name, const any& value)
     }
 }
 
-bool Parser::isPrefixActive(const string& prefix) {
-    bool ret = m_activePrefixes.find(prefix) != m_activePrefixes.end();
-    if(prefix == "\\global") {
-        int globaldefs = symbol("globaldefs", int(0));
-        if(globaldefs < 0) ret = false;
-        else if(globaldefs > 0) ret = true;
-    }
-    return ret;
-}
-
 void Parser::beginGroup()
 {
     m_symbolsStackLevels.push_back(m_symbolsStack.size());
@@ -276,6 +271,8 @@ Token::ptr Parser::rawNextToken(bool expand)
     if(token && token->isControl() && expand && token != m_noexpandToken) {
         Macro::ptr macro = symbolCommand<Macro>(token);
         if(macro) {
+            traceCommand(token);
+
             Node::ptr node(new Node("macro"));
             Node::ptr child(new Node("control_token"));
             child->tokens().push_back(token);
@@ -438,12 +435,15 @@ void Parser::pushBack(vector< Token::ptr >* tokens)
     // NOTE: lastToken is NOT changed
 }
 
-void Parser::processTextCharacter(char ch)
+void Parser::processTextCharacter(char ch, Token::ptr token)
 {
-    if(m_mode == RVERTICAL)
-        setMode(RHORIZONTAL);
-    else if(m_mode != RHORIZONTAL)
+    if(mode() != RHORIZONTAL)
         setMode(HORIZONTAL);
+
+    if(m_prevMode != m_mode)
+        traceCommand(token);
+
+    m_hasOutput = true;
 
     int prevSpacefactor = symbol("spacefactor", true);
     int spacefactor = symbol(
@@ -483,10 +483,38 @@ bool Parser::helperIsImplicitCharacter(Token::CatCode catCode, bool expand)
 Node::ptr Parser::parseCommand(Command::ptr command)
 {
     Node::ptr node(new Node("command"));
-    node->appendChild("control_sequence", parseControlSequence());
-    bool prefix = command->checkPrefixes(*this);
-    command->invoke(*this, node); // XXX check errors
-    if(prefix) m_activePrefixes.clear();
+
+    if(dynamic_pointer_cast<base::Prefix>(command)) {
+        std::set<string> prefixes;
+        Token::ptr token;
+        while(peekToken()) {
+            token = peekToken();
+
+            command = symbol(token, Command::ptr());
+            if(!command) break;
+
+            int lastChildNumber = node->childrenCount();
+            node->appendChild("prefix", parseControlSequence());
+
+            if(!command->invokeWithPrefixes(*this, node, prefixes)) {
+                pushBack(&node->children().back().second->tokens());
+                node->children().pop_back();
+                break;
+            } else if(prefixes.empty()) {
+                node->children()[lastChildNumber].first = "control_sequence";
+                resetNoexpand();
+                return node;
+            }
+        }
+        logger()->log(Logger::ERROR,
+            "You can't use a prefix with `" +
+            token->meaning(this) + "'",
+            *this, lastToken());
+    } else {
+        node->appendChild("control_sequence", parseControlSequence());
+        command->invoke(*this, node); // XXX check errors
+    }
+
     resetNoexpand();
     return node;
 }
@@ -508,7 +536,7 @@ Node::ptr Parser::parseToken(bool expand)
     return node;
 }
 
-Node::ptr Parser::parseMMathToken()
+Node::ptr Parser::parseDMathToken()
 {
     Node::ptr node(new Node("mmath_token"));
     nextToken(&node->tokens());
@@ -542,11 +570,14 @@ Node::ptr Parser::parseControlSequence(bool expand)
     return node;
 }
 
-Node::ptr Parser::parseCharacter(const string& type)
+Node::ptr Parser::parseTextCharacter()
 {
-    Node::ptr node(new Node(type));
+    Node::ptr node(new Node(peekToken() &&
+        peekToken()->isCharacterCat(Token::CC_SPACE) ?
+        "text_space" : "text_character" ));
     if(peekToken() && peekToken()->isCharacter()) {
-        processTextCharacter(peekToken()->value()[0]);
+        if(mode() != MATH && mode() != DMATH)
+            processTextCharacter(peekToken()->value()[0], peekToken());
         node->setValue(peekToken()->value());
         nextToken(&node->tokens());
     } else {
@@ -833,6 +864,10 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                     "Dimension too large", *this, lastToken());
                 v = TEXPP_SCALED_MAX;
             }
+
+            while(helperIsImplicitCharacter(Token::CC_SPACE))
+                nextToken(&fil->tokens());
+
             node->setValue(v);
             return node;
         }
@@ -930,9 +965,16 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         } else {
             node->setValue(int(0));
         }
+
+        if(iunit && iunit->type() == "keyword")
+            if(helperIsImplicitCharacter(Token::CC_SPACE))
+                nextToken(&iunit->tokens());
+
         resetNoexpand();
         return node;
     }
+
+    Node::ptr units;
 
     if(!mu) {
         // <optional true>
@@ -996,7 +1038,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             kw_physical_units.push_back("cc");
         }
 
-        Node::ptr units = parseKeyword(kw_physical_units);
+        units = parseKeyword(kw_physical_units);
         if(units) {
             node->appendChild("physical_unit", units);
             vector<string>::iterator it = std::find(kw_physical_units.begin(),
@@ -1020,6 +1062,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                 val.first = val.first + (val.second / 0x10000);
                 val.second = val.second % 0x10000;
             }
+
         } else {
             logger()->log(Logger::ERROR,
                 "Illegal unit of measure (pt inserted)", *this, lastToken());
@@ -1058,7 +1101,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
 
         // <mu units >
         static vector<string> kw_mu(1, "mu");
-        Node::ptr units = parseKeyword(kw_mu);
+        units = parseKeyword(kw_mu);
         if(units) {
             node->appendChild("muunit", units);
         } else {
@@ -1078,6 +1121,13 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     node->setValue(v);
+
+    if(!units) {
+        units = Node::ptr(new Node("unit"));
+        node->appendChild("unit", units);
+    }
+    if(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&units->tokens());
 
     resetNoexpand();
     return node;
@@ -1440,16 +1490,38 @@ Node::ptr Parser::parseFileName()
 
 Node::ptr Parser::parseTextWord()
 {
-    Node::ptr node(new Node("text_word"));
     string value;
+    Node::ptr node(new Node("text_word"));
     while(peekToken() && peekToken()->isCharacterCat(Token::CC_LETTER)) {
-        processTextCharacter(peekToken()->value()[0]);
+        if(mode() != MATH && mode() != DMATH)
+            processTextCharacter(peekToken()->value()[0], peekToken());
+        if(!value.empty()) traceCommand(peekToken());
+
         value += peekToken()->value();
         nextToken(&node->tokens());
     }
     node->setValue(value);
 
     return node;
+}
+
+void Parser::traceCommand(Token::ptr token)
+{
+    if(symbol("tracingcommands", int(0))) {
+        string str;
+        if(token->isControl()) {
+            Command::ptr cmd = symbol(token, Command::ptr());
+            if(cmd) str += cmd->texRepr(this);
+            else str = "undefined";
+        } else {
+            str = token->meaning(this);
+        }
+        if(m_prevMode != m_mode) {
+            str = modeName() + " mode: " + str;
+            m_prevMode = m_mode;
+        }
+        logger()->log(Logger::TRACING, str, *this, lastToken());
+    }
 }
 
 Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
@@ -1470,9 +1542,9 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
                 node->appendChild("group_begin", parseToken());
                 ok = true;
             }
-        } else if(groupType == GROUP_MMATH) {
+        } else if(groupType == GROUP_DMATH) {
             if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                node->appendChild("group_begin", parseMMathToken());
+                node->appendChild("group_begin", parseDMathToken());
                 ok = true;
             }
         }
@@ -1497,6 +1569,8 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             break;
         }
 
+        traceCommand(peekToken());
+
         if(parseBeginEnd) {
             if(groupType == GROUP_NORMAL) {
                 if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
@@ -1510,9 +1584,14 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
                     //endGroup();
                     break;
                 }
-            } else if(groupType == GROUP_MMATH) {
+            } else if(groupType == GROUP_DMATH) {
                 if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                    node->appendChild("group_end", parseMMathToken());
+                    Node::ptr dmathNode = parseDMathToken();
+                    node->appendChild("group_end", dmathNode);
+                    if(helperIsImplicitCharacter(Token::CC_SPACE, false)) {
+                        nextToken(&dmathNode->tokens());
+                    }
+
                     //endGroup();
                     break;
                 }
@@ -1533,20 +1612,23 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
         } else if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
             Node::ptr t1 = parseToken();
             // XXX: is the following line correct ?
-            bool mmath = helperIsImplicitCharacter(Token::CC_MATHSHIFT,
+            bool dmath = helperIsImplicitCharacter(Token::CC_MATHSHIFT,
                                                                 false);
             pushBack(&t1->tokens());
 
+            if(mode() != HORIZONTAL) {
+                setMode(HORIZONTAL);
+                traceCommand(t1->value(Token::ptr()));
+            }
+
             beginGroup();
             Mode prevMode = mode();
-            setMode(MATH);
-            node->appendChild("inline_math", parseGroup(
-                    mmath ? GROUP_MMATH : GROUP_MATH, true));
+            setMode(dmath ? DMATH : MATH);
 
-            if(prevMode == RHORIZONTAL || prevMode == RVERTICAL)
-                setMode(RHORIZONTAL);
-            else
-                setMode(HORIZONTAL);
+            node->appendChild("inline_math", parseGroup(
+                    dmath ? GROUP_DMATH : GROUP_MATH, true));
+
+            setMode(prevMode);
 
             endGroup();
 
@@ -1554,12 +1636,14 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             node->appendChild("text_word", parseTextWord());
 
         } else if(peekToken()->isCharacterCat(Token::CC_SPACE)) {
-            node->appendChild("text_space",
-                        parseCharacter("text_space"));
+            if(mode() == HORIZONTAL || mode() == RHORIZONTAL) {
+                node->appendChild("text_space", parseTextCharacter());
+            } else {
+                node->appendChild("space", parseToken());
+            }
 
         } else if(peekToken()->isCharacterCat(Token::CC_OTHER)) {
-            node->appendChild("text_character",
-                        parseCharacter("text_character"));
+            node->appendChild("text_character", parseTextCharacter());
 
         } else if(peekToken()->isControl()) {
             Command::ptr cmd = symbol(peekToken(), Command::ptr());
@@ -1604,6 +1688,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
 
 Node::ptr Parser::parse()
 {
+    setMode(VERTICAL);
     Node::ptr document = parseGroup(GROUP_DOCUMENT, false);
     document->setType("document");
     

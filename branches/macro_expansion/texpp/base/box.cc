@@ -24,8 +24,9 @@ namespace texpp {
 namespace base {
 
 bool Box::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                        shared_ptr<Node> node, Operation op, bool)
 {
+    // TODO: box should not derive from Variable!
     if(op == ASSIGN || op == GET) {
         string name = parseName(parser, node);
         Token::list tokens = parser.symbol(name, Token::list());
@@ -36,7 +37,7 @@ bool Box::invokeOperation(Parser& parser,
 }
 
 bool Lastbox::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                        shared_ptr<Node> node, Operation op, bool global)
 {
     if(parser.mode() == Parser::VERTICAL ||
                 parser.mode() == Parser::MATH) {
@@ -46,7 +47,7 @@ bool Lastbox::invokeOperation(Parser& parser,
             parser, parser.lastToken());
         return true;
     }
-    return Box::invokeOperation(parser, node, op);
+    return Box::invokeOperation(parser, node, op, global);
 }
 
 string Vsplit::parseName(Parser& parser, shared_ptr<Node> node)
@@ -83,7 +84,7 @@ string Setbox::parseName(Parser& parser, shared_ptr<Node> node)
 }
 
 bool Setbox::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -106,8 +107,7 @@ bool Setbox::invokeOperation(Parser& parser,
 
         if(name.substr(0, 6) == "setbox")
             name = name.substr(3);
-        parser.setSymbol(name, rvalue->valueAny(),
-                    parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, rvalue->valueAny(), global);
 
         return true;
     }
@@ -115,7 +115,7 @@ bool Setbox::invokeOperation(Parser& parser,
 }
 
 bool BoxSpec::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool)
 {
     if(op == ASSIGN || op == GET) {
         string name = parseName(parser, node);

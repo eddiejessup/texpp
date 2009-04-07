@@ -40,62 +40,6 @@ string Command::repr() const
             + ", " + reprString(texRepr()) + ")";
 }
 
-bool Command::checkPrefixes(Parser& parser)
-{
-    if(!parser.activePrefixes().empty()) {
-        parser.logger()->log(Logger::ERROR,
-            "You can't use a prefix with `" + texRepr(&parser) + "'",
-            parser, parser.lastToken());
-        parser.activePrefixes().clear();
-    }
-    return true;
-}
-
-bool Command::checkPrefixesGlobal(Parser& parser)
-{
-    bool ok = true;
-    BOOST_FOREACH(const string& s, parser.activePrefixes()) {
-        if(s != "\\global") ok = false;
-    }
-
-    if(!ok) {
-        char escape = parser.symbol("escapechar", int('\\'));
-        parser.logger()->log(Logger::ERROR,
-            string("You can't use `") + escape + "long' or `" +
-            escape + "outer' with `" + texRepr(&parser) + "'",
-            parser, parser.lastToken());
-
-        bool global = parser.isPrefixActive("\\global");
-        parser.activePrefixes().clear();
-        if(global) parser.activePrefixes().insert("\\global");
-    }
-    return true;
-}
-
-bool Command::checkPrefixesMacro(Parser& parser)
-{
-    bool ok = true;
-    BOOST_FOREACH(const string& s, parser.activePrefixes()) {
-        if(s != "\\global" && s != "\\outer" && s != "\\long")
-            ok = false;
-    }
-
-    if(!ok) {
-        parser.logger()->log(Logger::ERROR,
-            "You can't use such a prefix with `" + texRepr(&parser) + "'",
-            parser, parser.lastToken());
-
-        bool global = parser.isPrefixActive("\\global");
-        bool outer = parser.isPrefixActive("\\outer");
-        bool long_ = parser.isPrefixActive("\\long");
-        parser.activePrefixes().clear();
-        if(global) parser.activePrefixes().insert("\\global");
-        if(outer) parser.activePrefixes().insert("\\outer");
-        if(long_) parser.activePrefixes().insert("\\long");
-    }
-    return true;
-}
-
 string TokenCommand::texRepr(Parser*) const
 {
     return m_token->meaning();

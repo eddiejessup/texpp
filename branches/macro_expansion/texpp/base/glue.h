@@ -48,7 +48,7 @@ public:
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
     static string glueToString(const Glue& g, bool mu = false);
 };
@@ -60,7 +60,7 @@ public:
         : InternalGlue(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class InternalMuGlue: public Variable
@@ -70,7 +70,7 @@ public:
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
     static string glueToString(const Glue& g, bool mu = true) {
         return InternalGlue::glueToString(g, mu);
@@ -84,7 +84,7 @@ public:
         : InternalMuGlue(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 } // namespace base

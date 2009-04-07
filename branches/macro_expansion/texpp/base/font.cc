@@ -26,7 +26,7 @@ shared_ptr<FontInfo> defaultFontInfo(new FontInfo("\\nullfont", "nullfont"));
 
 string FontSelector::texRepr(Parser*) const
 {
-    return "select font " + initFontInfo()->file;
+    return "select font " + fontToString(*initFontInfo());
 }
 
 string FontVariable::fontToString(const FontInfo& fontInfo)
@@ -39,7 +39,7 @@ string FontVariable::fontToString(const FontInfo& fontInfo)
 }
 
 bool FontSelector::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == EXPAND) {
         string str = initFontInfo()->selector;
@@ -50,8 +50,7 @@ bool FontSelector::invokeOperation(Parser& parser,
         node->setValue(str + ' ');
         return true;
     } else if(op == ASSIGN) {
-        parser.setSymbol("font", initFontInfo(),
-                    parser.isPrefixActive("\\global"));
+        parser.setSymbol("font", initFontInfo(), global);
         return true;
     } else if(op == GET) {
         node->setValue(initFontInfo());
@@ -61,7 +60,7 @@ bool FontSelector::invokeOperation(Parser& parser,
 }
 
 bool Font::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == EXPAND) {
         string name = parseName(parser, node);
@@ -134,7 +133,7 @@ bool Font::invokeOperation(Parser& parser,
         node->setValue(fontInfo);
         parser.setSymbol(ltoken->value(),
             Command::ptr(new FontSelector(ltoken->value(), fontInfo)),
-            parser.isPrefixActive("\\global"));
+            global);
 
         return true;
 
@@ -148,7 +147,7 @@ bool Font::invokeOperation(Parser& parser,
 }
 
 bool FontFamily::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == EXPAND) {
         string name = parseName(parser, node);
@@ -179,8 +178,7 @@ bool FontFamily::invokeOperation(Parser& parser,
 
         node->appendChild("rvalue", rvalue);
         node->setValue(rvalue->valueAny());
-        parser.setSymbol(name, rvalue->valueAny(),
-                    parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, rvalue->valueAny(), global);
 
         return true;
 
@@ -260,7 +258,7 @@ string FontDimen::parseName(Parser& parser, shared_ptr<Node> node)
 }
 
 bool FontDimen::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
@@ -274,7 +272,7 @@ bool FontDimen::invokeOperation(Parser& parser,
             parser.setSymbol(name, rvalue->valueAny(), true); // global
         return true;
     } else {
-        return SpecialDimen::invokeOperation(parser, node, op);
+        return SpecialDimen::invokeOperation(parser, node, op, global);
     }
 }
 

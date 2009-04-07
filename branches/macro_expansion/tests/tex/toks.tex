@@ -1,3 +1,6 @@
+\tracingonline=2
+\tracingcommands=2
+
 \catcode`{=1
 \catcode`}=2
 \newlinechar=`@
@@ -20,7 +23,10 @@ b \bb \:cc~dd\zz
 
 \toks0={abc \relax def}
 \showthe\toks0
+
+\tracingcommands=0 % TODO XXX
 \message{~ \the\toks0 @}
+\tracingcommands=2
 
 \toks0={123}
 \count\the\toks0=234
