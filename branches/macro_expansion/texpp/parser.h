@@ -212,9 +212,12 @@ public:
     shared_ptr<Logger> logger() { return m_logger; }
     shared_ptr<Lexer> lexer() { return m_lexer; }
 
+    static const string& banner() { return BANNER; }
+
 protected:
     Token::ptr rawNextToken(bool expand = true);
     void setSpecialSymbol(const string& name, const any& value);
+    void init();
 
     typedef std::deque<
         Token::ptr
@@ -256,6 +259,7 @@ protected:
     bool    m_customGroupEnd;
 
     static any EMPTY_ANY;
+    static string BANNER;
 };
 
 } // namespace texpp

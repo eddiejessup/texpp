@@ -43,4 +43,14 @@
 \testmacro4{12{34}}
 \testmacro5{{12}34}
 
+\def\testmacro#1{z#1#1zz\relax{\relax}}
+\show\testmacro
+\testmacro12
+\testmacro{12}
+\testmacro{12{34}}
+\testmacro{{12}34}
+
+\let\newtoks=\relax
+\outer\def\newhelp#1#2{\newtoks#1#1\expandafter{\csname#2\endcsname}}
+
 \end

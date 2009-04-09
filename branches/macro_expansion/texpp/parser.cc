@@ -53,6 +53,12 @@ const texpp::string modeNames[] = {
 
 namespace texpp {
 
+string Parser::BANNER = "This is TeXpp, Version 0.0"
+#ifdef __GNUC__
+    "  " __DATE__ " " __TIME__
+#endif
+    "\n";
+
 using base::Dimen;
 
 Node::ptr Node::child(const string& name)
@@ -126,12 +132,8 @@ Parser::Parser(const string& fileName, std::istream* file,
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false)
 {
-    if(!m_logger)
-        m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
-                                 shared_ptr<Logger>(new NullLogger);
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
-
-    base::initSymbols(*this);
+    init();
 }
 
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
@@ -141,12 +143,19 @@ Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false)
 {
-    if(!m_logger)
-        m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
-                                 shared_ptr<Logger>(new NullLogger);
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
+    init();
+}
+
+void Parser::init()
+{
+    if(!m_logger)
+        m_logger = lexer()->interactive() ?
+                        shared_ptr<Logger>(new ConsoleLogger) :
+                        shared_ptr<Logger>(new NullLogger);
 
     base::initSymbols(*this);
+    m_logger->log(Logger::MESSAGE, BANNER, *this, Token::ptr());
 }
 
 const string& Parser::modeName() const
@@ -1431,7 +1440,7 @@ Node::ptr Parser::parseBalancedText(bool expand,
             if(--level < 0) break;
         }
 
-        tokens->push_back(nextToken(&node->tokens()));
+        tokens->push_back(nextToken(&node->tokens(), expand));
 
         if(paramCount >= 0 && token->isCharacterCat(Token::CC_PARAM)) {
             Token::ptr nToken = peekToken(expand);
@@ -1450,7 +1459,7 @@ Node::ptr Parser::parseBalancedText(bool expand,
                         token->type(), token->catCode(), token->value())));
                 }
             } else if(nToken) {
-                tokens->push_back(nextToken(&node->tokens()));
+                tokens->push_back(nextToken(&node->tokens(), expand));
             }
         }
     }
@@ -1768,6 +1777,13 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
 
 Node::ptr Parser::parse()
 {
+    if(!lexer()->fileName().empty()) {
+        logger()->log(Logger::MESSAGE,
+            "**" + lexer()->fileName() + "\n", *this, Token::ptr());
+        logger()->log(Logger::MESSAGE,
+            "(" + lexer()->fileName() + "\n", *this, Token::ptr());
+    }
+
     setMode(VERTICAL);
     Node::ptr document = parseGroup(GROUP_DOCUMENT, false);
     document->setType("document");
@@ -1779,6 +1795,11 @@ Node::ptr Parser::parse()
         node = node->child(node->childrenCount()-1);
 
     nextToken(&node->tokens());
+
+    if(!lexer()->fileName().empty()) {
+        logger()->log(Logger::MESSAGE,
+            " )", *this, Token::ptr());
+    }
 
     return document;
 }

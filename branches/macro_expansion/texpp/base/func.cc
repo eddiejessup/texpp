@@ -257,7 +257,7 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     node->appendChild("right_brace", right_brace);
     if(parser.peekToken(false) &&
             parser.peekToken(false)->isCharacterCat(Token::CC_EGROUP)) {
-        right_brace->setValue(parser.nextToken(&right_brace->tokens()));
+        right_brace->setValue(parser.nextToken(&right_brace->tokens(), false));
     } else {
         // TODO: error
         right_brace->setValue(Token::ptr(new Token(
@@ -282,10 +282,9 @@ string UserMacro::texRepr(Parser* parser) const
     if(m_outerAttr) str = str + escape + "outer";
     if(!str.empty()) str += ' ';
 
-    str += "macro:\n";
-    str += Token::texReprList(*m_params, parser);
-    str += "->";
-    str += Token::texReprList(*m_definition, parser);
+    str += "macro:\n" +
+            Token::texReprList(*m_params, parser) + "->" +
+            Token::texReprList(*m_definition, parser);
 
     return str;
 }
@@ -293,11 +292,10 @@ string UserMacro::texRepr(Parser* parser) const
 bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
     if(parser.symbol("tracingmacros", int(0)) > 0) {
-        string str(Command::texRepr(&parser));
-        str += ' ';
-        str += Token::texReprList(*m_params, &parser);
-        str += "->";
-        str += Token::texReprList(*m_definition, &parser);
+        string str(1, '\n');
+        str += Command::texRepr(&parser) + ' ' +
+                Token::texReprList(*m_params, &parser) + "->" +
+                Token::texReprList(*m_definition, &parser);
         parser.logger()->log(Logger::MTRACING,
             str, parser, Token::ptr());
     }

@@ -60,7 +60,7 @@ public:
 class ConsoleLogger: public Logger
 {
 public:
-    ConsoleLogger() {}
+    ConsoleLogger(): m_atNewline(true) {}
     ~ConsoleLogger();
     bool log(Level level, const string& message,
                 Parser& parser, shared_ptr<Token> token);

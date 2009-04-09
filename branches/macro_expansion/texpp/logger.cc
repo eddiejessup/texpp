@@ -99,13 +99,20 @@ bool ConsoleLogger::log(Level level, const string& message,
 
     std::ostringstream r1;
     int newlinechar = parser.symbol("newlinechar", int(0));
+    int llen = 0;
     BOOST_FOREACH(unsigned char ch, r.str()) {
-        if(ch == newlinechar) {
+        ++llen;
+        if(ch == newlinechar || ch == '\n') {
             r1 << '\n';
+            llen = 0;
         } else if(ch >= 0x7f) {
             r1 << "^^" << std::hex << int(ch);
         } else {
             r1 << ch;
+        }
+        if(llen >= 79) {
+            r1 << '\n';
+            llen = 0;
         }
     }
 
