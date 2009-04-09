@@ -292,7 +292,7 @@ Token::ptr Parser::rawNextToken(bool expand)
     if(token && token->isControl() && expand && token != m_noexpandToken) {
         Macro::ptr macro = symbolCommand<Macro>(token);
         if(macro) {
-            traceCommand(token);
+            traceCommand(token, true);
 
             Node::ptr node(new Node("macro"));
             Node::ptr child(new Node("control_token"));
@@ -1527,13 +1527,24 @@ Node::ptr Parser::parseTextWord()
     return node;
 }
 
-void Parser::traceCommand(Token::ptr token)
+void Parser::traceCommand(Token::ptr token, bool expanding)
 {
-    if(symbol("tracingcommands", int(0)) > 0) {
+    int tracingcommands = symbol("tracingcommands", int(0));
+    if(tracingcommands > 0) {
         string str;
         if(token->isControl()) {
             Command::ptr cmd = symbol(token, Command::ptr());
-            if(cmd) str += cmd->texRepr(this);
+            if(dynamic_pointer_cast<Macro>(cmd)) {
+                if(expanding) {
+                    if(tracingcommands < 2) return;
+                    str += cmd->texRepr(this);
+                } else {
+                    str += char(symbol("escapechar", int('\\')));
+                    str += "relax";
+                }
+            } else if(cmd) {
+                str += cmd->texRepr(this);
+            }
             else str = "undefined";
         } else {
             str = token->meaning(this);

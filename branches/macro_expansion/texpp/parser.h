@@ -115,7 +115,7 @@ public:
 
     bool hasOutput() const { return m_hasOutput; }
 
-    void traceCommand(Token::ptr token);
+    void traceCommand(Token::ptr token, bool expanding = false);
 
     //////// Tokens
     Token::ptr lastToken();
