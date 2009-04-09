@@ -139,7 +139,7 @@ bool Futurelet::invokeWithPrefixes(Parser& parser, Node::ptr node,
     if(token)
         tokens.push_back(token->lcopy());
     if(rtoken)
-        tokens.push_back(token->lcopy());
+        tokens.push_back(rtoken->lcopy());
 
     parser.pushBack(&tokens);
 
