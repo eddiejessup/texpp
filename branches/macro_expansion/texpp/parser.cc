@@ -1778,10 +1778,13 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
 Node::ptr Parser::parse()
 {
     if(!lexer()->fileName().empty()) {
+        string fname = lexer()->fileName();
         logger()->log(Logger::MESSAGE,
-            "**" + lexer()->fileName() + "\n", *this, Token::ptr());
+            "**" + fname + "\n", *this, Token::ptr());
+        bool p = std::find(fname.begin(), fname.end(), PATH_SEP)!=fname.end();
         logger()->log(Logger::MESSAGE,
-            "(" + lexer()->fileName() + "\n", *this, Token::ptr());
+            (p ? "(" : "(." + string(1, PATH_SEP))
+            + lexer()->fileName() + "\n", *this, Token::ptr());
     }
 
     setMode(VERTICAL);
