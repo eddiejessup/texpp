@@ -245,7 +245,9 @@ void Parser::endGroup()
                 str += "undefined";
             } else if(value.type() == typeid(Command::ptr)) {
                 Command::ptr cmd = *unsafe_any_cast<Command::ptr>(&value);
-                str += cmd->texRepr(this);
+                string r = cmd->texRepr(this);
+                std::remove_copy(r.begin(), r.end(),
+                        std::back_inserter(str), '\n');
             } else if(value.type() == typeid(base::ParshapeInfo)) {
                 str += boost::lexical_cast<string>(
                     unsafe_any_cast<base::ParshapeInfo>(&value)
@@ -396,8 +398,8 @@ Token::ptr Parser::peekToken(bool expand)
     //int n = 1; // XXX
     if(m_end) return Token::ptr();
 
-    if(m_token/* && n==1*/) return m_token; // cached token
-   // m_token.reset();
+    // check for cached token
+    if(m_token) return m_token;
 
     Token::list tokens;
     while(true) {
@@ -1414,35 +1416,59 @@ Node::ptr Parser::parseGlue(bool mu)
 }
 
 
-Node::ptr Parser::parseBalancedText()
+Node::ptr Parser::parseBalancedText(bool expand,
+                    int paramCount, Token::ptr nameToken)
 {
     Node::ptr node(new Node("balanced_text"));
     Token::list_ptr tokens(new Token::list);
 
     int level = 0;
-    while(peekToken()) {
-        if(peekToken()->isCharacterCat(Token::CC_BGROUP)) {
+    Token::ptr token;
+    while(token = peekToken(expand)) {
+        if(token->isCharacterCat(Token::CC_BGROUP)) {
             ++level;
-        } else if(peekToken()->isCharacterCat(Token::CC_EGROUP)) {
+        } else if(token->isCharacterCat(Token::CC_EGROUP)) {
             if(--level < 0) break;
         }
+
         tokens->push_back(nextToken(&node->tokens()));
+
+        if(paramCount >= 0 && token->isCharacterCat(Token::CC_PARAM)) {
+            Token::ptr nToken = peekToken(expand);
+            if(!nToken || !nToken->isCharacterCat(Token::CC_PARAM)) {
+                char ch = nToken && nToken->isCharacter() ?
+                            nToken->value()[0] : 0;
+                int n = std::isdigit(ch) ? ch - '0' : 0;
+                if(n <= 0 || n > paramCount) {
+                    logger()->log(Logger::ERROR,
+                        "Illegal parameter number in definition of "
+                        + (nameToken ? nameToken->texRepr(this) :
+                           char(symbol("escapechar", int(0))) +
+                           string("undefined")),
+                        *this, lastToken());
+                    tokens->push_back(Token::ptr(new Token(
+                        token->type(), token->catCode(), token->value())));
+                }
+            } else if(nToken) {
+                tokens->push_back(nextToken(&node->tokens()));
+            }
+        }
     }
     node->setValue(tokens);
     return node;
 }
 
-Node::ptr Parser::parseFiller()
+Node::ptr Parser::parseFiller(bool expand)
 {
     Node::ptr filler(new Node("filler"));
-    while(peekToken()) {
-        if(helperIsImplicitCharacter(Token::CC_SPACE)) {
-            nextToken(&filler->tokens());
+    while(peekToken(expand)) {
+        if(helperIsImplicitCharacter(Token::CC_SPACE, expand)) {
+            nextToken(&filler->tokens(), expand);
             continue;
-        } else if(peekToken()->isControl()) {
-            Command::ptr obj = symbol(peekToken(), Command::ptr());
+        } else if(peekToken(expand)->isControl()) {
+            Command::ptr obj = symbol(peekToken(expand), Command::ptr());
             if(obj && obj->name() == "\\relax") {
-                nextToken(&filler->tokens());
+                nextToken(&filler->tokens(), expand);
                 continue;
             }
         }
@@ -1453,33 +1479,37 @@ Node::ptr Parser::parseFiller()
     return filler;
 }
 
-Node::ptr Parser::parseGeneralText(bool implicit_lbrace)
+Node::ptr Parser::parseGeneralText(bool expand, bool implicitLbrace)
 {
     Node::ptr node(new Node("general_text"));
 
     // parse filler
-    node->appendChild("filler", parseFiller());
+    node->appendChild("filler", parseFiller(expand));
 
     // parse left_brace
     Node::ptr left_brace(new Node("left_brace"));
     node->appendChild("left_brace", left_brace);
-    if(peekToken() && (
-       (implicit_lbrace && helperIsImplicitCharacter(Token::CC_BGROUP)) ||
-       (!implicit_lbrace && peekToken()->isCharacterCat(Token::CC_BGROUP)))) {
-        left_brace->setValue(nextToken(&left_brace->tokens()));
+    if(peekToken(expand) && (
+       (implicitLbrace &&
+            helperIsImplicitCharacter(Token::CC_BGROUP, expand)) ||
+       (!implicitLbrace &&
+            peekToken(expand)->isCharacterCat(Token::CC_BGROUP)))) {
+        left_brace->setValue(nextToken(&left_brace->tokens(), expand));
     } else {
-        logger()->log(Logger::ERROR, "Missing { inserted", *this,lastToken());
+        logger()->log(Logger::ERROR, "Missing { inserted",
+                        *this, lastToken());
         left_brace->setValue(Token::ptr(new Token(
                     Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
     }
 
-    node->appendChild("balanced_text", parseBalancedText());
+    node->appendChild("balanced_text", parseBalancedText(expand));
 
     // parse right_brace
     Node::ptr right_brace(new Node("right_brace"));
     node->appendChild("right_brace", right_brace);
-    if(peekToken() && peekToken()->isCharacterCat(Token::CC_EGROUP)) {
-        right_brace->setValue(nextToken(&right_brace->tokens()));
+    if(peekToken(expand) &&
+            peekToken(expand)->isCharacterCat(Token::CC_EGROUP)) {
+        right_brace->setValue(nextToken(&right_brace->tokens(), expand));
     } else {
         // TODO: error
         right_brace->setValue(Token::ptr(new Token(
@@ -1537,15 +1567,18 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
             if(dynamic_pointer_cast<Macro>(cmd)) {
                 if(expanding) {
                     if(tracingcommands < 2) return;
+                    if(dynamic_pointer_cast<base::UserMacro>(cmd)) return;
                     str += cmd->texRepr(this);
                 } else {
                     str += char(symbol("escapechar", int('\\')));
                     str += "relax";
                 }
+                //std::remove(str.begin(), str.end(), '\n');
             } else if(cmd) {
                 str += cmd->texRepr(this);
+            } else {
+                str = "undefined";
             }
-            else str = "undefined";
         } else {
             str = token->meaning(this);
         }
@@ -1685,6 +1718,12 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
 
         } else if(peekToken()->isCharacterCat(Token::CC_OTHER)) {
             node->appendChild("text_character", parseTextCharacter());
+
+        } else if(peekToken()->isCharacterCat(Token::CC_PARAM)) {
+            m_logger->log(Logger::ERROR,
+                "You can't use `" + peekToken()->meaning(this) + "' in " +
+                modeName() + " mode", *this, lastToken());
+            node->appendChild("error_param", parseToken());
 
         } else if(peekToken()->isControl()) {
             Command::ptr cmd = symbol(peekToken(), Command::ptr());

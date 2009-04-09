@@ -39,7 +39,7 @@ bool InternalToks::invokeOperation(Parser& parser,
         if(internal) {
             node->setValue(internal->valueAny());
         } else {
-            internal = parser.parseGeneralText();
+            internal = parser.parseGeneralText(false);
             Token::list_ptr tokens = internal->child("balanced_text")
                                         ->value(Token::list_ptr());
             node->setValue(tokens ? *tokens : Token::list());

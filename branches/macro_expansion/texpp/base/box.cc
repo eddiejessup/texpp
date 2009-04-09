@@ -90,7 +90,7 @@ bool Setbox::invokeOperation(Parser& parser,
         string name = parseName(parser, node);
 
         node->appendChild("equals", parser.parseOptionalEquals());
-        node->appendChild("filler", parser.parseFiller());
+        node->appendChild("filler", parser.parseFiller(true));
 
         Node::ptr rvalue =
             Variable::tryParseVariableValue<base::Box>(parser);
@@ -135,7 +135,7 @@ bool BoxSpec::invokeOperation(Parser& parser,
             node->appendChild("spread", parser.parseDimen());
         }
 
-        node->appendChild("filler", parser.parseFiller());
+        node->appendChild("filler", parser.parseFiller(true));
 
         Parser::Mode prevMode = parser.mode();
 

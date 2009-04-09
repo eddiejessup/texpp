@@ -72,7 +72,7 @@ bool ArithmeticCommand::invokeWithPrefixes(Parser& parser,
         string tname;
         Command::ptr cmd = parser.symbol(token, Command::ptr());
         if(cmd) tname = cmd->texRepr(&parser);
-        else tname = token->meaning();
+        else tname = token->meaning(&parser);
         parser.logger()->log(Logger::ERROR,
             string("You can't use `") + tname +
             string("' after ") + texRepr(&parser),

@@ -74,6 +74,9 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("futurelet", Futurelet);
 
     __TEXPP_SET_COMMAND("def", Def);
+    __TEXPP_SET_COMMAND("gdef", Def, true);
+    __TEXPP_SET_COMMAND("edef", Def, false, true);
+    __TEXPP_SET_COMMAND("xdef", Def, true, true);
 
     __TEXPP_SET_COMMAND("show", Show);
     __TEXPP_SET_COMMAND("showthe", ShowThe);
@@ -311,9 +314,6 @@ void initSymbols(Parser& parser)
 
     // Unimplemented commands
 
-    __TEXPP_SET_COMMAND("gdef", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("edef", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("xdef", UnimplementedCommand);
     __TEXPP_SET_COMMAND("read", UnimplementedCommand);
     __TEXPP_SET_COMMAND("spread", UnimplementedCommand);
 

@@ -29,7 +29,7 @@ bool Hyphenation::invokeOperation(Parser& parser,
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        Node::ptr internal = parser.parseGeneralText();
+        Node::ptr internal = parser.parseGeneralText(true);
         Token::list_ptr tokens = internal->child("balanced_text")
                                     ->value(Token::list_ptr());
         node->setValue(tokens ? *tokens : Token::list());

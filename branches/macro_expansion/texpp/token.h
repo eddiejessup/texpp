@@ -110,6 +110,10 @@ public:
     string meaning(Parser* parser = NULL) const;
     string repr() const;
 
+    Token::ptr lcopy() const {
+        return Token::ptr(new Token(m_type, m_catCode, m_value));
+    }
+
     static string texReprList(const Token::list& tokens,
                                 Parser* parser = NULL);
 

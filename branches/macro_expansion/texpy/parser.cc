@@ -105,7 +105,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Parser_parseGroup_overloads, parseGroup, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_parseGeneralText_overloads, parseGeneralText, 0, 1)
+    Parser_parseGeneralText_overloads, parseGeneralText, 1, 2)
 
 void export_parser()
 {

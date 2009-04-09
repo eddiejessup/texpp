@@ -32,6 +32,7 @@ public:
     typedef shared_ptr<Logger> ptr;
 
     enum Level {
+        MTRACING = 5,
         TRACING = 10,
         MESSAGE = 20,
         SHOW = 30,

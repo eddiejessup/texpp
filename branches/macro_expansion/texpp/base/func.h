@@ -110,9 +110,14 @@ bool RegisterDef<Cmd>::invokeWithPrefixes(Parser& parser,
 class Def: public Assignment
 {
 public:
-    explicit Def(const string& name): Assignment(name) {}
+    explicit Def(const string& name,
+                    bool global = false, bool expand = false)
+        : Assignment(name), m_global(global), m_expand(expand) {}
     bool invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
                                 std::set<string>& prefixes);
+protected:
+    bool m_global;
+    bool m_expand;
 };
 
 class UserMacro: public Macro
@@ -130,6 +135,7 @@ public:
     bool longAttr() const { return m_longAttr; }
 
     string texRepr(Parser* parser = NULL) const;
+    bool expand(Parser& parser, shared_ptr<Node> node);
 
 protected:
     Token::list_ptr m_params;

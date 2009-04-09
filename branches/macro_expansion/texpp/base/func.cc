@@ -19,6 +19,8 @@
 #include <texpp/base/func.h>
 #include <texpp/parser.h>
 
+#include <boost/foreach.hpp>
+
 namespace texpp {
 namespace base {
 
@@ -135,11 +137,9 @@ bool Futurelet::invokeWithPrefixes(Parser& parser, Node::ptr node,
 
     Token::list tokens;
     if(token)
-        tokens.push_back(Token::ptr(new Token(token->type(),
-                        token->catCode(), token->value())));
+        tokens.push_back(token->lcopy());
     if(rtoken)
-        tokens.push_back(Token::ptr(new Token(rtoken->type(),
-                        rtoken->catCode(), rtoken->value())));
+        tokens.push_back(token->lcopy());
 
     parser.pushBack(&tokens);
 
@@ -154,12 +154,16 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     bool outerAttr = prefixes.count("\\outer");
     prefixes.clear();
 
+    global |= m_global;
+
     Node::ptr lvalue = parser.parseControlSequence(false);
+    Token::ptr ltoken = lvalue->value(Token::ptr());
     node->appendChild("lvalue", lvalue);
 
     Node::ptr paramsNode(new Node("params"));
     node->appendChild("params", paramsNode);
 
+    bool lbrace = false;
     int paramNum = 0;
     Token::list_ptr params(new Token::list);
     while(parser.peekToken(false)) {
@@ -168,31 +172,39 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
         } else if(parser.peekToken(false)->isCharacterCat(Token::CC_EGROUP)) {
             break;
         } else if(parser.peekToken(false)->isCharacterCat(Token::CC_PARAM)) {
-            ++paramNum;
             int curParamNum = -1;
+
             params->push_back(
                 parser.nextToken(&paramsNode->tokens(), false));
-            if(parser.peekToken(false) &&
-                    parser.peekToken(false)->isCharacter()) {
-                char ch = parser.peekToken(false)->value()[0];
+
+            Token::ptr token = parser.peekToken(false);
+            if(token && token->isCharacter()) {
+                if(token->isCharacterCat(Token::CC_BGROUP)){
+                    params->pop_back();
+                    params->push_back(token->lcopy());
+                    lbrace = true;
+                    break;
+                }
+                char ch = token->value()[0];
                 if(std::isdigit(ch)) curParamNum = ch - '0';
             }
 
-            if(paramNum > 9) {
+            if(paramNum+1 > 9) {
                 parser.logger()->log(Logger::ERROR,
                     "You already have nine parameters",
                     parser, parser.lastToken());
                 params->pop_back();
-            } else if(curParamNum != paramNum) {
+            } else if(curParamNum != paramNum+1) {
                 parser.logger()->log(Logger::ERROR,
                     "Parameters must be numbered consecutively",
                     parser, parser.lastToken());
                 params->push_back(Token::ptr(
                     new Token(Token::TOK_CHARACTER, Token::CC_OTHER,
-                                boost::lexical_cast<string>(paramNum))));
+                            boost::lexical_cast<string>(++paramNum))));
             } else {
                 params->push_back(
                     parser.nextToken(&paramsNode->tokens(), false));
+                ++paramNum;
             }
 
         } else {
@@ -215,7 +227,30 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
                     Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
     }
 
-    Node::ptr definition = parser.parseBalancedText();
+    Node::ptr definition =
+        parser.parseBalancedText(m_expand, paramNum, ltoken);
+    if(m_expand) {
+        Token::list_ptr tokens = definition->value(Token::list_ptr());
+        Token::list_ptr tokens_copy(new Token::list());
+        if(tokens) {
+            BOOST_FOREACH(Token::ptr token, *tokens) {
+                Command::ptr cmd = parser.symbol(token, Command::ptr());
+                if(token->isControl() && !cmd) {
+                    parser.logger()->log(Logger::ERROR,
+                        "Undefined control sequence", parser, token);
+                } else {
+                    tokens_copy->push_back(token);
+                }
+            }
+        }
+        definition->setValue(tokens_copy);
+    }
+
+    if(lbrace) {
+        Token::list_ptr p = definition->value(Token::list_ptr());
+        if(p) p->push_back(params->back());
+    }
+
     node->appendChild("definition", definition);
 
     Node::ptr right_brace(new Node("right_brace"));
@@ -229,7 +264,6 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
                     Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
     }
 
-    Token::ptr ltoken = lvalue->value(Token::ptr());
     parser.setSymbol(ltoken,
         Command::ptr(new UserMacro(ltoken ? ltoken->value() : "\\undefined",
             paramsNode->value(Token::list_ptr()),
@@ -249,11 +283,142 @@ string UserMacro::texRepr(Parser* parser) const
     if(!str.empty()) str += ' ';
 
     str += "macro:\n";
-    if(m_params) str += Token::texReprList(*m_params, parser);
+    str += Token::texReprList(*m_params, parser);
     str += "->";
-    if(m_definition) str += Token::texReprList(*m_definition, parser);
+    str += Token::texReprList(*m_definition, parser);
 
     return str;
+}
+
+bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
+{
+    if(parser.symbol("tracingmacros", int(0)) > 0) {
+        string str(Command::texRepr(&parser));
+        str += ' ';
+        str += Token::texReprList(*m_params, &parser);
+        str += "->";
+        str += Token::texReprList(*m_definition, &parser);
+        parser.logger()->log(Logger::MTRACING,
+            str, parser, Token::ptr());
+    }
+
+    Node::ptr child;
+
+    Token::list_ptr params[9];
+    size_t paramNum = 0;
+
+    Token::list::iterator end = m_params->end();
+    for(Token::list::iterator it = m_params->begin(); it < end; ++it) {
+        if((*it)->isCharacterCat(Token::CC_PARAM)) {
+            child = Node::ptr(new Node("arg"));
+            node->appendChild("arg" +
+                boost::lexical_cast<string>(paramNum+1), child);
+
+            Token::list_ptr tokens(new Token::list());
+            child->setValue(tokens);
+
+            Token::ptr etoken;
+            ++it;
+            if(it+1 < end && !(*(it+1))->isCharacterCat(Token::CC_PARAM))
+                etoken = *(it+1);
+
+            int level = 0;
+            Token::ptr token;
+            while(token = parser.peekToken(false)) {
+                if(level == 0 && etoken &&
+                        token->type() == etoken->type() &&
+                        token->catCode() == etoken->catCode() &&
+                        token->value() == etoken->value()) {
+                    break;
+                } else if(token->isCharacterCat(Token::CC_BGROUP)) {
+                    tokens->push_back(
+                        parser.nextToken(&child->tokens(), false));
+                    ++level;
+                } else if(token->isCharacterCat(Token::CC_EGROUP)) {
+                    tokens->push_back(
+                        parser.nextToken(&child->tokens(), false));
+                    --level;
+                    if(level == 0 && !etoken) break;
+                    if(level < 0) {
+                        parser.logger()->log(Logger::ERROR,
+                            "Argument of " + Command::texRepr(&parser) +
+                            " has an extra }", parser, parser.lastToken());
+                        level = 0;
+                    }
+                } else {
+                    tokens->push_back(
+                        parser.nextToken(&child->tokens(), false));
+                    if(level == 0 && !etoken) break;
+                }
+            }
+
+            if(tokens->size() >= 2 &&
+                    tokens->front()->isCharacterCat(Token::CC_BGROUP) &&
+                    tokens->back()->isCharacterCat(Token::CC_EGROUP)) {
+                std::copy(tokens->begin()+1, tokens->end(),
+                                tokens->begin());
+                tokens->resize(tokens->size()-2);
+            }
+
+            params[paramNum++] = tokens;
+            child->setValue(tokens);
+            child.reset();
+
+        } else {
+            Token::ptr ntoken = parser.peekToken(false);
+            if(!child) {
+                child = Node::ptr(new Node("arg_skip"));
+                node->appendChild("arg_skip", child);
+            }
+            parser.nextToken(&child->tokens(), false);
+
+            if(!ntoken ||
+                    ntoken->type() != (*it)->type() ||
+                    ntoken->catCode() != (*it)->catCode() ||
+                    ntoken->value() != (*it)->value()) {
+                parser.logger()->log(Logger::ERROR,
+                    "Use of " + Command::texRepr(&parser) +
+                    " doesn't match its definition",
+                    parser, parser.lastToken());
+                return true;
+            }
+        }
+    }
+
+    if(parser.symbol("tracingmacros", int(0)) > 0) {
+        for(size_t n = 0; n < paramNum; ++n) {
+            string str("#");
+            str += boost::lexical_cast<string>(n+1);
+            str += "<-";
+            if(params[n])
+                str += Token::texReprList(*params[n], &parser);
+            parser.logger()->log(Logger::MTRACING,
+                str, parser, Token::ptr());
+        }
+    }
+
+    Token::list result;
+    end = m_definition->end();
+    for(Token::list::iterator it = m_definition->begin();
+                                            it < end; ++it) {
+        if((*it)->isCharacterCat(Token::CC_PARAM)) {
+            if(++it >= end) break;
+            if((*it)->isCharacterCat(Token::CC_PARAM)) {
+                result.push_back((*it)->lcopy());
+            } else if((*it)->isCharacter()) {
+                char ch = (*it)->value()[0];
+                if(!isdigit(ch) || ch == '0' || !params[ch-'0'-1]) continue;
+                BOOST_FOREACH(Token::ptr token, *params[ch-'0'-1]) {
+                    result.push_back(token->lcopy());
+                }
+            }
+        } else {
+            result.push_back((*it)->lcopy());
+        }
+    }
+
+    node->setValue(result);
+    return true;
 }
 
 } // namespace base

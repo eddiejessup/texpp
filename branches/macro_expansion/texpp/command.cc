@@ -40,9 +40,9 @@ string Command::repr() const
             + ", " + reprString(texRepr()) + ")";
 }
 
-string TokenCommand::texRepr(Parser*) const
+string TokenCommand::texRepr(Parser* parser) const
 {
-    return m_token->meaning();
+    return m_token->meaning(parser);
 }
 
 bool TokenCommand::invoke(Parser&, shared_ptr<Node> node)

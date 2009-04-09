@@ -155,9 +155,10 @@ public:
     Node::ptr parseDimen(bool fil = false, bool mu = false);
     Node::ptr parseGlue(bool mu = false);
 
-    Node::ptr parseFiller();
-    Node::ptr parseBalancedText();
-    Node::ptr parseGeneralText(bool implicit_rbrace = true);
+    Node::ptr parseFiller(bool expand);
+    Node::ptr parseBalancedText(bool expand, int paramCount = -1,
+                                    Token::ptr nameToken = Token::ptr());
+    Node::ptr parseGeneralText(bool expand, bool implicitLbrace = true);
 
     Node::ptr parseFileName();
 

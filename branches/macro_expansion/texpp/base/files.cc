@@ -30,7 +30,8 @@ namespace base {
 bool Message::invoke(Parser& parser, Node::ptr node)
 {
     using boost::lexical_cast;
-    Node::ptr text = parser.parseGeneralText();
+    // TODO: expand text later
+    Node::ptr text = parser.parseGeneralText(true);
     node->appendChild("text", text);
     
     string str;

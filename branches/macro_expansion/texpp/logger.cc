@@ -80,7 +80,10 @@ bool ConsoleLogger::log(Level level, const string& message,
 
     std::ostringstream r;
     
-    if(level <= TRACING) {
+    if(level <= MTRACING) {
+        if(!m_atNewline) r << std::endl;
+        r << message << std::endl;
+    } else if(level <= TRACING) {
         if(!m_atNewline) r << std::endl;
         r << '{' << message << '}' << std::endl;
     } else if(level <= MESSAGE) {

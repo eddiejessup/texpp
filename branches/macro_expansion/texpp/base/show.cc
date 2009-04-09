@@ -39,7 +39,7 @@ bool parseMeaning(Parser& parser, shared_ptr<Node> node, bool show)
 
     string str;
     if(token->isCharacter()) {
-        str = token->meaning();
+        str = token->meaning(&parser);
     } else {
         if(show)
             str = token->texRepr(&parser) + '=';
