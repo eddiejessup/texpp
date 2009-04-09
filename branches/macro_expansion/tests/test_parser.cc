@@ -190,44 +190,34 @@ BOOST_AUTO_TEST_CASE( parser_symbols )
     BOOST_CHECK_EQUAL(string("x"), parser->symbol("c", string("x")));
     BOOST_CHECK_EQUAL(2, parser->symbol("b", 2));
 
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0));
 
     parser->beginGroup();
 
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0));
     
     parser->setSymbol("a", 2);
-    BOOST_CHECK_EQUAL(2, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(2, parser->symbol("a", 0));
 
     parser->setSymbol("a", 3, true);
-    BOOST_CHECK_EQUAL(2, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0));
 
     parser->setSymbol("d", 5);
-    BOOST_CHECK_EQUAL(5, parser->symbol("d", 0, false));
-    BOOST_CHECK_EQUAL(0, parser->symbol("d", 0, true));
+    BOOST_CHECK_EQUAL(5, parser->symbol("d", 0));
 
     parser->setSymbol("e", 7, true);
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, false));
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, true));
+    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0));
 
     parser->setSymbol("e", 8);
-    BOOST_CHECK_EQUAL(8, parser->symbol("e", 0, false));
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, true));
+    BOOST_CHECK_EQUAL(8, parser->symbol("e", 0));
 
     parser->endGroup();
 
-    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0));
 
-    BOOST_CHECK_EQUAL(0, parser->symbol("d", 0, false));
-    BOOST_CHECK_EQUAL(0, parser->symbol("d", 0, true));
+    BOOST_CHECK_EQUAL(0, parser->symbol("d", 0));
 
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, false));
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, true));
+    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0));
 }
 
 BOOST_AUTO_TEST_CASE( parser_parse )

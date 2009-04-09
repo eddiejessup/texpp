@@ -37,7 +37,7 @@ bool Hyphenation::invokeOperation(Parser& parser,
         node->appendChild("rvalue", internal);
 
         if(tokens) {
-            Token::list h = parser.symbol(name, Token::list(), true);
+            Token::list h = parser.symbol(name, Token::list());
             std::copy(tokens->begin(), tokens->end(), std::back_inserter(h));
             parser.setSymbol(name, h, true); // global
         }

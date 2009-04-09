@@ -35,10 +35,10 @@ struct FontInfo
 
     string selector;
     string file;
-    int at;
+    Dimen at;
 
     FontInfo() {}
-    explicit FontInfo(string s, string f = "nullfont", int a = 0)
+    explicit FontInfo(string s, string f = "nullfont", Dimen a = Dimen(0))
         : selector(s), file(f), at(a) {}
 
 };

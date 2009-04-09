@@ -149,12 +149,12 @@ bool SpecialInteger::invokeOperation(Parser& parser,
         return true;
     } else if(op == GET) {
         string name = parseName(parser, node);
-        const any& ret = parser.symbolAny(name, true); // global
+        const any& ret = parser.symbolAny(name);
         node->setValue(ret.empty() ? m_initValue : ret);
         return true;
     } else if(op == EXPAND) {
         string name = parseName(parser, node);
-        int val = parser.symbol(name, int(0), true); // global
+        int val = parser.symbol(name, int(0));
         node->setValue(boost::lexical_cast<string>(val));
         return true;
     } else {

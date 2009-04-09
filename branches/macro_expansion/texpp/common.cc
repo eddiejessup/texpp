@@ -20,6 +20,9 @@
 #include <texpp/token.h>
 #include <texpp/parser.h>
 
+#include <texpp/base/dimen.h>
+#include <texpp/base/glue.h>
+
 #include <sstream>
 #include <iomanip>
 #include <cassert>
@@ -73,8 +76,10 @@ string reprAny(const boost::any& value)
     using boost::unsafe_any_cast;
 
     std::ostringstream r;
+
     if(value.empty())
-        r << "any()";
+        r << "None";
+
     else if(value.type() == typeid(int))
         r << *unsafe_any_cast<int>(&value);
     else if(value.type() == typeid(short))
@@ -83,10 +88,26 @@ string reprAny(const boost::any& value)
         r << *unsafe_any_cast<long>(&value);
     else if(value.type() == typeid(string))
         r << reprString(*unsafe_any_cast<string>(&value));
+
+    else if(value.type() == typeid(pair<int,int>)) {
+        pair<int,int> v = *unsafe_any_cast<pair<int,int> >(&value);
+        r << "(" << v.first << ", " << v.second << ")";
+    }
+
+    else if(value.type() == typeid(base::Dimen))
+        r << base::InternalDimen::dimenToString(
+                *unsafe_any_cast<base::Dimen>(&value));
+
+    else if(value.type() == typeid(base::Glue))
+        r << base::InternalGlue::glueToString(
+                *unsafe_any_cast<base::Glue>(&value));
+
     else if(value.type() == typeid(Token::ptr))
-        r << (*unsafe_any_cast<Token::ptr>(&value))->repr();
+        r << (*unsafe_any_cast<Token::ptr>(&value))->texRepr();
+
     else if(value.type() == typeid(Command::ptr))
-        r << (*unsafe_any_cast<Command::ptr>(&value))->repr();
+        r << (*unsafe_any_cast<Command::ptr>(&value))->texRepr();
+
     else if(value.type() == typeid(Token::list_ptr))
         r << "TokenList("
           << (*unsafe_any_cast<Token::list_ptr>(&value))->size()

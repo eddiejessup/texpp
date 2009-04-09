@@ -26,6 +26,7 @@
 #include <texpp/base/dimen.h>
 #include <texpp/base/glue.h>
 #include <texpp/base/parshape.h>
+#include <texpp/base/font.h>
 
 #include <iostream>
 #include <sstream>
@@ -51,6 +52,8 @@ const texpp::string modeNames[] = {
 } // namespace
 
 namespace texpp {
+
+using base::Dimen;
 
 Node::ptr Node::child(const string& name)
 {
@@ -155,49 +158,27 @@ const string& Parser::modeName() const
 
 any Parser::EMPTY_ANY;
 
-const any& Parser::symbolAny(const string& name, bool global) const
+const any& Parser::symbolAny(const string& name) const
 {
     SymbolTable::const_iterator it = m_symbols.find(name);
-    if(it != m_symbols.end()) {
-        if(!global || it->second.first == 0) {
-            return it->second.second;
-        } else {
-            it = m_symbolsGlobal.find(name);
-            if(it != m_symbolsGlobal.end())
-                return it->second.second;
-        }
-    }
+    if(it != m_symbols.end())
+        return it->second.second;
     return EMPTY_ANY;
 }
 
 void Parser::setSymbol(const string& name, const any& value, bool global)
 {
-    SymbolTable::iterator it = m_symbols.find(name);
-    if(it != m_symbols.end()) {
-        if(!global) {
-            if(it->second.first != m_groupLevel) {
-                m_symbolsStack.push_back(std::make_pair(name, it->second));
-                if(it->second.first == 0) m_symbolsGlobal[name] = it->second;
-            }
-            it->second.first = m_groupLevel;
-            it->second.second = value;
-        } else {
-            if(it->second.first != 0) {
-                m_symbolsGlobal[name] = std::make_pair(0, value);
-            } else {
-                it->second.second = value;
-            }
-        }
-    } else {
-        m_symbols[name] = std::make_pair(global ? 0 : m_groupLevel, value);
-        if(!global && m_groupLevel != 0) {
-            m_symbolsGlobal[name] = std::make_pair(0, any());
-            m_symbolsStack.push_back(std::make_pair(name,
-                                        std::make_pair(0, any())));
-        }
-    }
+    SymbolTable::iterator it = m_symbols.insert(
+        std::make_pair(name, std::make_pair(0, any()))).first;
 
-    if(!global || m_groupLevel == 0) setSpecialSymbol(name, value);
+    if(!global && it->second.first != m_groupLevel) {
+        m_symbolsStack.push_back(std::make_pair(name, it->second));
+        it->second.first = m_groupLevel;
+    } else if(global && it->second.first >= 0) {
+        it->second.first = -1;
+    }
+    it->second.second = value;
+    setSpecialSymbol(name, value);
 }
 
 void Parser::setSpecialSymbol(const string& name, const any& value)
@@ -236,17 +217,57 @@ void Parser::endGroup()
         SymbolStack::reference item = m_symbolsStack.back();
         SymbolTable::iterator it = m_symbols.find(item.first);
 
-        if(item.second.first == 0) {
-            SymbolTable::iterator it1 = m_symbolsGlobal.find(item.first);
-            assert(it1 != m_symbolsGlobal.end());
+        if(symbol("tracingrestores", int(0)) > 0) {
+            string str;
+            any value;
 
-            it->second = it1->second;
-            m_symbolsGlobal.erase(it1);
-            if(it->second.second.empty())
-                m_symbols.erase(it);
+            if(it->second.first >= 0) {
+                str = "restoring ";
+                value = item.second.second;
+            } else {
+                str = "retaining ";
+                value = it->second.second;
+            }
+
+            char escape = symbol("escapechar", int('\\'));
+            if(item.first == "font")
+                str += "current font";
+            else if(item.first.size() > 0 && item.first[0] == '\\')
+                str += string(1, escape) + item.first.substr(1);
+            else if(item.first.size() > 0 && item.first[0] == '`')
+                str += item.first.substr(1);
             else
-                setSpecialSymbol(it->first, it->second.second);
-        } else {
+                str += string(1, escape) + item.first;
+
+            str += "=";
+
+            if(value.empty()) {
+                str += "undefined";
+            } else if(value.type() == typeid(Command::ptr)) {
+                Command::ptr cmd = *unsafe_any_cast<Command::ptr>(&value);
+                str += cmd->texRepr(this);
+            } else if(value.type() == typeid(base::ParshapeInfo)) {
+                str += boost::lexical_cast<string>(
+                    unsafe_any_cast<base::ParshapeInfo>(&value)
+                                        ->parshape.size());
+            } else if(value.type() == typeid(shared_ptr<base::FontInfo>)) {
+                shared_ptr<base::FontInfo> f =
+                    *unsafe_any_cast<shared_ptr<base::FontInfo> >(&value);
+                string fname = f ? f->selector : "";
+                if(!fname.empty() && fname[0] == '\\')
+                    fname[0] = escape;
+                else
+                    fname = string(1, escape) + "FONT" + str;
+                str += fname;
+            } else {
+                str += reprAny(value);
+            }
+
+            logger()->log(Logger::TRACING,
+                str, *this, Token::ptr());
+        }
+
+        if(it->second.first >= 0) {
             it->second = item.second;
             setSpecialSymbol(it->first, it->second.second);
         }
@@ -360,7 +381,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens, bool expand)
 
     if(!m_lexer->interactive() && m_lexer->lineNo() != m_lineNo) {
         m_lineNo = m_lexer->lineNo();
-        setSymbol("inputlineno", int(m_lineNo));
+        setSymbol("inputlineno", int(m_lineNo), true);
     }
     return ret;
 }
@@ -458,11 +479,20 @@ void Parser::processTextCharacter(char ch, Token::ptr token)
 
 void Parser::resetParagraphIndent()
 {
-    setSymbol("parshape", base::ParshapeInfo());
-    setSymbol("hangindent", int(0));
-    setSymbol("hangafter", int(1));
-    setSymbol("looseness", int(0));
-    setSymbol("spacefactor", int(1000));
+    if(symbol("parshape", base::ParshapeInfo()).parshape.size() != 0)
+        setSymbol("parshape", base::ParshapeInfo());
+
+    if(symbol("hangindent", Dimen(0)).value != 0)
+        setSymbol("hangindent", Dimen(0));
+
+    if(symbol("hangafter", int(0)) != 1)
+        setSymbol("hangafter", int(1));
+
+    if(symbol("looseness", int(0)) != 0)
+        setSymbol("looseness", int(0));
+
+    if(symbol("spacefactor", int(0)) != 1000)
+        setSymbol("spacefactor", int(1000), true);
 }
 
 bool Parser::helperIsImplicitCharacter(Token::CatCode catCode, bool expand)
@@ -813,7 +843,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     if(!peekToken()) {
         logger()->log(Logger::ERROR,
             "Missing number, treated as zero", *this, Token::ptr());
-        node->setValue(int(0));
+        node->setValue(Dimen(0));
         return node;
     }
 
@@ -868,7 +898,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             while(helperIsImplicitCharacter(Token::CC_SPACE))
                 nextToken(&fil->tokens());
 
-            node->setValue(v);
+            node->setValue(Dimen(v));
             return node;
         }
     }
@@ -891,17 +921,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
-            i_unit = iunit->value(0);
-            i_found = true;
-        }
-    }
-
-    if(!iunit) {
-        Node::ptr iunit =
-            base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
-        if(iunit) {
-            node->appendChild("internal_unit", iunit);
-            i_unit = iunit->value(0);
+            i_unit = iunit->value(Dimen(0)).value;
             i_found = true;
         }
     }
@@ -911,7 +931,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
-            i_unit = iunit->value(base::Glue(0)).width;
+            i_unit = iunit->value(base::Glue(0,0)).width.value;
             i_found = true;
         }
     }
@@ -921,7 +941,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
-            i_unit = iunit->value(base::Glue(0)).width;
+            i_unit = iunit->value(base::Glue(1,0)).width.value;
             i_found = true;
             i_mu = true;
         }
@@ -961,9 +981,9 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                 overflow = true;
                 v = TEXPP_SCALED_MAX;
             }
-            node->setValue(v);
+            node->setValue(Dimen(v));
         } else {
-            node->setValue(int(0));
+            node->setValue(Dimen(0));
         }
 
         if(iunit && iunit->type() == "keyword")
@@ -1075,7 +1095,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(i_node) {
             node->appendChild("internal_muunit", i_node);
-            int i_unit = i_node->value(base::Glue(0)).width;
+            int i_unit = i_node->value(base::Glue(1,0)).width.value;
 
             if(i_unit != 0) {
                 int v = TEXPP_SCALED_MAX;
@@ -1091,9 +1111,9 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                     overflow = true;
                     v = TEXPP_SCALED_MAX;
                 }
-                node->setValue(v);
+                node->setValue(Dimen(v));
             } else {
-                node->setValue(int(0));
+                node->setValue(Dimen(0));
             }
             resetNoexpand();
             return node;
@@ -1120,7 +1140,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         v = TEXPP_SCALED_MAX;
     }
 
-    node->setValue(v);
+    node->setValue(Dimen(v));
 
     if(!units) {
         units = Node::ptr(new Node("unit"));
@@ -1197,7 +1217,7 @@ Node::ptr Parser::parseDimenFactor()
 
     } else {
         Node::ptr node = parseNormalInteger();
-        node->setValue(std::make_pair(node->value(int(0)), 0));
+        node->setValue(std::make_pair(node->value(0), 0));
         resetNoexpand();
         return node;
     }
@@ -1213,7 +1233,7 @@ Node::ptr Parser::parseNumber()
         base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
     if(internal) {
         node->appendChild("coerced_dimen", internal);
-        unsigned_value = internal->value(0);
+        unsigned_value = internal->value(Dimen(0)).value;
     }
 
     if(!internal) {
@@ -1221,7 +1241,7 @@ Node::ptr Parser::parseNumber()
             base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
         if(internal) {
             node->appendChild("coerced_glue", internal);
-            unsigned_value = internal->value(base::Glue(0)).width;
+            unsigned_value = internal->value(base::Glue(0,0)).width.value;
         }
     }
 
@@ -1230,7 +1250,7 @@ Node::ptr Parser::parseNumber()
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("coerced_muglue", internal);
-            unsigned_value = internal->value(base::Glue(0)).width;
+            unsigned_value = internal->value(base::Glue(1,0)).width.value;
             logger()->log(Logger::ERROR,
                 "Incompatible glue units", *this, lastToken());
         }
@@ -1261,7 +1281,7 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
         base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
     if(internal) {
         node->appendChild("coerced_glue", internal);
-        unsigned_value = internal->value(base::Glue(0)).width;
+        unsigned_value = internal->value(base::Glue(0,0)).width.value;
         intern = true;
     }
 
@@ -1270,7 +1290,7 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("coerced_muglue", internal);
-            unsigned_value = internal->value(base::Glue(0)).width;
+            unsigned_value = internal->value(base::Glue(1,0)).width.value;
             intern = true;
             intern_mu = true;
         }
@@ -1284,10 +1304,11 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
     } else {
         internal = parseNormalDimen(fil, mu);
         node->appendChild(mu ? "normal_mudimen" : "normal_dimen", internal);
-        unsigned_value = internal->value(0);
+        unsigned_value = internal->value(Dimen(0)).value;
     }
 
-    node->setValue(node->child(0)->value(int(0)) * unsigned_value);
+    node->setValue(
+        Dimen(node->child(0)->value(0) * unsigned_value));
 
     resetNoexpand();
     return node;
@@ -1299,7 +1320,7 @@ Node::ptr Parser::parseGlue(bool mu)
     node->appendChild("sign", parseOptionalSigns());
     int sign = node->child(0)->value(int(0));
 
-    base::Glue glue(0);
+    base::Glue glue(mu,0);
     bool intern = false;
     bool intern_mu = false;
 
@@ -1307,7 +1328,7 @@ Node::ptr Parser::parseGlue(bool mu)
         base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
     if(internal) {
         node->appendChild("internal_glue", internal);
-        glue = internal->value(base::Glue(0));
+        glue = internal->value(base::Glue(0,0));
         intern = true;
     }
 
@@ -1316,7 +1337,7 @@ Node::ptr Parser::parseGlue(bool mu)
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("internal_glue", internal);
-            glue = internal->value(base::Glue(0));
+            glue = internal->value(base::Glue(1,0));
             intern = true;
             intern_mu = true;
         }
@@ -1326,11 +1347,12 @@ Node::ptr Parser::parseGlue(bool mu)
         if(intern_mu != mu) {
             logger()->log(Logger::ERROR,
                 "Incompatible glue units", *this, lastToken());
+            glue.mu = mu;
         }
 
-        glue.width *= sign;
-        glue.stretch *= sign;
-        glue.shrink *= sign;
+        glue.width.value *= sign;
+        glue.stretch.value *= sign;
+        glue.shrink.value *= sign;
 
         node->setValue(glue);
 
@@ -1340,7 +1362,7 @@ Node::ptr Parser::parseGlue(bool mu)
 
     Node::ptr width = parseDimen(false, mu);
     node->appendChild("width", width);
-    glue.width = sign * width->value(int(0));
+    glue.width = Dimen(sign * width->value(Dimen(0)).value);
 
     Node::ptr dimenStretch;
     static vector<string> kw_plus(1, "plus");
@@ -1352,7 +1374,7 @@ Node::ptr Parser::parseGlue(bool mu)
         stretch->setValue(dimenStretch->valueAny());
         stretch->setType("stretch");
 
-        glue.stretch = stretch->value(int(0));
+        glue.stretch = stretch->value(Dimen(0));
 
         Node::ptr fil = dimenStretch->child(!mu ? "normal_dimen":
                                                   "normal_mudimen");
@@ -1374,7 +1396,7 @@ Node::ptr Parser::parseGlue(bool mu)
         shrink->setValue(dimenShrink->valueAny());
         shrink->setType("shrink");
 
-        glue.shrink = shrink->value(int(0));
+        glue.shrink = shrink->value(Dimen(0));
 
         Node::ptr fil = dimenShrink->child(!mu ? "normal_dimen":
                                                  "normal_mudimen");
@@ -1507,7 +1529,7 @@ Node::ptr Parser::parseTextWord()
 
 void Parser::traceCommand(Token::ptr token)
 {
-    if(symbol("tracingcommands", int(0))) {
+    if(symbol("tracingcommands", int(0)) > 0) {
         string str;
         if(token->isControl()) {
             Command::ptr cmd = symbol(token, Command::ptr());
@@ -1624,6 +1646,14 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             beginGroup();
             Mode prevMode = mode();
             setMode(dmath ? DMATH : MATH);
+
+            setSymbol("fam", int(-1));
+
+            if(dmath) {
+                setSymbol("predisplaysize", Dimen(0));
+                setSymbol("displaywidth", Dimen(0));
+                setSymbol("displayindent", Dimen(0));
+            }
 
             node->appendChild("inline_math", parseGroup(
                     dmath ? GROUP_DMATH : GROUP_MATH, true));

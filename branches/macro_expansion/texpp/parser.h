@@ -174,30 +174,30 @@ public:
             setSymbol(token->value(), value, global);
     }
     
-    const any& symbolAny(const string& name, bool global = false) const;
-    const any& symbolAny(Token::ptr token, bool global = false) const {
+    const any& symbolAny(const string& name) const;
+    const any& symbolAny(Token::ptr token) const {
         if(!token || !token->isControl()) return EMPTY_ANY;
-        else return symbolAny(token->value(), global);
+        else return symbolAny(token->value());
     }
     
     template<typename T>
-    T symbol(const string& name, T def, bool global = false) {
-        const any& v = symbolAny(name, global);
+    T symbol(const string& name, T def) {
+        const any& v = symbolAny(name);
         if(v.type() != typeid(T)) return def;
         else return *unsafe_any_cast<T>(&v);
     }
 
     template<typename T>
-    T symbol(Token::ptr token, T def, bool global = false) {
-        const any& v = symbolAny(token, global);
+    T symbol(Token::ptr token, T def) {
+        const any& v = symbolAny(token);
         if(v.type() != typeid(T)) return def;
         else return *unsafe_any_cast<T>(&v);
     }
 
     template<typename T>
-    shared_ptr<T> symbolCommand(Token::ptr token, bool global = false) {
+    shared_ptr<T> symbolCommand(Token::ptr token) {
         return dynamic_pointer_cast<T>(
-                symbol(token, Command::ptr(), global));
+                symbol(token, Command::ptr()));
     }
 
     void beginGroup();
@@ -239,7 +239,6 @@ protected:
     > SymbolStack;
 
     SymbolTable     m_symbols;
-    SymbolTable     m_symbolsGlobal;
     SymbolStack     m_symbolsStack;
     vector<size_t>  m_symbolsStackLevels;
 

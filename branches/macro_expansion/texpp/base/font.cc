@@ -32,7 +32,7 @@ string FontSelector::texRepr(Parser*) const
 string FontVariable::fontToString(const FontInfo& fontInfo)
 {
     string str(fontInfo.file);
-    if(fontInfo.at) {
+    if(fontInfo.at.value) {
         str += " at " + InternalDimen::dimenToString(fontInfo.at);
     }
     return str;
@@ -86,7 +86,7 @@ bool Font::invokeOperation(Parser& parser,
         Node::ptr fileName = parser.parseFileName();
         node->appendChild("file_name", fileName);
 
-        int at = 0;
+        Dimen at = Dimen(0);
         static vector<string> kw_at;
         if(kw_at.empty()) {
             kw_at.push_back("at");
@@ -100,14 +100,14 @@ bool Font::invokeOperation(Parser& parser,
             Node::ptr atNode = parser.parseDimen();
             node->appendChild("at", atNode);
 
-            at = atNode->value(int(0));
-            if(at <= 0 || at >= 0x8000000) {
+            at = atNode->value(Dimen(0));
+            if(at.value <= 0 || at.value >= 0x8000000) {
                 parser.logger()->log(Logger::ERROR,
                     "Improper `at' size (" +
                     InternalDimen::dimenToString(at) +
                     + "), replaced by 10pt",
                     parser, parser.lastToken());
-                at = 655360;
+                at.value = 655360;
             }
 
         } else if(atKw->value(string()) == "scaled") {
@@ -124,7 +124,8 @@ bool Font::invokeOperation(Parser& parser,
             }
 
             // TODO: take actual font size into account !
-            at = InternalDimen::multiplyIntFrac(655360, scaled, 1000).get<0>();
+            at.value =
+                InternalDimen::multiplyIntFrac(655360, scaled, 1000).get<0>();
         }
 
         FontInfo::ptr fontInfo(new FontInfo(ltoken->value(),

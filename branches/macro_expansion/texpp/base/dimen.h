@@ -31,23 +31,30 @@ using boost::tuple;
 
 namespace base {
 
+struct Dimen
+{
+    int value;
+    Dimen() {}
+    explicit Dimen(int v): value(v) {}
+};
+
 class InternalDimen: public Variable
 {
 public:
-    InternalDimen(const string& name, const any& initValue = any(0))
+    InternalDimen(const string& name, const any& initValue = any(Dimen(0)))
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
                 shared_ptr<Node> node, Operation op, bool global);
 
     static tuple<int,int,bool> multiplyIntFrac(int x, int n, int d);
-    static string dimenToString(int n, int o=0, bool mu=false);
+    static string dimenToString(Dimen nn, int o=0, bool mu=false);
 };
 
 class DimenVariable: public InternalDimen
 {
 public:
-    DimenVariable(const string& name, const any& initValue = any(0))
+    DimenVariable(const string& name, const any& initValue = any(Dimen(0)))
         : InternalDimen(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
@@ -57,7 +64,7 @@ public:
 class SpecialDimen: public InternalDimen
 {
 public:
-    SpecialDimen(const string& name, const any& initValue = any(0))
+    SpecialDimen(const string& name, const any& initValue = any(Dimen(0)))
         : InternalDimen(name, initValue) {}
 
     bool invokeOperation(Parser& parser,

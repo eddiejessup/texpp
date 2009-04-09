@@ -138,13 +138,13 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_REGISTER("count", IntegerVariable, int(0));
 
-    __TEXPP_SET_REGISTER("dimen", DimenVariable, int(0));
-    __TEXPP_SET_REGISTER("ht", BoxDimen, int(0));
-    __TEXPP_SET_REGISTER("wd", BoxDimen, int(0));
-    __TEXPP_SET_REGISTER("dp", BoxDimen, int(0));
+    __TEXPP_SET_REGISTER("dimen", DimenVariable, Dimen(0));
+    __TEXPP_SET_REGISTER("ht", BoxDimen, Dimen(0));
+    __TEXPP_SET_REGISTER("wd", BoxDimen, Dimen(0));
+    __TEXPP_SET_REGISTER("dp", BoxDimen, Dimen(0));
 
-    __TEXPP_SET_REGISTER("skip", GlueVariable, Glue(0));
-    __TEXPP_SET_REGISTER("muskip", MuGlueVariable, Glue(0));
+    __TEXPP_SET_REGISTER("skip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_REGISTER("muskip", MuGlueVariable, Glue(1,0));
     __TEXPP_SET_REGISTER("toks", ToksVariable, Token::list());
 
     #define __TEXPP_SET_CHAR(name, T) \
@@ -172,10 +172,10 @@ void initSymbols(Parser& parser)
             ReadOnlyVariable<InternalInteger>, int(0));
 
     __TEXPP_SET_VARIABLE("lastkern",
-            ReadOnlyVariable<InternalDimen>, int(0));
+            ReadOnlyVariable<InternalDimen>, Dimen(0));
 
     __TEXPP_SET_VARIABLE("lastskip",
-            ReadOnlyVariable<InternalGlue>, Glue(0));
+            ReadOnlyVariable<InternalGlue>, Glue(0,0));
 
     __TEXPP_SET_VARIABLE("endlinechar", IntegerVariable, int(0));
     __TEXPP_SET_VARIABLE("mag", IntegerVariable, int(0));
@@ -234,47 +234,47 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("showboxdepth", IntegerVariable, int(0));
     __TEXPP_SET_VARIABLE("errorcontextlines", IntegerVariable, int(0));
 
-    __TEXPP_SET_VARIABLE("hfuzz", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("vfuzz", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("overfullrule", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("emergencystretch", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("hsize", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("vsize", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("maxdepth", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("splitmaxdepth", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("boxmaxdepth", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("lineskiplimit", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("delimitershortfall", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("nulldelimiterspace", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("scriptspace", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("mathsurround", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("predisplaysize", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("displaywidth", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("displayindent", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("parindent", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("hangindent", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("hoffset", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("voffset", DimenVariable, int(0));
+    __TEXPP_SET_VARIABLE("hfuzz", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("vfuzz", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("overfullrule", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("emergencystretch", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("hsize", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("vsize", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("maxdepth", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("splitmaxdepth", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("boxmaxdepth", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("lineskiplimit", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("delimitershortfall", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("nulldelimiterspace", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("scriptspace", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("mathsurround", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("predisplaysize", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("displaywidth", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("displayindent", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("parindent", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("hangindent", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("hoffset", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("voffset", DimenVariable, Dimen(0));
 
-    __TEXPP_SET_VARIABLE("baselineskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("lineskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("parskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("abovedisplayskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("abovedisplayshortskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("belowdisplayskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("belowdisplayshortskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("leftskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("rightskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("topskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("splittopskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("tabskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("spaceskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("xspaceskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("parfillskip", GlueVariable, Glue(0));
+    __TEXPP_SET_VARIABLE("baselineskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("lineskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("parskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("abovedisplayskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("abovedisplayshortskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("belowdisplayskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("belowdisplayshortskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("leftskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("rightskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("topskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("splittopskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("tabskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("spaceskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("xspaceskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("parfillskip", GlueVariable, Glue(0,0));
 
-    __TEXPP_SET_VARIABLE("thinmuskip", MuGlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("medmuskip", MuGlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("thickmuskip", MuGlueVariable, Glue(0));
+    __TEXPP_SET_VARIABLE("thinmuskip", MuGlueVariable, Glue(1,0));
+    __TEXPP_SET_VARIABLE("medmuskip", MuGlueVariable, Glue(1,0));
+    __TEXPP_SET_VARIABLE("thickmuskip", MuGlueVariable, Glue(1,0));
 
     __TEXPP_SET_VARIABLE("output", ToksVariable, Token::list());
     __TEXPP_SET_VARIABLE("everypar", ToksVariable, Token::list());
@@ -292,15 +292,15 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("deadcycles", SpecialInteger, int(0));
     __TEXPP_SET_COMMAND("insertpenalties", SpecialInteger, int(0));
 
-    __TEXPP_SET_COMMAND("prevdepth", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagegoal", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagetotal", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagestretch", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagefilstrerch", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagefillstrerch", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagefilllstrerch", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pageshrink", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagedepth", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("prevdepth", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagegoal", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagetotal", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagestretch", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagefilstrerch", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagefillstrerch", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagefilllstrerch", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pageshrink", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagedepth", SpecialDimen, Dimen(0));
 
     // Ignored commands
     __TEXPP_SET_COMMAND("errorstopmode", IgnoredCommand);

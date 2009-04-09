@@ -40,7 +40,7 @@ bool InternalDimen::invokeOperation(Parser& parser,
         return true;
     } else if(op == EXPAND) {
         string name = parseName(parser, node);
-        int val = parser.symbol(name, int(0));
+        Dimen val = parser.symbol(name, Dimen(0));
         node->setValue(dimenToString(val));
         return true;
     } else {
@@ -60,8 +60,8 @@ bool DimenVariable::invokeOperation(Parser& parser,
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 
-        int v = parser.symbol(name, int(0));
-        v += rvalue->value(int(0));
+        Dimen v = parser.symbol(name, Dimen(0));
+        v.value += rvalue->value(Dimen(0)).value;
 
         node->setValue(v);
         parser.setSymbol(name, v, global);
@@ -75,16 +75,16 @@ bool DimenVariable::invokeOperation(Parser& parser,
         Node::ptr rvalue = parser.parseNumber();
         node->appendChild("rvalue", rvalue);
 
-        int v = parser.symbol(name, int(0));
+        Dimen v = parser.symbol(name, Dimen(0));
         int rv = rvalue->value(int(0));
         bool overflow = false;
 
         if(op == MULTIPLY) {
-            pair<int,bool> p = safeMultiply(v, rv,  TEXPP_SCALED_MAX);
-            v = p.first; overflow = p.second;
+            pair<int,bool> p = safeMultiply(v.value, rv,  TEXPP_SCALED_MAX);
+            v.value = p.first; overflow = p.second;
         } else if(op == DIVIDE) {
-            pair<int,bool> p = safeDivide(v, rv);
-            v = p.first; overflow = p.second;
+            pair<int,bool> p = safeDivide(v.value, rv);
+            v.value = p.first; overflow = p.second;
         }
 
         if(overflow) {
@@ -114,9 +114,10 @@ tuple<int,int,bool> InternalDimen::multiplyIntFrac(int x, int n, int d)
                     sign * (v % d), false);
 }
 
-string InternalDimen::dimenToString(int n, int o, bool mu)
+string InternalDimen::dimenToString(Dimen nn, int o, bool mu)
 {
     std::ostringstream s;
+    int n = nn.value;
     if(n<0) { s << '-'; n=-n; }
 
     s << n/0x10000 << '.';
@@ -153,12 +154,12 @@ bool SpecialDimen::invokeOperation(Parser& parser,
         return true;
     } else if(op == GET) {
         string name = parseName(parser, node);
-        const any& ret = parser.symbolAny(name, true); // global
+        const any& ret = parser.symbolAny(name);
         node->setValue(ret.empty() ? m_initValue : ret);
         return true;
     } else if(op == EXPAND) {
         string name = parseName(parser, node);
-        int val = parser.symbol(name, int(0), true); // global
+        Dimen val = parser.symbol(name, Dimen(0));
         node->setValue(dimenToString(val));
         return true;
     } else {

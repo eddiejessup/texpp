@@ -1,5 +1,6 @@
 \tracingonline=2
 \tracingcommands=2
+\tracingrestores=2
 
 \catcode`{=1
 \catcode`}=2
@@ -27,6 +28,7 @@ b \bb \:cc~dd\zz
 \tracingcommands=0 % TODO XXX
 \message{~ \the\toks0 @}
 \tracingcommands=2
+\tracingrestores=2
 
 \toks0={123}
 \count\the\toks0=234
