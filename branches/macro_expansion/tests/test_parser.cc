@@ -37,7 +37,8 @@ public:
                 Parser&, shared_ptr<Token> token) {
         logMessages.push_back(message);
         logPositions.push_back(
-            std::make_pair(token->lineNo(), token->charPos()));
+            token ? std::make_pair(token->lineNo(), token->charPos())
+                  : std::make_pair(size_t(0), size_t(0)));
         return true;
     }
     vector<string> logMessages;
