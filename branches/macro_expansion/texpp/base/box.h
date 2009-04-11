@@ -25,17 +25,26 @@
 #include <texpp/parser.h>
 
 #include <texpp/base/variable.h>
+#include <texpp/base/dimen.h>
 
 namespace texpp {
 namespace base {
 
 struct Box
 {
-    Parser::Mode type;
+    Parser::Mode mode;
+    bool top;
+
+    Dimen width;
+    Dimen height;
+    Dimen skip;
+
     Token::list_ptr value;
 
-    Box(): type(Parser::RVERTICAL) {}
-    explicit Box(Parser::Mode t): type(t) {}
+    Box()
+        : mode(Parser::RVERTICAL), top(false), width(0), height(0), skip(0) {}
+    explicit Box(Parser::Mode m, bool t = false)
+        : mode(m), top(t), width(0), height(0), skip(0) {}
 };
 
 class BoxVariable: public Variable
@@ -85,13 +94,14 @@ public:
 class BoxSpec: public BoxVariable
 {
 public:
-    BoxSpec(const string& name, Parser::Mode mode)
-        : BoxVariable(name, Box()), m_mode(mode) {}
+    BoxSpec(const string& name, Parser::Mode mode, bool top)
+        : BoxVariable(name, Box()), m_mode(mode), m_top(top) {}
 
     bool invokeOperation(Parser& parser,
                 shared_ptr<Node> node, Operation op, bool global);
 protected:
     Parser::Mode m_mode;
+    bool m_top;
 };
 
 } // namespace base

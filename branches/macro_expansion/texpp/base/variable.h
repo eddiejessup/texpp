@@ -71,7 +71,7 @@ template<class Var>
 class Register: public Var
 {
 public:
-    Register(const string& name, const any& initValue = any(0))
+    Register(const string& name, const any& initValue)
         : Var(name, initValue) {}
 
     string parseName(Parser& parser, shared_ptr<Node> node);
@@ -119,7 +119,9 @@ string Register<Var>::parseName(Parser& parser, shared_ptr<Node> node)
         n = 0;
     }
 
-    return this->name().substr(1) + boost::lexical_cast<string>(n);
+    string s = this->name().substr(1) + boost::lexical_cast<string>(n);
+    parser.setSymbolDefault(s, this->m_initValue);
+    return s;
 }
 
 template<class Var>

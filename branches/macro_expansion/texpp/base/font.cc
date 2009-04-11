@@ -205,7 +205,9 @@ string FontFamily::parseName(Parser& parser, shared_ptr<Node> node)
         n = 0;
     }
 
-    return this->name().substr(1) + boost::lexical_cast<string>(n);
+    string s = this->name().substr(1) + boost::lexical_cast<string>(n);
+    parser.setSymbolDefault(s, m_initValue);
+    return s;
 }
 
 string FontChar::parseName(Parser& parser, shared_ptr<Node> node)
@@ -221,7 +223,9 @@ string FontChar::parseName(Parser& parser, shared_ptr<Node> node)
     }
     node->appendChild("variable_font", font);
 
-    return name().substr(1) + font->value(defaultFontInfo)->selector;
+    string s = name().substr(1) + font->value(defaultFontInfo)->selector;
+    parser.setSymbolDefault(s, m_initValue);
+    return s;
 }
 
 string FontDimen::parseName(Parser& parser, shared_ptr<Node> node)
@@ -254,8 +258,10 @@ string FontDimen::parseName(Parser& parser, shared_ptr<Node> node)
         n = 0;
     }
 
-    return name().substr(1) + boost::lexical_cast<string>(n)
+    string s = name().substr(1) + boost::lexical_cast<string>(n)
                             + fontInfo->selector;
+    parser.setSymbolDefault(s, m_initValue);
+    return s;
 }
 
 bool FontDimen::invokeOperation(Parser& parser,

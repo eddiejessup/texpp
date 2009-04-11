@@ -27,6 +27,7 @@
 #include <texpp/base/glue.h>
 #include <texpp/base/parshape.h>
 #include <texpp/base/font.h>
+#include <texpp/base/box.h>
 
 #include <iostream>
 #include <sstream>
@@ -190,6 +191,15 @@ void Parser::setSymbol(const string& name, const any& value, bool global)
     setSpecialSymbol(name, value);
 }
 
+void Parser::setSymbolDefault(const string& name, const any& defaultValue)
+{
+    pair<SymbolTable::iterator, bool> p = m_symbols.insert(
+        std::make_pair(name, std::make_pair(0, any())));
+
+    if(p.second) // new item
+        p.first->second = std::make_pair(0, defaultValue);
+}
+
 void Parser::setSpecialSymbol(const string& name, const any& value)
 {
     if(value.type() == typeid(int)) {
@@ -270,6 +280,22 @@ void Parser::endGroup()
                 else
                     fname = string(1, escape) + "FONT" + str;
                 str += fname;
+            } else if(value.type() == typeid(base::Box)) {
+                base::Box box = *unsafe_any_cast<base::Box>(&value);
+                if(box.value) {
+                    string w = base::InternalDimen::dimenToString(box.width);
+                    string h = base::InternalDimen::dimenToString(box.height);
+                    string s = base::InternalDimen::dimenToString(box.skip);
+                    str += "\n" + string(1, escape) +
+                        (box.mode == RHORIZONTAL ? "hbox" : "vbox") +
+                        "(" + w.substr(0, w.size()-2) +
+                        "+" + s.substr(0, s.size()-2) +
+                        ")x" + h.substr(0, h.size()-2);
+                    if(box.mode == RVERTICAL)
+                        str += " []";
+                } else {
+                    str += "void";
+                }
             } else {
                 str += reprAny(value);
             }

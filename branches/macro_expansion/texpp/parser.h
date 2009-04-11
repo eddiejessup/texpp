@@ -174,6 +174,8 @@ public:
         if(token && token->isControl())
             setSymbol(token->value(), value, global);
     }
+
+    void setSymbolDefault(const string& name, const any& defaultValue);
     
     const any& symbolAny(const string& name) const;
     const any& symbolAny(Token::ptr token) const {

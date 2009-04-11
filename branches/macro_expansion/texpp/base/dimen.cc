@@ -180,7 +180,9 @@ string BoxDimen::parseName(Parser& parser, shared_ptr<Node> node)
         n = 0;
     }
 
-    return name().substr(1) + boost::lexical_cast<string>(n);
+    string s = name().substr(1) + boost::lexical_cast<string>(n);
+    parser.setSymbolDefault(s, m_initValue);
+    return s;
 }
 
 bool BoxDimen::invokeOperation(Parser& parser,

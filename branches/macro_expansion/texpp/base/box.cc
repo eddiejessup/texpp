@@ -64,6 +64,7 @@ string Vsplit::parseName(Parser& parser, shared_ptr<Node> node)
     }
     node->appendChild("to", to);
     node->appendChild("dimen", parser.parseDimen());
+    //parser.setSymbolDefault(s, m_initValue);
     return s;
 }
 
@@ -80,7 +81,10 @@ string Setbox::parseName(Parser& parser, shared_ptr<Node> node)
         n = 0;
     }
 
-    return this->name().substr(1) + boost::lexical_cast<string>(n);
+    string s = this->name().substr(1) + boost::lexical_cast<string>(n);
+    if(s.substr(0, 6) == "setbox")
+        parser.setSymbolDefault(s.substr(3), m_initValue);
+    return s;
 }
 
 bool Setbox::invokeOperation(Parser& parser,
@@ -128,10 +132,15 @@ bool BoxSpec::invokeOperation(Parser& parser,
         Node::ptr spec = parser.parseOptionalKeyword(kw_spec);
         node->appendChild("spec_clause", spec);
 
+        Dimen to;
         if(spec->value(string()) == "to") {
-            node->appendChild("to", parser.parseDimen());
+            Node::ptr toNode = parser.parseDimen();
+            node->appendChild("to", toNode);
+            to = toNode->value(Dimen(0));
         } else if(spec->value(string()) == "spread") {
-            node->appendChild("spread", parser.parseDimen());
+            Node::ptr spreadNode = parser.parseDimen();
+            node->appendChild("spread", spreadNode);
+            to = spreadNode->value(Dimen(0));
         }
 
         node->appendChild("filler", parser.parseFiller(true));
@@ -147,8 +156,16 @@ bool BoxSpec::invokeOperation(Parser& parser,
 
         node->appendChild("content", group);
 
-        Box box(m_mode);
+        Box box(m_mode, m_top);
         box.value = Token::list_ptr(new Token::list());
+
+        if(m_mode == Parser::RHORIZONTAL) {
+            box.height = to;
+        } else if(m_mode == Parser::RVERTICAL) {
+            if(m_top) box.skip = to;
+            else box.width = to;
+        }
+
         // TODO: fill token list!
 
         node->setValue(box);

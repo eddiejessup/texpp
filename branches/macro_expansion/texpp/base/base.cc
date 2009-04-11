@@ -124,12 +124,12 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("hyphenation", Hyphenation);
     __TEXPP_SET_COMMAND("patterns", Hyphenation);
 
-    __TEXPP_SET_COMMAND("hbox", BoxSpec, Parser::RHORIZONTAL);
-    __TEXPP_SET_COMMAND("vbox", BoxSpec, Parser::RVERTICAL);
-    __TEXPP_SET_COMMAND("vtop", BoxSpec, Parser::RVERTICAL);
+    __TEXPP_SET_COMMAND("hbox", BoxSpec, Parser::RHORIZONTAL, false);
+    __TEXPP_SET_COMMAND("vbox", BoxSpec, Parser::RVERTICAL, false);
+    __TEXPP_SET_COMMAND("vtop", BoxSpec, Parser::RVERTICAL, true);
 
-    __TEXPP_SET_COMMAND("box", Register<BoxVariable>);
-    __TEXPP_SET_COMMAND("copy", Register<BoxVariable>);
+    __TEXPP_SET_COMMAND("box", Register<BoxVariable>, Box());
+    __TEXPP_SET_COMMAND("copy", Register<BoxVariable>, Box());
     __TEXPP_SET_COMMAND("vsplit", Vsplit);
     __TEXPP_SET_COMMAND("lastbox", Lastbox);
 
@@ -160,7 +160,7 @@ void initSymbols(Parser& parser)
                                         TEXPP_INT_MIN, 16777215);
 
     #define __TEXPP_SET_REGISTER(name, T, v) \
-        __TEXPP_SET_COMMAND(name, Register<T>); \
+        __TEXPP_SET_COMMAND(name, Register<T>, v); \
         parser.setSymbol("\\" name "def", \
             Command::ptr(new RegisterDef<Register<T> >("\\" name "def", \
                 static_pointer_cast<Register<T> >( \
