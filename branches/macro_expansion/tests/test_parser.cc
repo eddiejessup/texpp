@@ -278,7 +278,8 @@ BOOST_AUTO_TEST_CASE( parser_expansion )
     BOOST_CHECK_EQUAL(tokens.size(), 2);
     if(tokens.size() == 2) {
         BOOST_CHECK_EQUAL(tokens[0]->repr(),
-            Token(Token::TOK_SKIPPED, Token::CC_ESCAPE, "", "\\macro12", 0, 0, 0).repr());
+            Token(Token::TOK_SKIPPED, Token::CC_ESCAPE,
+                "\\macro", "\\macro12", 0, 0, 0).repr());
         BOOST_CHECK_EQUAL(tokens[1]->repr(), token.repr());
     }
 

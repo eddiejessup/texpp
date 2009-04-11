@@ -18,6 +18,7 @@
 
 #include <texpp/base/base.h>
 
+#include <texpp/base/conditional.h>
 #include <texpp/base/miscmacros.h>
 #include <texpp/base/misc.h>
 #include <texpp/base/show.h>
@@ -48,6 +49,13 @@ void initSymbols(Parser& parser)
     #define __TEXPP_SET_COMMAND(name, T, ...) \
         parser.setSymbol("\\" name, \
             Command::ptr(new T("\\" name, ##__VA_ARGS__)))
+
+    // conditionals
+    __TEXPP_SET_COMMAND("iftrue", Iftrue);
+    __TEXPP_SET_COMMAND("iffalse", Iffalse);
+
+    __TEXPP_SET_COMMAND("else", ConditionalElse);
+    __TEXPP_SET_COMMAND("fi", ConditionalEnd);
 
     // macros
     __TEXPP_SET_COMMAND("number", NumberMacro);
@@ -441,10 +449,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("ifhbox", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifvbox", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifeof", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("iftrue", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("iffalse", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("fi", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("else", UnimplementedCommand);
     __TEXPP_SET_COMMAND("or", UnimplementedCommand);
 
     // INITEX context

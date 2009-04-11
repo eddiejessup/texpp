@@ -150,7 +150,7 @@ bool NoexpandMacro::expand(Parser& parser, shared_ptr<Node> node)
     Node::ptr child = parser.parseToken(false);
     node->appendChild("token", child);
 
-    Token::ptr token = child->value(Token::ptr());
+    Token::ptr token = child->value(Token::ptr())->lcopy();
     parser.setNoexpand(token);
     node->setValue(Token::list(1, token));
 

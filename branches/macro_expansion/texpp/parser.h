@@ -216,6 +216,7 @@ public:
 
 protected:
     Token::ptr rawNextToken(bool expand = true);
+    Node::ptr parseFalseConditional(bool isElse = false);
     void setSpecialSymbol(const string& name, const any& value);
     void init();
 
@@ -233,6 +234,9 @@ protected:
 
     int             m_groupLevel;
     bool            m_end;
+
+    vector< pair<bool, bool> >
+                    m_conditionals;
 
     typedef unordered_map<
         string, pair< int, any >

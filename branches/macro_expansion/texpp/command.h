@@ -80,6 +80,36 @@ public:
     static vector<shared_ptr<Token> > stringToTokens(const string& str);
 };
 
+class Conditional: public Macro
+{
+public:
+    typedef shared_ptr<Conditional> ptr;
+    Conditional(const string& name = string()): Macro(name) {}
+};
+
+class ConditionalBegin: public Conditional
+{
+public:
+    typedef shared_ptr<ConditionalBegin> ptr;
+    ConditionalBegin(const string& name = string()): Conditional(name) {}
+    virtual bool evaluate(Parser&, shared_ptr<Node>) { return true; }
+};
+
+class ConditionalElse: public Conditional
+{
+public:
+    typedef shared_ptr<ConditionalElse> ptr;
+    ConditionalElse(const string& name = string()): Conditional(name) {}
+};
+
+class ConditionalEnd: public Conditional
+{
+public:
+    typedef shared_ptr<ConditionalEnd> ptr;
+    ConditionalEnd(const string& name = string()): Conditional(name) {}
+};
+
+
 } // namespace texpp
 
 #endif

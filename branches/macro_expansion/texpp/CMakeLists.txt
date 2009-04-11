@@ -10,6 +10,7 @@ set(libtexpp_SOURCES
     logger.cc
     parser.cc
     command.cc
+    base/conditional.cc
     base/miscmacros.cc
     base/misc.cc
     base/show.cc

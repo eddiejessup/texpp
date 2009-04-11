@@ -1,0 +1,39 @@
+\tracingonline=2
+\tracingcommands=2
+\tracingmacros=2
+\tracingrestores=2
+
+\catcode`{=1
+\catcode`}=2
+\catcode`#=6
+
+\iftrue\show\x\else\show\y\fi
+\iffalse\show\x\else\show\y\fi
+
+\iftrue
+    \show\x
+    \show\a
+    \iftrue
+        \show\b
+    \fi
+\else
+    \show\y
+    \iftrue
+        \show\c
+    \fi
+\fi
+
+%errors
+\fi
+\else
+\fi
+
+\iftrue\show\x\else\show\y\else\show\z\fi
+\iftrue\else
+    \iftrue
+    \fi
+    \else
+    \fi
+\fi
+
+\end
