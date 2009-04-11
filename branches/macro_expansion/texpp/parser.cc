@@ -333,9 +333,7 @@ Token::ptr Parser::rawNextToken(bool expand)
         Macro::ptr macro = dynamic_pointer_cast<Macro>(cmd);
 
         if(macro) {
-            if(m_conditionals.empty() ||
-                    m_conditionals.back().first !=
-                    m_conditionals.back().second)
+            if(m_conditionals.empty() || m_conditionals.back().active)
                 traceCommand(token, true);
 
             Node::ptr node(new Node("macro"));
@@ -343,50 +341,91 @@ Token::ptr Parser::rawNextToken(bool expand)
             child->tokens().push_back(token);
             child->setValue(token);
             node->appendChild("control_sequence", child);
+            
+            m_token.reset();
 
             if(dynamic_pointer_cast<ConditionalBegin>(macro)) {
                 ConditionalBegin::ptr condBegin =
                     static_pointer_cast<ConditionalBegin>(macro);
                 
                 // At this point the rawNextToken may be called recursively
-                m_token.reset();
                 condBegin->evaluate(*this, node);
                 m_token.reset();
 
-                bool value = node->value(bool(false));
-
-                if(symbol("tracingcommands", int(0)) > 1) {
-                    logger()->log(Logger::TRACING,
-                        value ? "true" : "false", *this, token);
+                ConditionalInfo cinfo;
+                cinfo.ifcase = node->valueAny().type() == typeid(int);
+                if(cinfo.ifcase) {
+                    cinfo.value = node->value(int(0));
+                    cinfo.active = cinfo.value == 0;
+                } else {
+                    cinfo.value = node->value(bool(false));
+                    cinfo.active = cinfo.value;
                 }
 
-                m_conditionals.push_back(std::make_pair(value, false));
+                cinfo.branch = 0;
 
-                if(!value)
+                if(symbol("tracingcommands", int(0)) > 1) {
+                    string str;
+                    if(cinfo.ifcase) {
+                        str = "case " +
+                            boost::lexical_cast<string>(cinfo.value);
+                    } else {
+                        str = cinfo.value ? "true" : "false";
+                    }
+                    logger()->log(Logger::TRACING, str, *this, token);
+                }
+
+                m_conditionals.push_back(cinfo);
+
+                if(!cinfo.active) {
                     node->appendChild("false_conditional",
-                                        parseFalseConditional(false));
+                                parseFalseConditional(true, cinfo.ifcase));
+                }
 
-            } else if(dynamic_pointer_cast<ConditionalElse>(macro)) {
-                if((m_conditionals.empty() || m_conditionals.back().second)) {
+            } else if(dynamic_pointer_cast<ConditionalOr>(macro)) {
+                if((m_conditionals.empty() ||
+                        m_conditionals.back().branch < 0 ||
+                        !m_conditionals.back().ifcase)) {
                     logger()->log(Logger::ERROR,
-                        "Extra " + macro->texRepr(), *this, token);
+                        "Extra " + macro->texRepr(this), *this, token);
                 } else {
-                    m_conditionals.back().second = true;
-                    if(m_conditionals.back().first)
+                    ConditionalInfo& cinfo = m_conditionals.back();
+                    ++cinfo.branch;
+                    cinfo.active = (cinfo.value == cinfo.branch);
+                    if(!cinfo.active) {
                         node->appendChild("false_conditional",
-                                        parseFalseConditional(true));
+                                        parseFalseConditional(true, true));
+                    }
+                }
+            } else if(dynamic_pointer_cast<ConditionalElse>(macro)) {
+                if((m_conditionals.empty() ||
+                        m_conditionals.back().branch < 0)) {
+                    logger()->log(Logger::ERROR,
+                        "Extra " + macro->texRepr(this), *this, token);
+                } else {
+                    ConditionalInfo& cinfo = m_conditionals.back();
+                    if(cinfo.ifcase) {
+                        cinfo.active = cinfo.value < 0 ||
+                                        cinfo.value > cinfo.branch;
+                    } else {
+                        cinfo.active = !cinfo.value;
+                    }
+                    cinfo.branch = -1;
+                    if(!cinfo.active) {
+                        node->appendChild("false_conditional",
+                                        parseFalseConditional(false, false));
+                    }
                 }
             } else if(dynamic_pointer_cast<ConditionalEnd>(macro)) {
                 if(m_conditionals.empty()) {
                     logger()->log(Logger::ERROR,
-                        "Extra " + macro->texRepr(), *this, token);
+                        "Extra " + macro->texRepr(this), *this, token);
                 } else {
                     m_conditionals.pop_back();
                 }
 
             } else {
                 // At this point the rawNextToken may be called recursively
-                m_token.reset();
                 macro->expand(*this, node);
                 m_token.reset();
 
@@ -605,7 +644,7 @@ bool Parser::helperIsImplicitCharacter(Token::CatCode catCode, bool expand)
     return false;
 }
 
-Node::ptr Parser::parseFalseConditional(bool isElse)
+Node::ptr Parser::parseFalseConditional(bool sElse, bool sOr)
 {
     Node::ptr node(new Node("skipped_conditional"));
 
@@ -617,8 +656,12 @@ Node::ptr Parser::parseFalseConditional(bool isElse)
         if(dynamic_pointer_cast<ConditionalBegin>(cmd)) {
             ++level;
 
+        } else if(dynamic_pointer_cast<ConditionalOr>(cmd)) {
+            if(!level && sOr)
+                return node;
+
         } else if(dynamic_pointer_cast<ConditionalElse>(cmd)) {
-            if(!level && !isElse)
+            if(!level && sElse)
                 return node;
 
         } else if(dynamic_pointer_cast<ConditionalEnd>(cmd)) {

@@ -293,7 +293,7 @@ bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
     if(parser.symbol("tracingmacros", int(0)) > 0) {
         string str(1, '\n');
-        str += Command::texRepr(&parser) + ' ' +
+        str += Token::texReprControl(name(), &parser, true) +
                 Token::texReprList(*m_params, &parser) + "->" +
                 Token::texReprList(*m_definition, &parser);
         parser.logger()->log(Logger::MTRACING,

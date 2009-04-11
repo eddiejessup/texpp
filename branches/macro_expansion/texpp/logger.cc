@@ -28,14 +28,16 @@
 #include <boost/foreach.hpp>
 
 namespace {
-texpp::string loggerLevelNames[] = {
+/*texpp::string loggerLevelNames[] = {
     "message", "show", "error", "critical"
-};
-const int MAX_LINE_CHARS = 1000;
+};*/
+const unsigned int MAX_LINE_CHARS = 79;
+const unsigned int MAX_TLINE_CHARS = 50;
 } // namespace
 
 namespace texpp {
 
+/*
 const string& Logger::levelName(Level level) const
 {
     if(level <= MESSAGE) return loggerLevelNames[0];
@@ -43,6 +45,7 @@ const string& Logger::levelName(Level level) const
     else if(level <= ERROR) return loggerLevelNames[2];
     else return loggerLevelNames[3];
 }
+*/
 
 string Logger::tokenLines(Parser& parser, Token::ptr token) const
 {
@@ -57,11 +60,17 @@ string Logger::tokenLines(Parser& parser, Token::ptr token) const
         string line1 = line.substr(0, token->charEnd());
         if(!line1.empty() && line1[line1.size()-1] == '\n')
             line1 = line1.substr(0, line1.size()-1);
+        int d = line1.size() + r.str().size() - MAX_TLINE_CHARS;
+        if(d > 0)
+            line1 = "..." + line1.substr(d+3, line1.size()-d-3);
         r << line1 << '\n';
-        r << string(r.str().size()-1, ' ');
-        r << line.substr(token->charEnd(),
+        
+        string line2 = line.substr(token->charEnd(),
                     line.find_last_not_of(" \r\n") + 1 - token->charEnd());
-        r << '\n';
+        if(line2.size() + r.str().size() - 1 > MAX_LINE_CHARS)
+            line2 = line2.substr(0,
+                MAX_LINE_CHARS - r.str().size() - 2) + "...";
+        r << string(r.str().size()-1, ' ') << line2 << '\n';
     }
 
     return r.str();
@@ -69,7 +78,7 @@ string Logger::tokenLines(Parser& parser, Token::ptr token) const
 
 ConsoleLogger::~ConsoleLogger()
 {
-    if(!m_atNewline) std::cout << std::endl;
+    if(m_linePos) std::cout << std::endl;
 }
 
 bool ConsoleLogger::log(Level level, const string& message,
@@ -81,16 +90,16 @@ bool ConsoleLogger::log(Level level, const string& message,
     std::ostringstream r;
     
     if(level <= MTRACING) {
-        if(!m_atNewline) r << std::endl;
+        if(m_linePos) r << '\n';
         r << message << std::endl;
     } else if(level <= TRACING) {
-        if(!m_atNewline) r << std::endl;
+        if(m_linePos) r << '\n';
         r << '{' << message << '}' << std::endl;
     } else if(level <= MESSAGE) {
-        if(!m_atNewline) r << ' '; 
+        if(m_linePos) r << ' '; 
         r << message;
     } else {
-        if(!m_atNewline) r << std::endl;
+        if(m_linePos) r << '\n';
         if(level <= SHOW) r << "> " << message << ".\n";
         else r << "! " << message << ".\n";
         if(token && token->lineNo())
@@ -99,31 +108,31 @@ bool ConsoleLogger::log(Level level, const string& message,
 
     std::ostringstream r1;
     int newlinechar = parser.symbol("newlinechar", int(0));
-    int llen = 0;
     BOOST_FOREACH(unsigned char ch, r.str()) {
-        ++llen;
         if(ch == newlinechar || ch == '\n') {
             r1 << '\n';
-            llen = 0;
-        } else if(ch >= 0x7f) {
-            r1 << "^^" << std::hex << int(ch);
+            m_linePos = 0;
         } else {
-            r1 << ch;
-        }
-        if(llen >= 79) {
-            r1 << '\n';
-            llen = 0;
+            if(m_linePos >= MAX_LINE_CHARS) {
+                r1 << '\n';
+                m_linePos = 0;
+            }
+            if(ch >= 0x7f) {
+                r1 << "^^" << std::hex << int(ch);
+                m_linePos += 4;
+            } else {
+                r1 << ch;
+                ++m_linePos;
+            }
         }
     }
 
     string msg(r1.str());
     std::cout << msg;
 
-    if(!msg.empty()) m_atNewline = msg[msg.size()-1] == '\n';
-
-    if(parser.lexer()->interactive() && !m_atNewline) {
+    if(parser.lexer()->interactive() && m_linePos) {
         std::cout << std::endl;
-        m_atNewline = true;
+        m_linePos = 0;
     }
 
     return true;

@@ -77,43 +77,48 @@ string reprAny(const boost::any& value)
 
     std::ostringstream r;
 
-    if(value.empty())
+    if(value.empty()) {
         r << "None";
 
-    else if(value.type() == typeid(int))
+    } else if(value.type() == typeid(int)) {
         r << *unsafe_any_cast<int>(&value);
-    else if(value.type() == typeid(short))
+
+    } else if(value.type() == typeid(short)) {
         r << *unsafe_any_cast<short>(&value);
-    else if(value.type() == typeid(long))
+
+    } else if(value.type() == typeid(long)) {
         r << *unsafe_any_cast<long>(&value);
-    else if(value.type() == typeid(string))
+
+    } else if(value.type() == typeid(string)) {
         r << reprString(*unsafe_any_cast<string>(&value));
 
-    else if(value.type() == typeid(pair<int,int>)) {
+    } else if(value.type() == typeid(pair<int,int>)) {
         pair<int,int> v = *unsafe_any_cast<pair<int,int> >(&value);
         r << "(" << v.first << ", " << v.second << ")";
-    }
 
-    else if(value.type() == typeid(base::Dimen))
+    } else if(value.type() == typeid(base::Dimen)) {
         r << base::InternalDimen::dimenToString(
                 *unsafe_any_cast<base::Dimen>(&value));
 
-    else if(value.type() == typeid(base::Glue))
+    } else if(value.type() == typeid(base::Glue)) {
         r << base::InternalGlue::glueToString(
                 *unsafe_any_cast<base::Glue>(&value));
 
-    else if(value.type() == typeid(Token::ptr))
-        r << (*unsafe_any_cast<Token::ptr>(&value))->texRepr();
+    } else if(value.type() == typeid(Token::ptr)) {
+        Token::ptr tok = (*unsafe_any_cast<Token::ptr>(&value));
+        r << (tok ? tok->texRepr() : "null");
 
-    else if(value.type() == typeid(Command::ptr))
-        r << (*unsafe_any_cast<Command::ptr>(&value))->texRepr();
+    } else if(value.type() == typeid(Command::ptr)) {
+        Command::ptr cmd = (*unsafe_any_cast<Command::ptr>(&value));
+        r << (cmd ? cmd->texRepr() : "null");
 
-    else if(value.type() == typeid(Token::list_ptr))
+    } else if(value.type() == typeid(Token::list_ptr)) {
         r << "TokenList("
           << (*unsafe_any_cast<Token::list_ptr>(&value))->size()
           << " tokens)";
-    else
+    } else {
         r << "any(" << value.type().name() << "())";
+    }
     return r.str();
 }
 

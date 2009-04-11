@@ -77,6 +77,9 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("ifhbox", Ifhbox);
     __TEXPP_SET_COMMAND("ifvbox", Ifvbox);
 
+    __TEXPP_SET_COMMAND("ifcase", Ifcase);
+
+    __TEXPP_SET_COMMAND("or", ConditionalOr);
     __TEXPP_SET_COMMAND("else", ConditionalElse);
     __TEXPP_SET_COMMAND("fi", ConditionalEnd);
 
@@ -457,9 +460,7 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("endinput", UnimplementedCommand);
 
     // conditionals
-    __TEXPP_SET_COMMAND("ifcase", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifeof", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("or", UnimplementedCommand);
 
     // INITEX context
     for(int i=0; i<256; ++i) {

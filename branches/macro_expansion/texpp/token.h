@@ -114,6 +114,8 @@ public:
         return Token::ptr(new Token(m_type, m_catCode, m_value));
     }
 
+    static string texReprControl(const string& name,
+                                Parser* parser = NULL, bool space = false);
     static string texReprList(const Token::list& tokens,
                                 Parser* parser = NULL);
 

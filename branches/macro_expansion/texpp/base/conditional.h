@@ -110,6 +110,13 @@ public:
     bool evaluate(Parser& parser, shared_ptr<Node> node);
 };
 
+class Ifcase: public ConditionalBegin
+{
+public:
+    Ifcase(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 

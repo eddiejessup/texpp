@@ -44,7 +44,7 @@ public:
     Logger() {}
     virtual ~Logger() {}
 
-    const string& levelName(Level level) const;
+    //const string& levelName(Level level) const;
     string tokenLines(Parser& parser, shared_ptr<Token> token) const;
 
     virtual bool log(Level level, const string& message,
@@ -60,12 +60,12 @@ public:
 class ConsoleLogger: public Logger
 {
 public:
-    ConsoleLogger(): m_atNewline(true) {}
+    ConsoleLogger(): m_linePos(0) {}
     ~ConsoleLogger();
     bool log(Level level, const string& message,
                 Parser& parser, shared_ptr<Token> token);
 protected:
-    int m_atNewline;
+    unsigned int m_linePos;
 };
 
 } // namespace texpp

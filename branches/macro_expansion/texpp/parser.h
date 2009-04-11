@@ -218,7 +218,7 @@ public:
 
 protected:
     Token::ptr rawNextToken(bool expand = true);
-    Node::ptr parseFalseConditional(bool isElse = false);
+    Node::ptr parseFalseConditional(bool sElse = false, bool sOr = false);
     void setSpecialSymbol(const string& name, const any& value);
     void init();
 
@@ -237,7 +237,13 @@ protected:
     int             m_groupLevel;
     bool            m_end;
 
-    vector< pair<bool, bool> >
+    struct ConditionalInfo {
+        bool ifcase;
+        bool active;
+        int  value;
+        int  branch;
+    };
+    vector< ConditionalInfo >
                     m_conditionals;
 
     typedef unordered_map<

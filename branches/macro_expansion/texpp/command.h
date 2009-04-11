@@ -82,33 +82,33 @@ public:
     static vector<shared_ptr<Token> > stringToTokens(const string& str);
 };
 
-class Conditional: public Macro
-{
-public:
-    typedef shared_ptr<Conditional> ptr;
-    Conditional(const string& name = string()): Macro(name) {}
-};
-
-class ConditionalBegin: public Conditional
+class ConditionalBegin: public Macro
 {
 public:
     typedef shared_ptr<ConditionalBegin> ptr;
-    ConditionalBegin(const string& name = string()): Conditional(name) {}
+    ConditionalBegin(const string& name = string()): Macro(name) {}
     virtual bool evaluate(Parser&, shared_ptr<Node>) { return true; }
 };
 
-class ConditionalElse: public Conditional
+class ConditionalOr: public Macro
+{
+public:
+    typedef shared_ptr<ConditionalOr> ptr;
+    ConditionalOr(const string& name = string()): Macro(name) {}
+};
+
+class ConditionalElse: public Macro
 {
 public:
     typedef shared_ptr<ConditionalElse> ptr;
-    ConditionalElse(const string& name = string()): Conditional(name) {}
+    ConditionalElse(const string& name = string()): Macro(name) {}
 };
 
-class ConditionalEnd: public Conditional
+class ConditionalEnd: public Macro
 {
 public:
     typedef shared_ptr<ConditionalEnd> ptr;
-    ConditionalEnd(const string& name = string()): Conditional(name) {}
+    ConditionalEnd(const string& name = string()): Macro(name) {}
 };
 
 

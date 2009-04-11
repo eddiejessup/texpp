@@ -56,6 +56,9 @@
     \fi
 \fi
 
+\iffalse\else\else\fi
+\iftrue\else\else\fi
+
 %ifnum
 \count33=3
 \ifnum1>2\show\x\else\show\y\fi
@@ -220,10 +223,24 @@ $$\ifinner\show\x\fi$$
 \ifvbox0\show\x\fi
 }
 
+%ifcase
+\ifcase0\show\x\or\show\y\or\show\z\else\show\zz\fi
+\ifcase1\show\x\or\show\y\or\show\z\else\show\zz\fi
+\ifcase2\show\x\or\show\y\or\show\z\else\show\zz\fi
+\ifcase10\show\x\or\show\y\or\show\z\else\show\zz\fi
+\ifcase-1\show\x\or\show\y\or\show\z\else\show\zz\fi
+
+\ifcase0\show\x\or\show\y\or\show\z\else\show\zz\or\else\fi
+\ifcase1\show\x\or\show\y\or\show\z\else\show\zz\or\else\fi
+\ifcase2\show\x\or\show\y\or\show\z\else\show\zz\or\else\fi
+\ifcase10\show\x\or\show\y\or\show\z\else\show\zz\or\else\fi
+\ifcase-1\show\x\or\show\y\or\show\z\else\show\zz\or\else\fi
+
 %errors
 \fi
 \else
 \fi
+\or
 
 \iftrue\show\x\else\show\y\else\show\z\fi
 \iftrue\else

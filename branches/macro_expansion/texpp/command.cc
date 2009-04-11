@@ -26,12 +26,7 @@ namespace texpp {
 
 string Command::texRepr(Parser* parser) const
 {
-    if(!m_name.empty() && m_name[0] == '\\') {
-        string ret = m_name;
-        ret[0] = parser ? parser->symbol("escapechar", int(0)) : '\\';
-        return ret;
-    }
-    return m_name;
+    return Token::texReprControl(m_name, parser);
 }
 
 string Command::repr() const

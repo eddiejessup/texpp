@@ -73,19 +73,42 @@ const texpp::string catCodeNames[] = {
 
 namespace texpp {
 
+string Token::texReprControl(const string& name,
+                        Parser* parser, bool space)
+{
+    string str(name);
+    if(!str.empty()) {
+        if(str[0] == '\\') {
+            if(parser) {
+                char escape = parser->symbol("escapechar", int('\\'));
+                str[0] = escape;
+                if(str.size() == 1) {
+                    str += "csname" + string(1, escape) + "endcsname";
+                }
+                if(space) {
+                    if(str.size() > 2) {
+                        str += ' ';
+                    } else { // str.size() always equals 2 in this case
+                        int cc = parser->symbol("catcode" +
+                            boost::lexical_cast<string>(int(str[1])), int(0));
+                        if(cc == Token::CC_LETTER)
+                            str += ' ';
+                    }
+                }
+            }
+        } else if(str[0] == '`') {
+            str = str.substr(1);
+        }
+    }
+    return str;
+}
+
 string Token::texReprList(const Token::list& tokens, Parser* parser)
 {
     string str;
     BOOST_FOREACH(Token::ptr token, tokens) {
         if(token->isControl()) {
-            str += token->texRepr(parser);
-            if(token->value().size() > 1 &&
-                    token->value()[0] == '\\') {
-                 int ccode = parser ? parser->symbol("catcode" +
-                    boost::lexical_cast<string>(
-                        int(token->value()[1])), int(0)) : -1;
-                if(ccode == Token::CC_LETTER) str += ' ';
-            }
+            str += Token::texReprControl(token->value(), parser, true);
         } else if(token->isCharacter()) {
             str += token->value();
         }
@@ -95,18 +118,8 @@ string Token::texReprList(const Token::list& tokens, Parser* parser)
 
 string Token::texRepr(Parser* parser) const
 {
-    char escape = parser ? parser->symbol("escapechar", int(0)) : '\\';
     if(isControl()) {
-        if(m_value[0] == '\\') {
-            if(m_value.size() == 1) {
-                return string(1, escape) + "csname"
-                         + string(1, escape) + "endcsname";
-            } else {
-                return string(1, escape) + m_value.substr(1);
-            }
-        } else {
-            return m_value.substr(1);
-        }
+        return Token::texReprControl(m_value, parser);
     } else if(isCharacter()) {
         return m_value;
     } else {

@@ -277,6 +277,14 @@ bool Ifvbox::evaluate(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
+bool Ifcase::evaluate(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+    node->setValue(int(number->value(int(0))));
+    return true;
+}
+
 } // namespace base
 } // namespace texpp
 

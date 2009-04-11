@@ -52,8 +52,8 @@ void export_logger_base()
     scope scopeLogger = class_<LoggerWrap<Logger>,
             shared_ptr<Logger>, boost::noncopyable>("Logger", no_init)
 
-        .def("levelName", &Logger::levelName,
-            return_value_policy<copy_const_reference>())
+        /*.def("levelName", &Logger::levelName,
+            return_value_policy<copy_const_reference>())*/
         .def("tokenLines", &Logger::tokenLines)
         .def("log", pure_virtual(&Logger::log))
         ;
