@@ -54,6 +54,8 @@ protected:
 class TokenCommand: public Command
 {
 public:
+    typedef shared_ptr<TokenCommand> ptr;
+
     TokenCommand(shared_ptr<Token> token)
         : Command("token_command"), m_token(token) {}
 

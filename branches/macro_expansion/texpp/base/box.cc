@@ -23,14 +23,14 @@
 namespace texpp {
 namespace base {
 
-bool Box::invokeOperation(Parser& parser,
+bool BoxVariable::invokeOperation(Parser& parser,
                         shared_ptr<Node> node, Operation op, bool)
 {
     // TODO: box should not derive from Variable!
     if(op == ASSIGN || op == GET) {
         string name = parseName(parser, node);
-        Token::list tokens = parser.symbol(name, Token::list());
-        node->setValue(tokens);
+        Box box = parser.symbol(name, Box());
+        node->setValue(box);
         return true;
     }
     return false;
@@ -47,12 +47,12 @@ bool Lastbox::invokeOperation(Parser& parser,
             parser, parser.lastToken());
         return true;
     }
-    return Box::invokeOperation(parser, node, op, global);
+    return BoxVariable::invokeOperation(parser, node, op, global);
 }
 
 string Vsplit::parseName(Parser& parser, shared_ptr<Node> node)
 {
-    string s = Register<Box>::parseName(parser, node);
+    string s = Register<BoxVariable>::parseName(parser, node);
     static vector<string> kw_to(1, "to");
     Node::ptr to = parser.parseKeyword(kw_to);
     if(!to) {
@@ -93,13 +93,13 @@ bool Setbox::invokeOperation(Parser& parser,
         node->appendChild("filler", parser.parseFiller(true));
 
         Node::ptr rvalue =
-            Variable::tryParseVariableValue<base::Box>(parser);
+            Variable::tryParseVariableValue<base::BoxVariable>(parser);
         if(!rvalue) {
             parser.logger()->log(Logger::ERROR,
                 "A <box> was supposed to be here",
                 parser, parser.lastToken());
             rvalue = Node::ptr(new Node("error_missing_box"));
-            rvalue->setValue(Token::list());
+            rvalue->setValue(Box());
         }
 
         node->appendChild("rvalue", rvalue);
@@ -108,7 +108,6 @@ bool Setbox::invokeOperation(Parser& parser,
         if(name.substr(0, 6) == "setbox")
             name = name.substr(3);
         parser.setSymbol(name, rvalue->valueAny(), global);
-
         return true;
     }
     return false;
@@ -148,8 +147,11 @@ bool BoxSpec::invokeOperation(Parser& parser,
 
         node->appendChild("content", group);
 
+        Box box(m_mode);
+        box.value = Token::list_ptr(new Token::list());
+        // TODO: fill token list!
 
-        node->setValue(group);
+        node->setValue(box);
         return true;
 
     }

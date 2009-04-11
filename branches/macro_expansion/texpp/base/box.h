@@ -29,34 +29,43 @@
 namespace texpp {
 namespace base {
 
-class Box: public Variable
+struct Box
+{
+    Parser::Mode type;
+    Token::list_ptr value;
+
+    Box(): type(Parser::RVERTICAL) {}
+    explicit Box(Parser::Mode t): type(t) {}
+};
+
+class BoxVariable: public Variable
 {
 public:
-    Box(const string& name,
-        const any& initValue = any(Token::list()))
+    BoxVariable(const string& name,
+        const any& initValue = any(Box()))
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
                 shared_ptr<Node> node, Operation op, bool global);
 };
 
-class Lastbox: public Box
+class Lastbox: public BoxVariable
 {
 public:
     Lastbox(const string& name,
-        const any& initValue = any(Token::list()))
-        : Box(name, initValue) {}
+        const any& initValue = any(Box()))
+        : BoxVariable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
                 shared_ptr<Node> node, Operation op, bool global);
 };
 
-class Vsplit: public Register<Box>
+class Vsplit: public Register<BoxVariable>
 {
 public:
     Vsplit(const string& name,
-        const any& initValue = any(Token::list()))
-        : Register<Box>(name, initValue) {}
+        const any& initValue = any(Box()))
+        : Register<BoxVariable>(name, initValue) {}
 
     string parseName(Parser& parser, shared_ptr<Node> node);
 };
@@ -65,7 +74,7 @@ class Setbox: public Variable
 {
 public:
     Setbox(const string& name,
-        const any& initValue = any(Token::list()))
+        const any& initValue = any(Box()))
         : Variable(name, initValue) {}
 
     string parseName(Parser& parser, shared_ptr<Node> node);
@@ -73,11 +82,11 @@ public:
                 shared_ptr<Node> node, Operation op, bool global);
 };
 
-class BoxSpec: public Box
+class BoxSpec: public BoxVariable
 {
 public:
     BoxSpec(const string& name, Parser::Mode mode)
-        : Box(name, Token::list()), m_mode(mode) {}
+        : BoxVariable(name, Box()), m_mode(mode) {}
 
     bool invokeOperation(Parser& parser,
                 shared_ptr<Node> node, Operation op, bool global);

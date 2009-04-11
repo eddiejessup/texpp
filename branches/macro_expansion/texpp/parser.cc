@@ -323,6 +323,7 @@ Token::ptr Parser::rawNextToken(bool expand)
                     static_pointer_cast<ConditionalBegin>(macro);
                 
                 // At this point the rawNextToken may be called recursively
+                m_token.reset();
                 condBegin->evaluate(*this, node);
                 m_token.reset();
 
@@ -359,6 +360,7 @@ Token::ptr Parser::rawNextToken(bool expand)
 
             } else {
                 // At this point the rawNextToken may be called recursively
+                m_token.reset();
                 macro->expand(*this, node);
                 m_token.reset();
 

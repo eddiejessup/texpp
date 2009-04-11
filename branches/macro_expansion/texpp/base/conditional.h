@@ -39,6 +39,56 @@ public:
     bool evaluate(Parser&, shared_ptr<Node> node);
 };
 
+class Ifnum: public ConditionalBegin
+{
+public:
+    Ifnum(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
+class Ifdim: public ConditionalBegin
+{
+public:
+    Ifdim(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
+class Ifodd: public ConditionalBegin
+{
+public:
+    Ifodd(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
+class Ifmode: public ConditionalBegin
+{
+public:
+    Ifmode(const string& name = string(), int modeMask = 0)
+        : ConditionalBegin(name), m_modeMask(modeMask) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+
+protected:
+    int m_modeMask;
+};
+
+class Ifcat: public ConditionalBegin
+{
+public:
+    Ifcat(const string& name = string(), bool testCat = true)
+        : ConditionalBegin(name), m_testCat(testCat) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+
+protected:
+    bool m_testCat;
+};
+
+class Ifx: public ConditionalBegin
+{
+public:
+    Ifx(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 

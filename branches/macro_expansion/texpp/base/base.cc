@@ -54,6 +54,25 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("iftrue", Iftrue);
     __TEXPP_SET_COMMAND("iffalse", Iffalse);
 
+    __TEXPP_SET_COMMAND("ifnum", Ifnum);
+    __TEXPP_SET_COMMAND("ifdim", Ifdim);
+    __TEXPP_SET_COMMAND("ifodd", Ifodd);
+
+    __TEXPP_SET_COMMAND("ifvmode", Ifmode,
+            (1<<Parser::VERTICAL) | (1<<Parser::RVERTICAL));
+    __TEXPP_SET_COMMAND("ifhmode", Ifmode,
+            (1<<Parser::HORIZONTAL) | (1<<Parser::RHORIZONTAL));
+    __TEXPP_SET_COMMAND("ifmmode", Ifmode,
+            (1<<Parser::MATH) | (1<<Parser::DMATH));
+    __TEXPP_SET_COMMAND("ifinner", Ifmode,
+            (1<<Parser::RVERTICAL) | (1<<Parser::RHORIZONTAL) |
+            (1<<Parser::MATH));
+
+    __TEXPP_SET_COMMAND("ifcat", Ifcat);
+    __TEXPP_SET_COMMAND("if", Ifcat, false);
+
+    __TEXPP_SET_COMMAND("ifx", Ifx);
+
     __TEXPP_SET_COMMAND("else", ConditionalElse);
     __TEXPP_SET_COMMAND("fi", ConditionalEnd);
 
@@ -109,8 +128,8 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("vbox", BoxSpec, Parser::RVERTICAL);
     __TEXPP_SET_COMMAND("vtop", BoxSpec, Parser::RVERTICAL);
 
-    __TEXPP_SET_COMMAND("box", Register<Box>);
-    __TEXPP_SET_COMMAND("copy", Register<Box>);
+    __TEXPP_SET_COMMAND("box", Register<BoxVariable>);
+    __TEXPP_SET_COMMAND("copy", Register<BoxVariable>);
     __TEXPP_SET_COMMAND("vsplit", Vsplit);
     __TEXPP_SET_COMMAND("lastbox", Lastbox);
 
@@ -434,17 +453,7 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("endinput", UnimplementedCommand);
 
     // conditionals
-    __TEXPP_SET_COMMAND("if", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifcat", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifx", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifcase", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifnum", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifodd", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifhmode", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifvmode", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifmmode", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifinner", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifdim", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifvoid", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifhbox", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifvbox", UnimplementedCommand);
