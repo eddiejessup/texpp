@@ -73,6 +73,10 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("ifx", Ifx);
 
+    __TEXPP_SET_COMMAND("ifvoid", Ifvoid);
+    __TEXPP_SET_COMMAND("ifhbox", Ifhbox);
+    __TEXPP_SET_COMMAND("ifvbox", Ifvbox);
+
     __TEXPP_SET_COMMAND("else", ConditionalElse);
     __TEXPP_SET_COMMAND("fi", ConditionalEnd);
 
@@ -454,9 +458,6 @@ void initSymbols(Parser& parser)
 
     // conditionals
     __TEXPP_SET_COMMAND("ifcase", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifvoid", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifhbox", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifvbox", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifeof", UnimplementedCommand);
     __TEXPP_SET_COMMAND("or", UnimplementedCommand);
 

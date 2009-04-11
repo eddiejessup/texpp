@@ -19,8 +19,11 @@
 #include <texpp/base/conditional.h>
 #include <texpp/base/dimen.h>
 #include <texpp/base/func.h>
+#include <texpp/base/box.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
+
+#include <boost/lexical_cast.hpp>
 
 namespace texpp {
 namespace base {
@@ -239,6 +242,38 @@ bool Ifx::evaluate(Parser& parser, shared_ptr<Node> node)
     }
 
     node->setValue(res);
+    return true;
+}
+
+bool Ifvoid::evaluate(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+
+    string s = "box" + boost::lexical_cast<string>(number->value(int(0)));
+    node->setValue(bool(!parser.symbol(s, Box()).value));
+    return true;
+}
+
+bool Ifhbox::evaluate(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+
+    string s = "box" + boost::lexical_cast<string>(number->value(int(0)));
+    Box box = parser.symbol(s, Box());
+    node->setValue(bool(box.value && box.mode == Parser::RHORIZONTAL));
+    return true;
+}
+
+bool Ifvbox::evaluate(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+
+    string s = "box" + boost::lexical_cast<string>(number->value(int(0)));
+    Box box = parser.symbol(s, Box());
+    node->setValue(bool(box.value && box.mode == Parser::RVERTICAL));
     return true;
 }
 

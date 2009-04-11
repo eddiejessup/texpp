@@ -89,6 +89,27 @@ public:
     bool evaluate(Parser& parser, shared_ptr<Node> node);
 };
 
+class Ifvoid: public ConditionalBegin
+{
+public:
+    Ifvoid(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
+class Ifhbox: public ConditionalBegin
+{
+public:
+    Ifhbox(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
+class Ifvbox: public ConditionalBegin
+{
+public:
+    Ifvbox(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 
