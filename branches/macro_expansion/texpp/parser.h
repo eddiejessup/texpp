@@ -123,7 +123,7 @@ public:
     Token::ptr nextToken(vector< Token::ptr >* tokens = NULL,
                          bool expand = true);
     void setNoexpand(Token::ptr token) { m_noexpandToken = token; }
-    void resetNoexpand() { m_noexpandToken.reset(); m_token.reset(); }
+    void resetNoexpand() { m_noexpandToken.reset(); pushBack(NULL); }
     void pushBack(vector< Token::ptr >* tokens);
 
     void end() { m_end = true; }
@@ -218,7 +218,8 @@ public:
 
 protected:
     Token::ptr rawNextToken(bool expand = true);
-    Node::ptr parseFalseConditional(bool sElse = false, bool sOr = false);
+    Node::ptr parseFalseConditional(size_t level,
+                          bool sElse = false, bool sOr = false);
     void setSpecialSymbol(const string& name, const any& value);
     void init();
 
@@ -230,6 +231,8 @@ protected:
     shared_ptr<Logger>  m_logger;
 
     Token::ptr      m_token;
+    Token::list     m_tokenSource;
+
     Token::ptr      m_lastToken;
     Token::ptr      m_noexpandToken;
     TokenQueue      m_tokenQueue;
@@ -238,6 +241,7 @@ protected:
     bool            m_end;
 
     struct ConditionalInfo {
+        bool parsed;
         bool ifcase;
         bool active;
         int  value;

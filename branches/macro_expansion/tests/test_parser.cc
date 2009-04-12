@@ -72,7 +72,9 @@ BOOST_AUTO_TEST_CASE( parser_tokens )
         Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3).repr());*/
 
     vector< Token::ptr > tokens_t;
-    parser->nextToken(&tokens_t);
+    Token::ptr token0 = parser->nextToken(&tokens_t);
+    BOOST_CHECK_EQUAL(token0->repr(),
+        Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3).repr());
 
     BOOST_CHECK_EQUAL(parser->peekToken()->repr(),
         Token(Token::TOK_CHARACTER, Token::CC_SPACE, " ", " ", 1, 3, 4).repr());
@@ -87,8 +89,13 @@ BOOST_AUTO_TEST_CASE( parser_tokens )
         Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3).repr());
 
     tokens_t.clear();
-    parser->nextToken(&tokens_t);
-    parser->nextToken(&tokens_t);
+    token0 = parser->nextToken(&tokens_t);
+    BOOST_CHECK_EQUAL(token0->repr(),
+        Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3).repr());
+
+    token0 = parser->nextToken(&tokens_t);
+    BOOST_CHECK_EQUAL(token0->repr(),
+        Token(Token::TOK_CHARACTER, Token::CC_SPACE, " ", " ", 1, 3, 4).repr());
 
     BOOST_CHECK_EQUAL(parser->peekToken()->repr(),
         Token(Token::TOK_CONTROL, Token::CC_ESCAPE, "\\bb", "\\bb", 2, 2, 5).repr());

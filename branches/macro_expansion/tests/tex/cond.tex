@@ -236,6 +236,27 @@ $$\ifinner\show\x\fi$$
 \ifcase10\show\x\or\show\y\or\show\z\else\show\zz\or\else\fi
 \ifcase-1\show\x\or\show\y\or\show\z\else\show\zz\or\else\fi
 
+%misc
+{
+\def\a{}
+\def\b{**}
+\def\c{True}
+\if\a\b\fi
+\ifcat\a\b\fi
+\if\c\fi
+\ifcat\c\fi
+\ifx\a\b\fi
+\ifx\ifx\ifx
+
+\if\ifx\a\b\c\else\if\a\b\c\fi\fi\fi
+}
+
+\if\else\else\show\x\fi
+\if1\else\show\x\fi
+\if\relax\else\show\x\fi
+\ifx1\else\show\x\fi
+\if1\fi\fi
+
 %errors
 \fi
 \else

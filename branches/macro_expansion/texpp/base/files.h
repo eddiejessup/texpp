@@ -25,6 +25,13 @@
 namespace texpp {
 namespace base {
 
+class Write: public Command
+{
+public:
+    explicit Write(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
 class Message: public Command
 {
 public:
