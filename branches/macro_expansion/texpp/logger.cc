@@ -98,6 +98,9 @@ bool ConsoleLogger::log(Level level, const string& message,
     } else if(level <= MESSAGE) {
         if(m_linePos) r << ' '; 
         r << message;
+    } else if(level <= WRITE) {
+        if(m_linePos) r << '\n'; 
+        r << message;
     } else {
         if(m_linePos) r << '\n';
         if(level <= SHOW) r << "> " << message << ".\n";

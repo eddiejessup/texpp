@@ -21,15 +21,26 @@
 
 #include <texpp/common.h>
 #include <texpp/command.h>
+#include <texpp/base/func.h>
 
 namespace texpp {
 namespace base {
+
+class Immediate: public Prefix
+{
+public:
+    explicit Immediate(const string& name = string()): Prefix(name) {}
+    bool invokeWithPrefixes(Parser& parser, shared_ptr<Node>,
+                                    std::set<string>& prefixes);
+};
 
 class Write: public Command
 {
 public:
     explicit Write(const string& name): Command(name) {}
     bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>& prefixes);
 };
 
 class Message: public Command

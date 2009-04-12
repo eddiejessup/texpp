@@ -35,6 +35,7 @@ public:
         MTRACING = 5,
         TRACING = 10,
         MESSAGE = 20,
+        WRITE = 25,
         SHOW = 30,
         ERROR = 40,
         CRITICAL = 50,

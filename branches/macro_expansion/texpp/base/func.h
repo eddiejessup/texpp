@@ -29,6 +29,7 @@
 namespace texpp {
 namespace base {
 
+// TODO: move this class to command.h
 class Prefix: public Command
 {
 public:

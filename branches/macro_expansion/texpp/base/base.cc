@@ -114,6 +114,9 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("show", Show);
     __TEXPP_SET_COMMAND("showthe", ShowThe);
+
+    __TEXPP_SET_COMMAND("immediate", Immediate);
+    __TEXPP_SET_COMMAND("write", Write);
     __TEXPP_SET_COMMAND("message", Message);
 
     // prefixes
@@ -364,10 +367,8 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("errmessage", UnimplementedCommand);
     __TEXPP_SET_COMMAND("openin", UnimplementedCommand);
     __TEXPP_SET_COMMAND("closein", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("immediate", UnimplementedCommand);
     __TEXPP_SET_COMMAND("openout", UnimplementedCommand);
     __TEXPP_SET_COMMAND("closeout", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("write", UnimplementedCommand);
     __TEXPP_SET_COMMAND("special", UnimplementedCommand);
     __TEXPP_SET_COMMAND("penalty", UnimplementedCommand);
     __TEXPP_SET_COMMAND("kern", UnimplementedCommand);
