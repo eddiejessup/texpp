@@ -184,21 +184,21 @@ public:
     }
     
     template<typename T>
-    T symbol(const string& name, T def) {
+    T symbol(const string& name, T def) const {
         const any& v = symbolAny(name);
         if(v.type() != typeid(T)) return def;
         else return *unsafe_any_cast<T>(&v);
     }
 
     template<typename T>
-    T symbol(Token::ptr token, T def) {
+    T symbol(Token::ptr token, T def) const {
         const any& v = symbolAny(token);
         if(v.type() != typeid(T)) return def;
         else return *unsafe_any_cast<T>(&v);
     }
 
     template<typename T>
-    shared_ptr<T> symbolCommand(Token::ptr token) {
+    shared_ptr<T> symbolCommand(Token::ptr token) const {
         return dynamic_pointer_cast<T>(
                 symbol(token, Command::ptr()));
     }
@@ -209,6 +209,11 @@ public:
     void beginCustomGroup(const string& type) {
         m_customGroupBegin = true; m_customGroupType = type; beginGroup(); }
     void endCustomGroup() { endGroup(); m_customGroupEnd = true; }
+
+    string escapestr() const {
+        int e = symbol("escapechar", int(0));
+        return e >= 0 && e <= 255 ? string(1, e) : string();
+    }
 
     //////// Others
     shared_ptr<Logger> logger() { return m_logger; }

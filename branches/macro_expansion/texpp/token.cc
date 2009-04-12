@@ -80,10 +80,10 @@ string Token::texReprControl(const string& name,
     if(!str.empty()) {
         if(str[0] == '\\') {
             if(parser) {
-                char escape = parser->symbol("escapechar", int('\\'));
-                str[0] = escape;
+                string escape = parser->escapestr();
+                str = escape + str.substr(1);
                 if(str.size() == 1) {
-                    str += "csname" + string(1, escape) + "endcsname";
+                    str += "csname" + escape + "endcsname";
                 }
                 if(space) {
                     if(str.size() > 2) {

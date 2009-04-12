@@ -43,10 +43,12 @@ bool FontSelector::invokeOperation(Parser& parser,
 {
     if(op == EXPAND) {
         string str = initFontInfo()->selector;
-        if(!str.empty() && str[0] == '\\')
-            str[0] = parser.symbol("escapechar", int('\\'));
-        else
-            str = parser.symbol("escapechar", int('\\')) + "FONT" + str;
+        string escape = parser.escapestr();
+        if(!str.empty() && str[0] == '\\') {
+            str = escape + str.substr(1);
+        } else {
+            str = escape + "FONT" + str;
+        }
         node->setValue(str + ' ');
         return true;
     } else if(op == ASSIGN) {
@@ -67,10 +69,12 @@ bool Font::invokeOperation(Parser& parser,
         FontInfo::ptr fontInfo = parser.symbol(name, defaultFontInfo);
 
         string str = fontInfo->selector;
-        if(!str.empty() && str[0] == '\\')
-            str[0] = parser.symbol("escapechar", int('\\'));
-        else
-            str = parser.symbol("escapechar", int('\\')) + "FONT" + str;
+        string escape = parser.escapestr();
+        if(!str.empty() && str[0] == '\\') {
+            str = escape + str.substr(1);
+        } else {
+            str = escape + "FONT" + str;
+        }
         node->setValue(str + ' ');
         return true;
 
@@ -155,10 +159,12 @@ bool FontFamily::invokeOperation(Parser& parser,
         FontInfo::ptr fontInfo = parser.symbol(name, defaultFontInfo);
 
         string str = fontInfo->selector;
-        if(!str.empty() && str[0] == '\\')
-            str[0] = parser.symbol("escapechar", int('\\'));
-        else
-            str = parser.symbol("escapechar", int('\\')) + "FONT" + str;
+        string escape = parser.escapestr();
+        if(!str.empty() && str[0] == '\\') {
+            str = escape + str.substr(1);
+        } else {
+            str = escape + "FONT" + str;
+        }
         node->setValue(str + ' ');
         return true;
 
@@ -247,11 +253,14 @@ string FontDimen::parseName(Parser& parser, shared_ptr<Node> node)
     FontInfo::ptr fontInfo = font->value(defaultFontInfo);
 
     if(n <= 0 || n > 7) {
+        // TODO: the following calc should be one function
         string str = fontInfo->selector;
-        if(!str.empty() && str[0] == '\\')
-            str[0] = parser.symbol("escapechar", int('\\'));
-        else
-            str = parser.symbol("escapechar", int('\\')) + "FONT" + str;
+        string escape = parser.escapestr();
+        if(!str.empty() && str[0] == '\\') {
+            str = escape + str.substr(1);
+        } else {
+            str = escape + "FONT" + str;
+        }
         parser.logger()->log(Logger::ERROR,
             "Font " + str + " has only 7 fontdimen parameters", // TODO: 7?
             parser, parser.lastToken());

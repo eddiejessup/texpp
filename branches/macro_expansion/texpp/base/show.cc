@@ -89,7 +89,7 @@ bool parseThe(Parser& parser, shared_ptr<Node> node, bool show)
         if(cmd) tname = cmd->texRepr(&parser);
         parser.logger()->log(Logger::ERROR,
             "You can't use `" + tname +
-            "' after " + char(parser.symbol("escapechar", int(0))) + "the",
+            "' after " + parser.escapestr() + "the",
             parser, token);
         str = "0";
     }

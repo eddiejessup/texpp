@@ -163,7 +163,7 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("catcode", CharcodeVariable, int(0), 0, 15);
     __TEXPP_SET_COMMAND("lccode", CharcodeVariable, int(0), 0, 255);
-    __TEXPP_SET_COMMAND("uscode", CharcodeVariable, int(0), 0, 255);
+    __TEXPP_SET_COMMAND("uccode", CharcodeVariable, int(0), 0, 255);
     __TEXPP_SET_COMMAND("sfcode", CharcodeVariable, int(0), 0, 32767);
     __TEXPP_SET_COMMAND("mathcode", CharcodeVariable, int(0), 0, 32768);
     __TEXPP_SET_COMMAND("delcode", CharcodeVariable, int(0),

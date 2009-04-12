@@ -248,15 +248,15 @@ void Parser::endGroup()
                 value = it->second.second;
             }
 
-            char escape = symbol("escapechar", int('\\'));
+            string escape = escapestr();
             if(item.first == "font")
                 str += "current font";
             else if(item.first.size() > 0 && item.first[0] == '\\')
-                str += string(1, escape) + item.first.substr(1);
+                str += escape + item.first.substr(1);
             else if(item.first.size() > 0 && item.first[0] == '`')
                 str += item.first.substr(1);
             else
-                str += string(1, escape) + item.first;
+                str += escape + item.first;
 
             str += "=";
 
@@ -275,10 +275,11 @@ void Parser::endGroup()
                 shared_ptr<base::FontInfo> f =
                     *unsafe_any_cast<shared_ptr<base::FontInfo> >(&value);
                 string fname = f ? f->selector : "";
-                if(!fname.empty() && fname[0] == '\\')
-                    fname[0] = escape;
-                else
-                    fname = string(1, escape) + "FONT" + str;
+                if(!fname.empty() && fname[0] == '\\') {
+                    fname = escape + fname.substr(1);
+                } else {
+                    fname = escape + "FONT" + str;
+                }
                 str += fname;
             } else if(value.type() == typeid(base::Box)) {
                 base::Box box = *unsafe_any_cast<base::Box>(&value);
@@ -286,7 +287,7 @@ void Parser::endGroup()
                     string w = base::InternalDimen::dimenToString(box.width);
                     string h = base::InternalDimen::dimenToString(box.height);
                     string s = base::InternalDimen::dimenToString(box.skip);
-                    str += "\n" + string(1, escape) +
+                    str += "\n" + escape +
                         (box.mode == RHORIZONTAL ? "hbox" : "vbox") +
                         "(" + w.substr(0, w.size()-2) +
                         "+" + s.substr(0, s.size()-2) +
@@ -1712,8 +1713,7 @@ Node::ptr Parser::parseBalancedText(bool expand,
                     logger()->log(Logger::ERROR,
                         "Illegal parameter number in definition of "
                         + (nameToken ? nameToken->texRepr(this) :
-                           char(symbol("escapechar", int(0))) +
-                           string("undefined")),
+                           escapestr() + "undefined"),
                         *this, lastToken());
                     tokens->push_back(Token::ptr(new Token(
                         token->type(), token->catCode(), token->value())));
@@ -1839,7 +1839,7 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
                     if(dynamic_pointer_cast<base::UserMacro>(cmd)) return;
                     str += cmd->texRepr(this);
                 } else {
-                    str += char(symbol("escapechar", int('\\')));
+                    str += escapestr();
                     str += "relax";
                 }
                 //std::remove(str.begin(), str.end(), '\n');

@@ -96,9 +96,9 @@ bool CsnameMacro::expand(Parser& parser, shared_ptr<Node> node)
     if(cmd) {
         parser.nextToken(&child->tokens());
     } else {
-        char escape = parser.symbol("escapechar", int(0));
+        string escape = parser.escapestr();
         parser.logger()->log(Logger::ERROR,
-            "Missing " + string(1, escape) + "endcsname inserted",
+            "Missing " + escape + "endcsname inserted",
             parser, parser.lastToken());
     }
 

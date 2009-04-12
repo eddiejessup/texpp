@@ -48,12 +48,12 @@ bool Assignment::checkPrefixes(Parser& parser,
     }
 
     if(prefixes.size() != ok) {
-        char escape = parser.symbol("escapechar", int('\\'));
         if(macro) {
             parser.logger()->log(Logger::ERROR,
                 "You can't use such a prefix with `" + texRepr(&parser) + "'",
                 parser, parser.lastToken());
         } else {
+            string escape = parser.escapestr();
             parser.logger()->log(Logger::ERROR,
                 string("You can't use `") + escape + "long' or `" +
                 escape + "outer' with `" + texRepr(&parser) + "'",
@@ -277,7 +277,7 @@ string UserMacro::texRepr(Parser* parser) const
 {
     string str;
 
-    char escape = parser ? parser->symbol("escapechar", int(0)) : '\\';
+    string escape = parser ? parser->escapestr() : string(1, '\\');
     if(m_longAttr) str = str + escape + "long";
     if(m_outerAttr) str = str + escape + "outer";
     if(!str.empty()) str += ' ';
