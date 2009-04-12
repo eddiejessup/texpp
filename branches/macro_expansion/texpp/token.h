@@ -111,7 +111,8 @@ public:
     string repr() const;
 
     Token::ptr lcopy() const {
-        return Token::ptr(new Token(m_type, m_catCode, m_value));
+        return Token::ptr(new Token(
+            m_type, m_catCode, m_value, "", m_lineNo, m_charEnd, m_charEnd));
     }
 
     static string texReprControl(const string& name,
