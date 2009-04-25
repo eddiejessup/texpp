@@ -60,6 +60,17 @@ public:
     bool invoke(Parser& parser, shared_ptr<Node> node);
 };
 
+class Changecase: public Command
+{
+public:
+    explicit Changecase(const string& name, const string& table)
+        : Command(name), m_table(table) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+
+protected:
+    string m_table;
+};
+
 } // namespace base
 } // namespace texpp
 

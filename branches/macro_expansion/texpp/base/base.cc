@@ -104,6 +104,9 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("par", Par);
     __TEXPP_SET_COMMAND("relax", Relax);
 
+    __TEXPP_SET_COMMAND("uppercase", Changecase, "uccode");
+    __TEXPP_SET_COMMAND("lowercase", Changecase, "lccode");
+
     __TEXPP_SET_COMMAND("let", Let);
     __TEXPP_SET_COMMAND("futurelet", Futurelet);
 
@@ -362,8 +365,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("ignorespaces", UnimplementedCommand);
     __TEXPP_SET_COMMAND("afterassignment", UnimplementedCommand);
     __TEXPP_SET_COMMAND("aftergroup", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("uppercase", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("lowercase", UnimplementedCommand);
     __TEXPP_SET_COMMAND("errmessage", UnimplementedCommand);
     __TEXPP_SET_COMMAND("openin", UnimplementedCommand);
     __TEXPP_SET_COMMAND("closein", UnimplementedCommand);

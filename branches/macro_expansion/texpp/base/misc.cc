@@ -21,6 +21,9 @@
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+
 namespace texpp {
 namespace base {
 
@@ -47,6 +50,36 @@ bool Par::invoke(Parser& parser, shared_ptr<Node>)
         parser.setMode(Parser::RVERTICAL);
     else if(parser.mode() == Parser::HORIZONTAL)
         parser.setMode(Parser::VERTICAL);
+    return true;
+}
+
+bool Changecase::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr text = parser.parseGeneralText(false, false);
+    node->appendChild("text", text);
+
+    Token::list_ptr tokens =
+        text->child("balanced_text")->value(Token::list_ptr());
+
+    if(tokens) {
+        Token::list newTokens;
+        BOOST_FOREACH(Token::ptr token, *tokens) {
+            Token::ptr newToken = token->lcopy();
+
+            if(token->isCharacter()) {
+                int newCode = parser.symbol(m_table +
+                        boost::lexical_cast<string>(int(token->value()[0])),
+                        int(0));
+                if(newCode > 0 && newCode <= 255)
+                    newToken->setValue(string(1, char(newCode)));
+            }
+
+            newTokens.push_back(newToken);
+        }
+
+        parser.pushBack(&newTokens);
+    }
+
     return true;
 }
 

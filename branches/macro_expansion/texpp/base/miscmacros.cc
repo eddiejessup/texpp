@@ -71,9 +71,9 @@ bool StringMacro::expand(Parser& parser, shared_ptr<Node> node)
 
     string str;
     if(token->isControl()) {
-        str = token->value();
-    } else {
         str = token->texRepr(&parser);
+    } else {
+        str = token->value();
     }
 
     node->setValue(stringToTokens(str));
