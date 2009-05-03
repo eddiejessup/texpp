@@ -45,11 +45,11 @@ def parseOptionalArgs(parser):
 
     return node
 
-def parseArg(parser):
+def parseGeneralArg(parser, expand=False):
     node = texpy.Node('args')
     node.appendChild('optional_spaces', parser.parseOptionalSpaces())
     if parser.peekToken() and parser.peekToken().isCharacter('{'):
-        node.appendChild('group', parser.parseGeneralText())
+        node.appendChild('group', parser.parseGeneralText(expand))
     else:
         node.appendChild('token', parser.parseToken())
 
@@ -57,19 +57,19 @@ def parseArg(parser):
 
 class Newcommand(texpy.Command):
     def invoke(self, parser, node):
-        node.appendChild('cmd', parseArg(parser))
+        node.appendChild('cmd', parseGeneralArg(parser))
         node.appendChild('args', parseOptionalArgs(parser))
         node.appendChild('opt', parseOptionalArgs(parser))
-        node.appendChild('def', parseArg(parser))
+        node.appendChild('def', parseGeneralArg(parser))
 
         return True
 
 class Newenvironment(texpy.Command):
     def invoke(self, parser, node):
-        node.appendChild('nam', parseArg(parser))
+        node.appendChild('nam', parseGeneralArg(parser))
         node.appendChild('args', parseOptionalArgs(parser))
-        node.appendChild('begdef', parseArg(parser))
-        node.appendChild('enddef', parseArg(parser)) 
+        node.appendChild('begdef', parseGeneralArg(parser))
+        node.appendChild('enddef', parseGeneralArg(parser)) 
 
         return True
 
@@ -78,14 +78,14 @@ class Newtheorem(texpy.Command):
         if parser.peekToken().isCharacter('*'):
             node.appendChild('star', parser.parseToken())
 
-        node.appendChild('env_nam', parseArg(parser))
+        node.appendChild('env_nam', parseGeneralArg(parser))
 
         node.appendChild('optional_spaces', parser.parseOptionalSpaces())
         if parser.peekToken() and parser.peekToken().isCharacter('['):
             node.appendChild('numbered_like', parseOptionalArgs(parser))
-            node.appendChild('caption', parseArg(parser))
+            node.appendChild('caption', parseGeneralArg(parser))
         else:
-            node.appendChild('caption', parseArg(parser))
+            node.appendChild('caption', parseGeneralArg(parser))
             node.appendChild('within', parseOptionalArgs(parser))
 
         return True

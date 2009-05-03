@@ -98,14 +98,19 @@ void export_node()
 
 }
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_setSymbol_overloads, setSymbol, 2, 3)
+#define PARSER_OVERLOADS(name, n1, n2) \
+    BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( \
+            Parser_##name##_overloads, name, n1, n2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_parseGroup_overloads, parseGroup, 1, 2)
+PARSER_OVERLOADS(setSymbol, 2, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_parseGeneralText_overloads, parseGeneralText, 1, 2)
+PARSER_OVERLOADS(peekToken, 0, 1)
+PARSER_OVERLOADS(nextToken, 0, 2)
+
+PARSER_OVERLOADS(parseToken, 0, 1)
+PARSER_OVERLOADS(parseGroup, 1, 2)
+PARSER_OVERLOADS(parseGeneralText, 1, 2)
+PARSER_OVERLOADS(parseControlSequence, 0, 1)
 
 void export_parser()
 {
@@ -123,18 +128,23 @@ void export_parser()
         .def("parse", &Parser::parse)
 
         // Tokens
-        .def("peekToken", &Parser::peekToken)
-        .def("nextToken", &Parser::nextToken)
+        .def("peekToken", &Parser::peekToken,
+            Parser_peekToken_overloads())
+        .def("nextToken", &Parser::nextToken,
+            Parser_nextToken_overloads())
         .def("lastToken", &Parser::lastToken)
 
         // parse*
-        .def("parseToken", &Parser::parseToken)
+        .def("parseToken", &Parser::parseToken,
+            Parser_parseToken_overloads())
         .def("parseGroup", &Parser::parseGroup,
             Parser_parseGroup_overloads())
         .def("parseGeneralText", &Parser::parseGeneralText,
             Parser_parseGeneralText_overloads())
+        .def("parseControlSequence", &Parser::parseControlSequence,
+            Parser_parseControlSequence_overloads())
+
         .def("parseOptionalSpaces", &Parser::parseOptionalSpaces)
-        .def("parseControlSequence", &Parser::parseControlSequence)
 
         // Symbols
         .def("symbol", (const any& (Parser::*)(const string&) const)(
