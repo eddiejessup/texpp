@@ -50,15 +50,15 @@ void check_output(Token* tokens, size_t count, vector<Token::ptr> output,
     using namespace boost::lambda;
     vector<string> tokens_repr(count);
     std::transform(tokens, tokens+count,
-            tokens_repr.begin(), bind(&Token::repr, _1));
+            tokens_repr.begin(), bind(&Token::repr, boost::lambda::_1));
 
     vector<string> output_repr(output.size());
     std::transform(output.begin(), output.end(),
-            output_repr.begin(), bind(&Token::repr, *_1));
+            output_repr.begin(), bind(&Token::repr, *boost::lambda::_1));
 
     if(print)
         std::for_each(output_repr.begin(), output_repr.end(),
-                        std::cout << _1 << '\n');
+                        std::cout << boost::lambda::_1 << '\n');
 
     BOOST_CHECK_EQUAL_COLLECTIONS(
         tokens_repr.begin(), tokens_repr.end(),
