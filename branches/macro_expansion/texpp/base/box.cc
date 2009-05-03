@@ -175,6 +175,35 @@ bool BoxSpec::invokeOperation(Parser& parser,
     return false;
 }
 
+bool Rule::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    static vector<string> kw_spec;
+    if(kw_spec.empty()) {
+        kw_spec.push_back("width");
+        kw_spec.push_back("height");
+        kw_spec.push_back("depth");
+    }
+
+    while(true) {
+        Node::ptr spec = parser.parseOptionalKeyword(kw_spec);
+        string name = spec->value(string());
+        node->appendChild("spec_" + name, spec);
+        if(name.empty()) break;
+
+        Node::ptr dimen = parser.parseDimen();
+        node->appendChild("dimen_" + name, dimen);
+    }
+
+    return true;
+}
+
+bool Rule::presetMode(Parser& parser)
+{
+    parser.setMode(m_mode == Parser::VERTICAL ?
+                    Parser::HORIZONTAL : Parser::VERTICAL);
+    return true;
+}
+
 } // namespace base
 } // namespace texpp
 

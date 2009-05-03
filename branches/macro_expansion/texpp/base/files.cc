@@ -66,7 +66,11 @@ bool Write::invokeWithPrefixes(Parser& parser,
     int stream = number->value(int(0));
 
     // TODO: expand text later
+    Parser::Mode oldmode = parser.mode();
+    parser.setMode(Parser::NULLMODE);
     Node::ptr text = parser.parseGeneralText(true);
+    parser.setMode(oldmode);
+
     node->appendChild("text", text);
     
     string str;
@@ -95,6 +99,7 @@ bool Message::invoke(Parser& parser, Node::ptr node)
 {
     using boost::lexical_cast;
     // TODO: expand text later
+    //
     Node::ptr text = parser.parseGeneralText(true);
     node->appendChild("text", text);
     

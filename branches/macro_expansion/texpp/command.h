@@ -47,6 +47,8 @@ public:
     virtual bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
                                 std::set<string>&) { return false; }
 
+    virtual bool presetMode(Parser&) { return false; }
+
 protected:
     string m_name;
 };

@@ -104,6 +104,18 @@ protected:
     bool m_top;
 };
 
+class Rule: public Command
+{
+public:
+    explicit Rule(const string& name, Parser::Mode mode)
+        : Command(name), m_mode(mode) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool presetMode(Parser& parser);
+
+protected:
+    Parser::Mode m_mode;
+};
+
 } // namespace base
 } // namespace texpp
 

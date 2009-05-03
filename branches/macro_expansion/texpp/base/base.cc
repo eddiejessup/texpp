@@ -122,6 +122,12 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("write", Write);
     __TEXPP_SET_COMMAND("message", Message);
 
+    // horizontal mode
+    __TEXPP_SET_COMMAND("vrule", Rule, Parser::VERTICAL);
+
+    // vertical mode
+    __TEXPP_SET_COMMAND("hrule", Rule, Parser::HORIZONTAL);
+
     // prefixes
     __TEXPP_SET_COMMAND("global", Prefix);
     __TEXPP_SET_COMMAND("long", Prefix);
@@ -390,8 +396,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("leaders", UnimplementedCommand);
     __TEXPP_SET_COMMAND("cleaders", UnimplementedCommand);
     __TEXPP_SET_COMMAND("xleaders", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("vrule", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("hrule", UnimplementedCommand);
     __TEXPP_SET_COMMAND("moveleft", UnimplementedCommand);
     __TEXPP_SET_COMMAND("moveright", UnimplementedCommand);
     __TEXPP_SET_COMMAND("unvbox", UnimplementedCommand);

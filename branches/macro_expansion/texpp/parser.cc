@@ -20,7 +20,7 @@
 #include <texpp/logger.h>
 
 #include <texpp/base/base.h>
-#include <texpp/base/func.h>
+#include <texpp/base/show.h>
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
 #include <texpp/base/dimen.h>
@@ -41,7 +41,7 @@
 namespace {
 
 const texpp::string modeNames[] = {
-    "nullmode",
+    "no",
     "vertical",
     "horizontal",
     "internal vertical",
@@ -161,7 +161,7 @@ void Parser::init()
 
 const string& Parser::modeName() const
 {
-    if(m_mode < VERTICAL || m_mode > DMATH)
+    if(m_mode > DMATH)
         return modeNames[DMATH+1];
     return modeNames[m_mode];
 }
@@ -369,7 +369,7 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         cinfo.branch = 0;
         cinfo.parsed = true;
 
-        if(symbol("tracingcommands", int(0)) > 1) {
+        if(symbol("tracingcommands", int(0)) > 1 && mode() != NULLMODE) {
             string str;
             if(cinfo.ifcase) {
                 str = "case " +
@@ -1868,7 +1868,10 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
         string str;
         if(token->isControl()) {
             Command::ptr cmd = symbol(token, Command::ptr());
-            if(dynamic_pointer_cast<Macro>(cmd)) {
+            if(dynamic_pointer_cast<base::TheMacro>(cmd)
+                    && mode() == NULLMODE) {
+                return;
+            } else if(dynamic_pointer_cast<Macro>(cmd)) {
                 if(expanding) {
                     if(tracingcommands < 2) return;
                     if(dynamic_pointer_cast<base::UserMacro>(cmd)) return;
@@ -2034,6 +2037,11 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             Command::ptr cmd = symbol(peekToken(), Command::ptr());
             Node::ptr cmdNode;
             if(cmd) {
+                Mode prevMode = mode();
+                cmd->presetMode(*this);
+                if(mode() != prevMode)
+                    traceCommand(peekToken());
+
                 cmdNode = parseCommand(cmd);
                 //node->appendChild("control", parseCommand(cmd));
             } else {
