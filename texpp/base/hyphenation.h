@@ -33,7 +33,7 @@ public:
         const any& initValue = any(Token::list()))
         : Variable(name, initValue) {}
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 } // namespace base

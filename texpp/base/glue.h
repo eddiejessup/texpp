@@ -23,6 +23,7 @@
 #include <texpp/command.h>
 
 #include <texpp/base/variable.h>
+#include <texpp/base/dimen.h>
 #include <boost/tuple/tuple.hpp>
 
 namespace texpp {
@@ -31,60 +32,61 @@ namespace base {
 
 struct Glue
 {
-    int width;
-    int stretch, stretchOrder;
-    int shrink, shrinkOrder;
+    bool mu;
+    Dimen width;
+    Dimen stretch;
+    int stretchOrder;
+    Dimen shrink;
+    int shrinkOrder;
 
     Glue() {}
-    explicit Glue(int w, int st = 0, int sto = 0, int sh = 0, int sho = 0)
-        : width(w), stretch(st), stretchOrder(sto),
+    explicit Glue(bool m,
+            int w, Dimen st = Dimen(0), int sto = 0,
+            Dimen sh = Dimen(0), int sho = 0)
+        : mu(m), width(w), stretch(st), stretchOrder(sto),
           shrink(sh), shrinkOrder(sho) {}
 };
 
 class InternalGlue: public Variable
 {
 public:
-    InternalGlue(const string& name, const any& initValue = any(Glue(0)))
+    InternalGlue(const string& name, const any& initValue = any(Glue(0,0)))
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
-    static string glueToString(const Glue& g, bool mu = false);
+    static string glueToString(const Glue& g);
 };
 
 class GlueVariable: public InternalGlue
 {
 public:
-    GlueVariable(const string& name, const any& initValue = any(Glue(0)))
+    GlueVariable(const string& name, const any& initValue = any(Glue(0,0)))
         : InternalGlue(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class InternalMuGlue: public Variable
 {
 public:
-    InternalMuGlue(const string& name, const any& initValue = any(Glue(0)))
+    InternalMuGlue(const string& name, const any& initValue = any(Glue(1,0)))
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
-
-    static string glueToString(const Glue& g, bool mu = true) {
-        return InternalGlue::glueToString(g, mu);
-    }
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class MuGlueVariable: public InternalMuGlue
 {
 public:
-    MuGlueVariable(const string& name, const any& initValue = any(Glue(0)))
+    MuGlueVariable(const string& name, const any& initValue = any(Glue(1,0)))
         : InternalMuGlue(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 } // namespace base

@@ -20,11 +20,14 @@
 #include <texpp/logger.h>
 
 #include <texpp/base/base.h>
+#include <texpp/base/show.h>
 #include <texpp/base/variable.h>
 #include <texpp/base/integer.h>
 #include <texpp/base/dimen.h>
 #include <texpp/base/glue.h>
 #include <texpp/base/parshape.h>
+#include <texpp/base/font.h>
+#include <texpp/base/box.h>
 
 #include <iostream>
 #include <sstream>
@@ -38,16 +41,26 @@
 namespace {
 
 const texpp::string modeNames[] = {
+    "no",
     "vertical",
     "horizontal",
-    "restricted vertical",
+    "internal vertical",
     "restricted horizontal",
     "math",
+    "display math",
     "unknown"
 };
 } // namespace
 
 namespace texpp {
+
+string Parser::BANNER = "This is TeXpp, Version 0.0"
+#ifdef __GNUC__
+    "  " __DATE__ " " __TIME__
+#endif
+    "\n";
+
+using base::Dimen;
 
 Node::ptr Node::child(const string& name)
 {
@@ -116,83 +129,75 @@ string Node::source() const
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false),
-      m_lineNo(1), m_mode(VERTICAL), m_currentGroupType(GROUP_DOCUMENT),
+      m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
+      m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false)
 {
-    if(!m_logger)
-        m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
-                                 shared_ptr<Logger>(new NullLogger);
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
-
-    base::initSymbols(*this);
+    init();
 }
 
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false),
-      m_lineNo(1), m_mode(VERTICAL), m_currentGroupType(GROUP_DOCUMENT),
+      m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
+      m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false)
 {
-    if(!m_logger)
-        m_logger = interactive ? shared_ptr<Logger>(new ConsoleLogger) :
-                                 shared_ptr<Logger>(new NullLogger);
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
+    init();
+}
+
+void Parser::init()
+{
+    if(!m_logger)
+        m_logger = lexer()->interactive() ?
+                        shared_ptr<Logger>(new ConsoleLogger) :
+                        shared_ptr<Logger>(new NullLogger);
 
     base::initSymbols(*this);
+    m_logger->log(Logger::MESSAGE, BANNER, *this, Token::ptr());
 }
 
 const string& Parser::modeName() const
 {
-    if(m_mode < VERTICAL || m_mode > MATH)
-        return modeNames[5];
+    if(m_mode > DMATH)
+        return modeNames[DMATH+1];
     return modeNames[m_mode];
 }
 
 any Parser::EMPTY_ANY;
 
-const any& Parser::symbolAny(const string& name, bool global) const
+const any& Parser::symbolAny(const string& name) const
 {
     SymbolTable::const_iterator it = m_symbols.find(name);
-    if(it != m_symbols.end()) {
-        if(!global || it->second.first == 0) {
-            return it->second.second;
-        } else {
-            it = m_symbolsGlobal.find(name);
-            if(it != m_symbolsGlobal.end())
-                return it->second.second;
-        }
-    }
+    if(it != m_symbols.end())
+        return it->second.second;
     return EMPTY_ANY;
 }
 
 void Parser::setSymbol(const string& name, const any& value, bool global)
 {
-    SymbolTable::iterator it = m_symbols.find(name);
-    if(it != m_symbols.end()) {
-        if(!global) {
-            if(it->second.first != m_groupLevel) {
-                m_symbolsStack.push_back(std::make_pair(name, it->second));
-                if(it->second.first == 0) m_symbolsGlobal[name] = it->second;
-            }
-            it->second.first = m_groupLevel;
-            it->second.second = value;
-        } else {
-            if(it->second.first != 0) {
-                m_symbolsGlobal[name] = std::make_pair(0, value);
-            } else {
-                it->second.second = value;
-            }
-        }
-    } else {
-        m_symbols[name] = std::make_pair(global ? 0 : m_groupLevel, value);
-        if(!global && m_groupLevel != 0) {
-            m_symbolsGlobal[name] = std::make_pair(0, any());
-            m_symbolsStack.push_back(std::make_pair(name,
-                                        std::make_pair(0, any())));
-        }
-    }
+    SymbolTable::iterator it = m_symbols.insert(
+        std::make_pair(name, std::make_pair(0, any()))).first;
 
-    if(!global || m_groupLevel == 0) setSpecialSymbol(name, value);
+    if(!global && it->second.first != m_groupLevel) {
+        m_symbolsStack.push_back(std::make_pair(name, it->second));
+        it->second.first = m_groupLevel;
+    } else if(global && it->second.first >= 0) {
+        it->second.first = -1;
+    }
+    it->second.second = value;
+    setSpecialSymbol(name, value);
+}
+
+void Parser::setSymbolDefault(const string& name, const any& defaultValue)
+{
+    pair<SymbolTable::iterator, bool> p = m_symbols.insert(
+        std::make_pair(name, std::make_pair(0, any())));
+
+    if(p.second) // new item
+        p.first->second = std::make_pair(0, defaultValue);
 }
 
 void Parser::setSpecialSymbol(const string& name, const any& value)
@@ -208,16 +213,6 @@ void Parser::setSpecialSymbol(const string& name, const any& value)
             }
         }
     }
-}
-
-bool Parser::isPrefixActive(const string& prefix) {
-    bool ret = m_activePrefixes.find(prefix) != m_activePrefixes.end();
-    if(prefix == "\\global") {
-        int globaldefs = symbol("globaldefs", int(0));
-        if(globaldefs < 0) ret = false;
-        else if(globaldefs > 0) ret = true;
-    }
-    return ret;
 }
 
 void Parser::beginGroup()
@@ -241,17 +236,76 @@ void Parser::endGroup()
         SymbolStack::reference item = m_symbolsStack.back();
         SymbolTable::iterator it = m_symbols.find(item.first);
 
-        if(item.second.first == 0) {
-            SymbolTable::iterator it1 = m_symbolsGlobal.find(item.first);
-            assert(it1 != m_symbolsGlobal.end());
+        if(symbol("tracingrestores", int(0)) > 0) {
+            string str;
+            any value;
 
-            it->second = it1->second;
-            m_symbolsGlobal.erase(it1);
-            if(it->second.second.empty())
-                m_symbols.erase(it);
+            if(it->second.first >= 0) {
+                str = "restoring ";
+                value = item.second.second;
+            } else {
+                str = "retaining ";
+                value = it->second.second;
+            }
+
+            string escape = escapestr();
+            if(item.first == "font")
+                str += "current font";
+            else if(item.first.size() > 0 && item.first[0] == '\\')
+                str += escape + item.first.substr(1);
+            else if(item.first.size() > 0 && item.first[0] == '`')
+                str += item.first.substr(1);
             else
-                setSpecialSymbol(it->first, it->second.second);
-        } else {
+                str += escape + item.first;
+
+            str += "=";
+
+            if(value.empty()) {
+                str += "undefined";
+            } else if(value.type() == typeid(Command::ptr)) {
+                Command::ptr cmd = *unsafe_any_cast<Command::ptr>(&value);
+                string r = cmd->texRepr(this);
+                std::remove_copy(r.begin(), r.end(),
+                        std::back_inserter(str), '\n');
+            } else if(value.type() == typeid(base::ParshapeInfo)) {
+                str += boost::lexical_cast<string>(
+                    unsafe_any_cast<base::ParshapeInfo>(&value)
+                                        ->parshape.size());
+            } else if(value.type() == typeid(shared_ptr<base::FontInfo>)) {
+                shared_ptr<base::FontInfo> f =
+                    *unsafe_any_cast<shared_ptr<base::FontInfo> >(&value);
+                string fname = f ? f->selector : "";
+                if(!fname.empty() && fname[0] == '\\') {
+                    fname = escape + fname.substr(1);
+                } else {
+                    fname = escape + "FONT" + str;
+                }
+                str += fname;
+            } else if(value.type() == typeid(base::Box)) {
+                base::Box box = *unsafe_any_cast<base::Box>(&value);
+                if(box.value) {
+                    string w = base::InternalDimen::dimenToString(box.width);
+                    string h = base::InternalDimen::dimenToString(box.height);
+                    string s = base::InternalDimen::dimenToString(box.skip);
+                    str += "\n" + escape +
+                        (box.mode == RHORIZONTAL ? "hbox" : "vbox") +
+                        "(" + w.substr(0, w.size()-2) +
+                        "+" + s.substr(0, s.size()-2) +
+                        ")x" + h.substr(0, h.size()-2);
+                    if(box.mode == RVERTICAL)
+                        str += " []";
+                } else {
+                    str += "void";
+                }
+            } else {
+                str += reprAny(value);
+            }
+
+            logger()->log(Logger::TRACING,
+                str, *this, Token::ptr());
+        }
+
+        if(it->second.first >= 0) {
             it->second = item.second;
             setSpecialSymbol(it->first, it->second.second);
         }
@@ -262,23 +316,236 @@ void Parser::endGroup()
     --m_groupLevel;
 }
 
-inline Token::ptr Parser::rawNextToken()
+Node::ptr Parser::rawExpandToken(Token::ptr token)
 {
-    if(!m_tokenQueue.empty()) {
-        Token::ptr token = m_tokenQueue.front();
-        m_tokenQueue.pop_front(); return token;
+    Command::ptr cmd = symbol(token, Command::ptr());
+    Macro::ptr macro = dynamic_pointer_cast<Macro>(cmd);
+
+    if(!macro)
+        return Node::ptr();
+
+    if(m_conditionals.empty() || m_conditionals.back().active)
+        traceCommand(token, true);
+
+    Node::ptr node(new Node("macro"));
+    Node::ptr child(new Node("control_token"));
+    child->tokens().push_back(token);
+    child->setValue(token);
+    node->appendChild("control_sequence", child);
+    bool expanded = true;
+    
+    pushBack(NULL);
+
+    if(dynamic_pointer_cast<ConditionalBegin>(macro)) {
+        ConditionalBegin::ptr condBegin =
+            static_pointer_cast<ConditionalBegin>(macro);
+
+        ConditionalInfo cinfo0;
+        cinfo0.parsed = false;
+        cinfo0.ifcase = false;
+        cinfo0.active = true;
+        cinfo0.value = true;
+        cinfo0.branch = 0;
+
+        m_conditionals.push_back(cinfo0);
+        size_t level = m_conditionals.size();
+
+        // At this point the rawNextToken may be called recursively
+        condBegin->evaluate(*this, node);
+        pushBack(NULL);
+
+        assert(m_conditionals.size() >= level);
+        ConditionalInfo& cinfo = m_conditionals[level-1];
+
+        cinfo.ifcase = node->valueAny().type() == typeid(int);
+        if(cinfo.ifcase) {
+            cinfo.value = node->value(int(0));
+            cinfo.active = cinfo.value == 0;
+        } else {
+            cinfo.value = node->value(bool(false));
+            cinfo.active = cinfo.value;
+        }
+
+        cinfo.branch = 0;
+        cinfo.parsed = true;
+
+        if(symbol("tracingcommands", int(0)) > 1 && mode() != NULLMODE) {
+            string str;
+            if(cinfo.ifcase) {
+                str = "case " +
+                    boost::lexical_cast<string>(cinfo.value);
+            } else {
+                str = cinfo.value ? "true" : "false";
+            }
+            logger()->log(Logger::TRACING, str, *this, token);
+        }
+
+        //m_conditionals.push_back(cinfo);
+
+        if(!cinfo.active) {
+            node->appendChild("false_conditional",
+                    parseFalseConditional(level, true, cinfo.ifcase));
+            pushBack(NULL);
+        }
+
+    } else if(dynamic_pointer_cast<ConditionalOr>(macro)) {
+        if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
+            node->setValue(Token::list(1, token->lcopy()));
+            //m_tokenQueue.push_front(token->lcopy());
+            expanded = false;
+        } else if((m_conditionals.empty() ||
+                m_conditionals.back().branch < 0 ||
+                !m_conditionals.back().ifcase)) {
+            logger()->log(Logger::ERROR,
+                "Extra " + macro->texRepr(this), *this, token);
+        } else {
+            ConditionalInfo& cinfo = m_conditionals.back();
+            ++cinfo.branch;
+            cinfo.active = (cinfo.value == cinfo.branch);
+            if(!cinfo.active) {
+                node->appendChild("false_conditional",
+                    parseFalseConditional(
+                        m_conditionals.size(), true, true));
+                pushBack(NULL);
+            }
+        }
+    } else if(dynamic_pointer_cast<ConditionalElse>(macro)) {
+        if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
+            node->setValue(Token::list(1, token->lcopy()));
+            //m_tokenQueue.push_front(token->lcopy());
+            expanded = false;
+        } else if((m_conditionals.empty() ||
+                m_conditionals.back().branch < 0)) {
+            logger()->log(Logger::ERROR,
+                "Extra " + macro->texRepr(this), *this, token);
+        } else {
+            ConditionalInfo& cinfo = m_conditionals.back();
+            if(cinfo.ifcase) {
+                cinfo.active = cinfo.value < 0 ||
+                                cinfo.value > cinfo.branch;
+            } else {
+                cinfo.active = !cinfo.value;
+            }
+            cinfo.branch = -1;
+            if(!cinfo.active) {
+                node->appendChild("false_conditional",
+                    parseFalseConditional(
+                        m_conditionals.size(), false, false));
+                pushBack(NULL);
+            }
+        }
+    } else if(dynamic_pointer_cast<ConditionalEnd>(macro)) {
+        if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
+            node->setValue(Token::list(1, token->lcopy()));
+            //m_tokenQueue.push_front(token->lcopy());
+            expanded = false;
+        } else if(m_conditionals.empty()) {
+            logger()->log(Logger::ERROR,
+                "Extra " + macro->texRepr(this), *this, token);
+        } else {
+            m_conditionals.pop_back();
+        }
+
     } else {
-        return m_lexer->nextToken();
+        // At this point the rawNextToken may be called recursively
+        macro->expand(*this, node);
+        pushBack(NULL);
+
     }
+
+    // TODO: the next lines is horible. Either Node::value should return
+    //       a reference or the value itself should be Token::list_ptr.
+    Token::list newTokens = node->value(Token::list());
+    newTokens.insert(newTokens.begin(),
+                Token::ptr(new Token(
+                    expanded ? Token::TOK_SKIPPED : token->type(),
+                    token->catCode(), token->value(), node->source()))
+            );
+    node->setValue(newTokens);
+
+    return node;
+
+    /*
+    Token::list newTokens = node->value(Token::list());
+    Token::list::reverse_iterator rend = newTokens.rend();
+    for(Token::list::reverse_iterator it = newTokens.rbegin();
+                it != rend; ++it) {
+        assert((*it)->source().empty());
+        m_tokenQueue.push_front(*it);
+    }
+
+    token = Token::ptr(new Token(
+                expanded ? Token::TOK_SKIPPED : token->type(),
+                token->catCode(), token->value(), node->source()));
+    */
+
+#warning TODO: uncomment the following code!
+    /* else if(!cmd) {
+        traceCommand(token, true);
+        logger()->log(Logger::ERROR,
+            "Undefined control sequence", *this, lastToken());
+        token = Token::ptr(new Token(Token::TOK_SKIPPED,
+                    token->catCode(), token->value(), token->source()));
+    }*/
 }
 
-Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
+Token::ptr Parser::rawNextToken(bool expand)
 {
+    Token::ptr token;
+
+    if(!m_tokenQueue.empty()) {
+        token = m_tokenQueue.front();
+        m_tokenQueue.pop_front();
+    } else {
+        token = m_lexer->nextToken();
+    }
+
+    if(token && token->isControl() && expand &&
+                token != m_noexpandToken) {
+        Node::ptr node = rawExpandToken(token);
+        if(node) {
+            Token::list newTokens = node->value(Token::list());
+            Token::list::reverse_iterator rend = newTokens.rend();
+            Token::list::reverse_iterator it = newTokens.rbegin();
+            for(; it+1 != rend; ++it) {
+                assert((*it)->source().empty());
+                m_tokenQueue.push_front(*it);
+            }
+            if(it != rend)
+                token = *it;
+        }
+    }
+
+    return token;
+}
+
+Token::ptr Parser::nextToken(vector< Token::ptr >* tokens, bool expand)
+{
+    if(m_tokenSource.empty())
+        peekToken(expand);
+
+    if(tokens) {
+        std::copy(m_tokenSource.begin(), m_tokenSource.end(),
+                    std::back_inserter(*tokens));
+    }
+
+    Token::ptr token = m_token;
+    if(!m_lexer->interactive() && m_lexer->lineNo() != m_lineNo) {
+        m_lineNo = m_lexer->lineNo();
+        setSymbol("inputlineno", int(m_lineNo), true);
+    }
+
+    m_tokenSource.clear();
+    m_token.reset();
+
+    return token;
+
+#if 0
     if(m_end) {
         if(!m_lexer->interactive()) {
             // Return the rest of the document as skipped tokens
             Token::ptr token;
-            while(token = rawNextToken()) {
+            while(token = rawNextToken(false)) {
                 token->setType(Token::TOK_SKIPPED);
                 if(tokens) tokens->push_back(token);
             }
@@ -289,7 +556,7 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
     m_token.reset();
 
     // skip ignored tokens
-    Token::ptr token = rawNextToken();
+    Token::ptr token = rawNextToken(expand);
     while(token && token->isSkipped()) {
         if(token->catCode() == Token::CC_INVALID) {
             m_logger->log(Logger::ERROR,
@@ -297,18 +564,19 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
         }
 
         if(tokens) tokens->push_back(token);
-        token = rawNextToken();
+        token = rawNextToken(expand);
     }
 
     // real token
     if(tokens && token) tokens->push_back(token);
     Token::ptr ret = token;
-    m_lastToken = token;
+    if(token && token->lineNo())
+        m_lastToken = token;
 
     // skip ignored tokens until EOL
     if(token && !token->isLastInLine()) {
         while(true) {
-            token = rawNextToken();
+            token = rawNextToken(false);
             if(!token) {
                 break;
             } else if(!token->isSkipped()) {
@@ -332,9 +600,10 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens)
 
     if(!m_lexer->interactive() && m_lexer->lineNo() != m_lineNo) {
         m_lineNo = m_lexer->lineNo();
-        setSymbol("inputlineno", int(m_lineNo));
+        setSymbol("inputlineno", int(m_lineNo), true);
     }
     return ret;
+#endif
 }
 
 Token::ptr Parser::lastToken()
@@ -342,14 +611,75 @@ Token::ptr Parser::lastToken()
     return m_lastToken;
 }
 
-Token::ptr Parser::peekToken()
+Token::ptr Parser::peekToken(bool expand)
 {
     //int n = 1; // XXX
-    if(m_end) return Token::ptr();
+    if(m_end) {
+        m_token.reset();
+        if(!m_lexer->interactive()) {
+            // Return the rest of the document as skipped tokens
+            Token::ptr token;
+            while(token = rawNextToken(false)) {
+                token->setType(Token::TOK_SKIPPED);
+                m_tokenSource.push_back(token);
+            }
+        }
+        return Token::ptr();
+    }
 
-    if(m_token/* && n==1*/) return m_token; // cached token
-   // m_token.reset();
+    // check for cached token
+    if(!m_tokenSource.empty())
+        return m_token;
 
+    // skipped tokens
+    Token::ptr token;
+    Token::list tokenSource;
+    while((token = rawNextToken(expand)) && token->isSkipped()) {
+        if(token->catCode() == Token::CC_INVALID) {
+            m_logger->log(Logger::ERROR,
+                "Text line contains an invalid character", *this, token);
+        }
+        
+        tokenSource.push_back(token);
+    }
+
+    // real token
+    Token::ptr mtoken = token;
+    if(token) {
+        if(token->lineNo())
+            m_lastToken = token;
+        tokenSource.push_back(token);
+    }
+
+    // skipped tokens until EOL
+    if(token && !token->isLastInLine()) {
+        while(token = rawNextToken(false)) {
+            if(!token->isSkipped() || !token->lineNo()) {
+                m_tokenQueue.push_front(token);
+                break;
+            }
+
+            if(token->catCode() == Token::CC_INVALID) {
+                m_logger->log(Logger::ERROR,
+                    "Text line contains an invalid character", *this, token);
+            }
+
+            tokenSource.push_back(token);
+            
+            if(token->isLastInLine()) {
+                break;
+            }
+        }
+    }
+
+    pushBack(NULL); // peekToken may be called recursively
+
+    m_token = mtoken;
+    m_tokenSource = tokenSource;
+
+    return m_token;
+
+    #if 0
     // check the queue
     std::deque<Token::ptr >::iterator end = m_tokenQueue.end();
     for(std::deque<Token::ptr >::iterator it = m_tokenQueue.begin();
@@ -377,22 +707,33 @@ Token::ptr Parser::peekToken()
     }
 
     return Token::ptr();
+    #endif
 }
 
 void Parser::pushBack(vector< Token::ptr >* tokens)
 {
-    std::copy(tokens->rbegin(), tokens->rend(),
-            std::front_inserter(m_tokenQueue));
+    std::copy(m_tokenSource.rbegin(), m_tokenSource.rend(),
+                std::front_inserter(m_tokenQueue));
+
+    m_tokenSource.clear();
     m_token.reset();
+
+    if(tokens) {
+        std::copy(tokens->rbegin(), tokens->rend(),
+                    std::front_inserter(m_tokenQueue));
+    }
     // NOTE: lastToken is NOT changed
 }
 
-void Parser::processTextCharacter(char ch)
+void Parser::processTextCharacter(char ch, Token::ptr token)
 {
-    if(m_mode == RVERTICAL)
-        setMode(RHORIZONTAL);
-    else if(m_mode != RHORIZONTAL)
+    if(mode() != RHORIZONTAL)
         setMode(HORIZONTAL);
+
+    if(m_prevMode != m_mode)
+        traceCommand(token);
+
+    m_hasOutput = true;
 
     int prevSpacefactor = symbol("spacefactor", true);
     int spacefactor = symbol(
@@ -407,21 +748,30 @@ void Parser::processTextCharacter(char ch)
 
 void Parser::resetParagraphIndent()
 {
-    setSymbol("parshape", base::ParshapeInfo());
-    setSymbol("hangindent", int(0));
-    setSymbol("hangafter", int(1));
-    setSymbol("looseness", int(0));
-    setSymbol("spacefactor", int(1000));
+    if(symbol("parshape", base::ParshapeInfo()).parshape.size() != 0)
+        setSymbol("parshape", base::ParshapeInfo());
+
+    if(symbol("hangindent", Dimen(0)).value != 0)
+        setSymbol("hangindent", Dimen(0));
+
+    if(symbol("hangafter", int(0)) != 1)
+        setSymbol("hangafter", int(1));
+
+    if(symbol("looseness", int(0)) != 0)
+        setSymbol("looseness", int(0));
+
+    if(symbol("spacefactor", int(0)) != 1000)
+        setSymbol("spacefactor", int(1000), true);
 }
 
-bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
+bool Parser::helperIsImplicitCharacter(Token::CatCode catCode, bool expand)
 {
-    if(peekToken()) {
-        if(peekToken()->isCharacterCat(catCode)) {
+    if(peekToken(expand)) {
+        if(peekToken(expand)->isCharacterCat(catCode)) {
             return true;
-        } else if(peekToken()->isControl()) {
+        } else if(peekToken(expand)->isControl()) {
             shared_ptr<TokenCommand> c =
-                symbolCommand<TokenCommand>(peekToken());
+                symbolCommand<TokenCommand>(peekToken(expand));
             if(c && c->token()->isCharacterCat(catCode))
                 return true;
         }
@@ -429,68 +779,142 @@ bool Parser::helperIsImplicitCharacter(Token::CatCode catCode)
     return false;
 }
 
-Node::ptr Parser::parseCommand(Command::ptr command)
+Node::ptr Parser::parseFalseConditional(size_t level, bool sElse, bool sOr)
 {
-    Node::ptr node(new Node("command"));
-    node->appendChild("control_token", parseToken());
-    bool prefix = command->checkPrefixes(*this);
-    command->invoke(*this, node); // XXX check errors
-    if(prefix) m_activePrefixes.clear();
+    Node::ptr node(new Node("skipped_conditional"));
+
+    Token::ptr token;
+    while((token = peekToken(false)) && m_conditionals.size() >= level) {
+        Command::ptr cmd = symbol(token, Command::ptr());
+        
+        if(dynamic_pointer_cast<ConditionalBegin>(cmd)) {
+            ConditionalInfo cinfo;
+            cinfo.parsed = false;
+            cinfo.active = false;
+            m_conditionals.push_back(cinfo);
+
+        } else if(dynamic_pointer_cast<ConditionalOr>(cmd)) {
+            if(sOr && m_conditionals.size() == level) {
+                return node;
+            }
+
+        } else if(dynamic_pointer_cast<ConditionalElse>(cmd)) {
+            if(sElse && m_conditionals.size() == level) {
+                return node;
+            }
+
+        } else if(dynamic_pointer_cast<ConditionalEnd>(cmd)) {
+            if(m_conditionals.size() == level) {
+                return node;
+            }
+            m_conditionals.pop_back();
+        }
+
+        nextToken(&node->tokens(), false);
+    }
+
+    // TODO: error
     return node;
 }
 
-Node::ptr Parser::parseToken()
+Node::ptr Parser::parseCommand(Command::ptr command)
+{
+    Node::ptr node(new Node("command"));
+
+    if(dynamic_pointer_cast<base::Prefix>(command)) {
+        std::set<string> prefixes;
+        Token::ptr token;
+        while(peekToken()) {
+            token = peekToken();
+
+            command = symbol(token, Command::ptr());
+            if(!command) break;
+
+            int lastChildNumber = node->childrenCount();
+            node->appendChild("prefix", parseControlSequence());
+
+            if(!command->invokeWithPrefixes(*this, node, prefixes)) {
+                pushBack(&node->children().back().second->tokens());
+                node->children().pop_back();
+                break;
+            } else if(prefixes.empty()) {
+                node->children()[lastChildNumber].first = "control_sequence";
+                resetNoexpand();
+                return node;
+            }
+        }
+        logger()->log(Logger::ERROR,
+            "You can't use a prefix with `" +
+            token->meaning(this) + "'",
+            *this, lastToken());
+    } else {
+        node->appendChild("control_sequence", parseControlSequence());
+        command->invoke(*this, node); // XXX check errors
+    }
+
+    resetNoexpand();
+    return node;
+}
+
+Node::ptr Parser::parseToken(bool expand)
 {
     Node::ptr node(new Node("token"));
-    Token::ptr token = peekToken();
+    Token::ptr token = peekToken(expand);
 
     if(token) {
-        node->setValue(nextToken(&node->tokens()));
+        node->setValue(nextToken(&node->tokens(), expand));
     } else {
         logger()->log(Logger::ERROR, "Missing token inserted", *this, token);
         node->setValue(Token::ptr(new Token(Token::TOK_CONTROL,
                             Token::CC_ESCAPE, "inaccessible")));
     }
 
+    resetNoexpand();
     return node;
 }
 
-Node::ptr Parser::parseMMathToken()
+Node::ptr Parser::parseDMathToken()
 {
     Node::ptr node(new Node("mmath_token"));
     nextToken(&node->tokens());
 
-    if(!helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
+    if(!helperIsImplicitCharacter(Token::CC_MATHSHIFT, false)) {
         logger()->log(Logger::ERROR,
             "Display math should end with $$", *this, lastToken());
     } else {
         nextToken(&node->tokens());
     }
 
+    resetNoexpand();
     return node;
 }
 
-Node::ptr Parser::parseControlSequence()
+Node::ptr Parser::parseControlSequence(bool expand)
 {
     Node::ptr node(new Node("control_sequence"));
-    Token::ptr token = peekToken();
+    Token::ptr token = peekToken(expand);
 
     if(token && token->isControl()) {
-        node->setValue(nextToken(&node->tokens()));
+        node->setValue(nextToken(&node->tokens(), expand));
     } else {
         logger()->log(Logger::ERROR,
-            "Missing control sequence inserted", *this, token);
+            "Missing control sequence inserted", *this, lastToken());
         node->setValue(Token::ptr(new Token(Token::TOK_CONTROL,
                             Token::CC_ESCAPE, "inaccessible")));
     }
+
+    resetNoexpand();
     return node;
 }
 
-Node::ptr Parser::parseCharacter(const string& type)
+Node::ptr Parser::parseTextCharacter()
 {
-    Node::ptr node(new Node(type));
+    Node::ptr node(new Node(peekToken() &&
+        peekToken()->isCharacterCat(Token::CC_SPACE) ?
+        "text_space" : "text_character" ));
     if(peekToken() && peekToken()->isCharacter()) {
-        processTextCharacter(peekToken()->value()[0]);
+        if(mode() != MATH && mode() != DMATH)
+            processTextCharacter(peekToken()->value()[0], peekToken());
         node->setValue(peekToken()->value());
         nextToken(&node->tokens());
     } else {
@@ -498,6 +922,8 @@ Node::ptr Parser::parseCharacter(const string& type)
             "Missing character inserted", *this, lastToken());
         node->setValue(string(""));
     }
+
+    resetNoexpand();
     return node;
 }
 
@@ -531,11 +957,14 @@ Node::ptr Parser::parseKeyword(const vector<string>& keywords)
             break;
         } else if(kw->size() == n) {
             node->setValue(value);
+            resetNoexpand();
             return node;
         }
     }
 
     pushBack(&node->tokens());
+
+    resetNoexpand();
     return Node::ptr();
 }
 
@@ -547,11 +976,12 @@ Node::ptr Parser::parseOptionalKeyword(const vector<string>& keywords)
         while(helperIsImplicitCharacter(Token::CC_SPACE))
             nextToken(&node->tokens());
         node->setValue(string());
+        resetNoexpand();
     }
     return node;
 }
 
-Node::ptr Parser::parseOptionalEquals(bool oneSpaceAfter)
+Node::ptr Parser::parseOptionalEquals()
 {
     Node::ptr node(new Node("optional_equals"));
     while(helperIsImplicitCharacter(Token::CC_SPACE))
@@ -561,9 +991,12 @@ Node::ptr Parser::parseOptionalEquals(bool oneSpaceAfter)
         node->setValue(nextToken(&node->tokens()));
     }
 
+    /*
     if(oneSpaceAfter && helperIsImplicitCharacter(Token::CC_SPACE))
         nextToken(&node->tokens());
+    */
 
+    resetNoexpand();
     return node;
 }
 
@@ -593,7 +1026,8 @@ Node::ptr Parser::parseNormalInteger()
         logger()->log(Logger::ERROR,
             "Missing number, treated as zero", *this, Token::ptr());
         node->setValue(int(0));
-
+        resetNoexpand();
+        return node;
     }
 
     Node::ptr integer =
@@ -601,18 +1035,19 @@ Node::ptr Parser::parseNormalInteger()
     if(integer) {
         node->appendChild("internal_integer", integer);
         node->setValue(integer->valueAny());
+        resetNoexpand();
         return node;
     }
 
     if(peekToken()->isCharacter('`', Token::CC_OTHER)) {
         nextToken(&node->tokens());
-        if(peekToken() && peekToken()->isCharacter()) {
-            node->setValue(int(peekToken()->value()[0]));
-            nextToken(&node->tokens());
-        } else if(peekToken() && peekToken()->isControl() &&
+        if(peekToken(false) && peekToken(false)->isCharacter()) {
+            node->setValue(int(peekToken(false)->value()[0]));
+            nextToken(&node->tokens(), false);
+        } else if(peekToken(false) && peekToken(false)->isControl() &&
                     peekToken()->value().size() == 2) {
-            node->setValue(int(peekToken()->value()[1]));
-            nextToken(&node->tokens());
+            node->setValue(int(peekToken(false)->value()[1]));
+            nextToken(&node->tokens(), false);
         } else {
             logger()->log(Logger::ERROR,
                 "Improper alphabetic constant", *this, lastToken());
@@ -621,6 +1056,7 @@ Node::ptr Parser::parseNormalInteger()
         if(helperIsImplicitCharacter(Token::CC_SPACE))
             nextToken(&node->tokens());
 
+        resetNoexpand();
         return node;
     }
     
@@ -704,6 +1140,7 @@ Node::ptr Parser::parseNormalInteger()
     if(helperIsImplicitCharacter(Token::CC_SPACE))
         nextToken(&node->tokens());
 
+    resetNoexpand();
     return node;
 }
 
@@ -713,7 +1150,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     if(!peekToken()) {
         logger()->log(Logger::ERROR,
             "Missing number, treated as zero", *this, Token::ptr());
-        node->setValue(int(0));
+        node->setValue(Dimen(0));
         return node;
     }
 
@@ -722,6 +1159,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     if(dimen) {
         node->appendChild("internal_dimen", dimen);
         node->setValue(dimen->valueAny());
+        resetNoexpand();
         return node;
     }
 
@@ -763,7 +1201,11 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                     "Dimension too large", *this, lastToken());
                 v = TEXPP_SCALED_MAX;
             }
-            node->setValue(v);
+
+            while(helperIsImplicitCharacter(Token::CC_SPACE))
+                nextToken(&fil->tokens());
+
+            node->setValue(Dimen(v));
             return node;
         }
     }
@@ -786,17 +1228,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
-            i_unit = iunit->value(0);
-            i_found = true;
-        }
-    }
-
-    if(!iunit) {
-        Node::ptr iunit =
-            base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
-        if(iunit) {
-            node->appendChild("internal_unit", iunit);
-            i_unit = iunit->value(0);
+            i_unit = iunit->value(Dimen(0)).value;
             i_found = true;
         }
     }
@@ -806,7 +1238,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
-            i_unit = iunit->value(base::Glue(0)).width;
+            i_unit = iunit->value(base::Glue(0,0)).width.value;
             i_found = true;
         }
     }
@@ -816,7 +1248,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
-            i_unit = iunit->value(base::Glue(0)).width;
+            i_unit = iunit->value(base::Glue(1,0)).width.value;
             i_found = true;
             i_mu = true;
         }
@@ -856,12 +1288,20 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                 overflow = true;
                 v = TEXPP_SCALED_MAX;
             }
-            node->setValue(v);
+            node->setValue(Dimen(v));
         } else {
-            node->setValue(int(0));
+            node->setValue(Dimen(0));
         }
+
+        if(iunit && iunit->type() == "keyword")
+            if(helperIsImplicitCharacter(Token::CC_SPACE))
+                nextToken(&iunit->tokens());
+
+        resetNoexpand();
         return node;
     }
+
+    Node::ptr units;
 
     if(!mu) {
         // <optional true>
@@ -925,7 +1365,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             kw_physical_units.push_back("cc");
         }
 
-        Node::ptr units = parseKeyword(kw_physical_units);
+        units = parseKeyword(kw_physical_units);
         if(units) {
             node->appendChild("physical_unit", units);
             vector<string>::iterator it = std::find(kw_physical_units.begin(),
@@ -949,6 +1389,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                 val.first = val.first + (val.second / 0x10000);
                 val.second = val.second % 0x10000;
             }
+
         } else {
             logger()->log(Logger::ERROR,
                 "Illegal unit of measure (pt inserted)", *this, lastToken());
@@ -961,7 +1402,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(i_node) {
             node->appendChild("internal_muunit", i_node);
-            int i_unit = i_node->value(base::Glue(0)).width;
+            int i_unit = i_node->value(base::Glue(1,0)).width.value;
 
             if(i_unit != 0) {
                 int v = TEXPP_SCALED_MAX;
@@ -977,16 +1418,17 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
                     overflow = true;
                     v = TEXPP_SCALED_MAX;
                 }
-                node->setValue(v);
+                node->setValue(Dimen(v));
             } else {
-                node->setValue(int(0));
+                node->setValue(Dimen(0));
             }
+            resetNoexpand();
             return node;
         }
 
         // <mu units >
         static vector<string> kw_mu(1, "mu");
-        Node::ptr units = parseKeyword(kw_mu);
+        units = parseKeyword(kw_mu);
         if(units) {
             node->appendChild("muunit", units);
         } else {
@@ -1005,8 +1447,16 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
         v = TEXPP_SCALED_MAX;
     }
 
-    node->setValue(v);
+    node->setValue(Dimen(v));
 
+    if(!units) {
+        units = Node::ptr(new Node("unit"));
+        node->appendChild("unit", units);
+    }
+    if(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&units->tokens());
+
+    resetNoexpand();
     return node;
 }
 
@@ -1069,11 +1519,13 @@ Node::ptr Parser::parseDimenFactor()
         }
         
         node->setValue(std::make_pair(int(result), frac));
+        resetNoexpand();
         return node;
 
     } else {
         Node::ptr node = parseNormalInteger();
-        node->setValue(std::make_pair(node->value(int(0)), 0));
+        node->setValue(std::make_pair(node->value(0), 0));
+        resetNoexpand();
         return node;
     }
 }
@@ -1088,7 +1540,7 @@ Node::ptr Parser::parseNumber()
         base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
     if(internal) {
         node->appendChild("coerced_dimen", internal);
-        unsigned_value = internal->value(0);
+        unsigned_value = internal->value(Dimen(0)).value;
     }
 
     if(!internal) {
@@ -1096,7 +1548,7 @@ Node::ptr Parser::parseNumber()
             base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
         if(internal) {
             node->appendChild("coerced_glue", internal);
-            unsigned_value = internal->value(base::Glue(0)).width;
+            unsigned_value = internal->value(base::Glue(0,0)).width.value;
         }
     }
 
@@ -1105,7 +1557,7 @@ Node::ptr Parser::parseNumber()
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("coerced_muglue", internal);
-            unsigned_value = internal->value(base::Glue(0)).width;
+            unsigned_value = internal->value(base::Glue(1,0)).width.value;
             logger()->log(Logger::ERROR,
                 "Incompatible glue units", *this, lastToken());
         }
@@ -1118,6 +1570,8 @@ Node::ptr Parser::parseNumber()
     }
 
     node->setValue(node->child(0)->value(int(0)) * unsigned_value);
+
+    resetNoexpand();
     return node;
 }
 
@@ -1134,7 +1588,7 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
         base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
     if(internal) {
         node->appendChild("coerced_glue", internal);
-        unsigned_value = internal->value(base::Glue(0)).width;
+        unsigned_value = internal->value(base::Glue(0,0)).width.value;
         intern = true;
     }
 
@@ -1143,7 +1597,7 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("coerced_muglue", internal);
-            unsigned_value = internal->value(base::Glue(0)).width;
+            unsigned_value = internal->value(base::Glue(1,0)).width.value;
             intern = true;
             intern_mu = true;
         }
@@ -1157,10 +1611,13 @@ Node::ptr Parser::parseDimen(bool fil, bool mu)
     } else {
         internal = parseNormalDimen(fil, mu);
         node->appendChild(mu ? "normal_mudimen" : "normal_dimen", internal);
-        unsigned_value = internal->value(0);
+        unsigned_value = internal->value(Dimen(0)).value;
     }
 
-    node->setValue(node->child(0)->value(int(0)) * unsigned_value);
+    node->setValue(
+        Dimen(node->child(0)->value(0) * unsigned_value));
+
+    resetNoexpand();
     return node;
 }
 
@@ -1170,7 +1627,7 @@ Node::ptr Parser::parseGlue(bool mu)
     node->appendChild("sign", parseOptionalSigns());
     int sign = node->child(0)->value(int(0));
 
-    base::Glue glue(0);
+    base::Glue glue(mu,0);
     bool intern = false;
     bool intern_mu = false;
 
@@ -1178,7 +1635,7 @@ Node::ptr Parser::parseGlue(bool mu)
         base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
     if(internal) {
         node->appendChild("internal_glue", internal);
-        glue = internal->value(base::Glue(0));
+        glue = internal->value(base::Glue(0,0));
         intern = true;
     }
 
@@ -1187,7 +1644,7 @@ Node::ptr Parser::parseGlue(bool mu)
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(internal) {
             node->appendChild("internal_glue", internal);
-            glue = internal->value(base::Glue(0));
+            glue = internal->value(base::Glue(1,0));
             intern = true;
             intern_mu = true;
         }
@@ -1197,19 +1654,22 @@ Node::ptr Parser::parseGlue(bool mu)
         if(intern_mu != mu) {
             logger()->log(Logger::ERROR,
                 "Incompatible glue units", *this, lastToken());
+            glue.mu = mu;
         }
 
-        glue.width *= sign;
-        glue.stretch *= sign;
-        glue.shrink *= sign;
+        glue.width.value *= sign;
+        glue.stretch.value *= sign;
+        glue.shrink.value *= sign;
 
         node->setValue(glue);
+
+        resetNoexpand();
         return node;
     }
 
     Node::ptr width = parseDimen(false, mu);
     node->appendChild("width", width);
-    glue.width = sign * width->value(int(0));
+    glue.width = Dimen(sign * width->value(Dimen(0)).value);
 
     Node::ptr dimenStretch;
     static vector<string> kw_plus(1, "plus");
@@ -1221,7 +1681,7 @@ Node::ptr Parser::parseGlue(bool mu)
         stretch->setValue(dimenStretch->valueAny());
         stretch->setType("stretch");
 
-        glue.stretch = stretch->value(int(0));
+        glue.stretch = stretch->value(Dimen(0));
 
         Node::ptr fil = dimenStretch->child(!mu ? "normal_dimen":
                                                   "normal_mudimen");
@@ -1243,7 +1703,7 @@ Node::ptr Parser::parseGlue(bool mu)
         shrink->setValue(dimenShrink->valueAny());
         shrink->setType("shrink");
 
-        glue.shrink = shrink->value(int(0));
+        glue.shrink = shrink->value(Dimen(0));
 
         Node::ptr fil = dimenShrink->child(!mu ? "normal_dimen":
                                                  "normal_mudimen");
@@ -1255,80 +1715,112 @@ Node::ptr Parser::parseGlue(bool mu)
     }
 
     node->setValue(glue);
+
+    resetNoexpand();
     return node;
 }
 
 
-Node::ptr Parser::parseBalancedText()
+Node::ptr Parser::parseBalancedText(bool expand,
+                    int paramCount, Token::ptr nameToken)
 {
     Node::ptr node(new Node("balanced_text"));
     Token::list_ptr tokens(new Token::list);
 
     int level = 0;
-    while(peekToken()) {
-        if(peekToken()->isCharacterCat(Token::CC_BGROUP)) {
+    Token::ptr token;
+    while(token = peekToken(expand)) {
+        if(token->isCharacterCat(Token::CC_BGROUP)) {
             ++level;
-        } else if(peekToken()->isCharacterCat(Token::CC_EGROUP)) {
+        } else if(token->isCharacterCat(Token::CC_EGROUP)) {
             if(--level < 0) break;
         }
-        tokens->push_back(nextToken(&node->tokens()));
+
+        tokens->push_back(nextToken(&node->tokens(), expand));
+
+        if(paramCount >= 0 && token->isCharacterCat(Token::CC_PARAM)) {
+            Token::ptr nToken = peekToken(expand);
+            if(!nToken || !nToken->isCharacterCat(Token::CC_PARAM)) {
+                char ch = nToken && nToken->isCharacter() ?
+                            nToken->value()[0] : 0;
+                int n = std::isdigit(ch) ? ch - '0' : 0;
+                if(n <= 0 || n > paramCount) {
+                    logger()->log(Logger::ERROR,
+                        "Illegal parameter number in definition of "
+                        + (nameToken ? nameToken->texRepr(this) :
+                           escapestr() + "undefined"),
+                        *this, lastToken());
+                    tokens->push_back(Token::ptr(new Token(
+                        token->type(), token->catCode(), token->value())));
+                }
+            } else if(nToken) {
+                tokens->push_back(nextToken(&node->tokens(), expand));
+            }
+        }
     }
     node->setValue(tokens);
     return node;
 }
 
-Node::ptr Parser::parseFiller()
+Node::ptr Parser::parseFiller(bool expand)
 {
     Node::ptr filler(new Node("filler"));
-    while(peekToken()) {
-        if(helperIsImplicitCharacter(Token::CC_SPACE)) {
-            nextToken(&filler->tokens());
+    while(peekToken(expand)) {
+        if(helperIsImplicitCharacter(Token::CC_SPACE, expand)) {
+            nextToken(&filler->tokens(), expand);
             continue;
-        } else if(peekToken()->isControl()) {
-            Command::ptr obj = symbol(peekToken(), Command::ptr());
+        } else if(peekToken(expand)->isControl()) {
+            Command::ptr obj = symbol(peekToken(expand), Command::ptr());
             if(obj && obj->name() == "\\relax") {
-                nextToken(&filler->tokens());
+                nextToken(&filler->tokens(), expand);
                 continue;
             }
         }
         break;
     }
+
+    resetNoexpand();
     return filler;
 }
 
-Node::ptr Parser::parseGeneralText(bool implicit_lbrace)
+Node::ptr Parser::parseGeneralText(bool expand, bool implicitLbrace)
 {
     Node::ptr node(new Node("general_text"));
 
     // parse filler
-    node->appendChild("filler", parseFiller());
+    node->appendChild("filler", parseFiller(expand));
 
     // parse left_brace
     Node::ptr left_brace(new Node("left_brace"));
     node->appendChild("left_brace", left_brace);
-    if(peekToken() && (
-       (implicit_lbrace && helperIsImplicitCharacter(Token::CC_BGROUP)) ||
-       (!implicit_lbrace && peekToken()->isCharacterCat(Token::CC_BGROUP)))) {
-        left_brace->setValue(nextToken(&left_brace->tokens()));
+    if(peekToken(expand) && (
+       (implicitLbrace &&
+            helperIsImplicitCharacter(Token::CC_BGROUP, expand)) ||
+       (!implicitLbrace &&
+            peekToken(expand)->isCharacterCat(Token::CC_BGROUP)))) {
+        left_brace->setValue(nextToken(&left_brace->tokens(), expand));
     } else {
-        logger()->log(Logger::ERROR, "Missing { inserted", *this,lastToken());
+        logger()->log(Logger::ERROR, "Missing { inserted",
+                        *this, lastToken());
         left_brace->setValue(Token::ptr(new Token(
                     Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
     }
 
-    node->appendChild("balanced_text", parseBalancedText());
+    node->appendChild("balanced_text", parseBalancedText(expand));
 
     // parse right_brace
     Node::ptr right_brace(new Node("right_brace"));
     node->appendChild("right_brace", right_brace);
-    if(peekToken() && peekToken()->isCharacterCat(Token::CC_EGROUP)) {
-        right_brace->setValue(nextToken(&right_brace->tokens()));
+    if(peekToken(expand) &&
+            peekToken(expand)->isCharacterCat(Token::CC_EGROUP)) {
+        right_brace->setValue(nextToken(&right_brace->tokens(), expand));
     } else {
         // TODO: error
         right_brace->setValue(Token::ptr(new Token(
                     Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
     }
 
+    resetNoexpand();
     return node;
 }
 
@@ -1347,20 +1839,63 @@ Node::ptr Parser::parseFileName()
     }
 
     node->setValue(fileName);
+
+    resetNoexpand();
     return node;
 }
 
 Node::ptr Parser::parseTextWord()
 {
-    Node::ptr node(new Node("text_word"));
     string value;
+    Node::ptr node(new Node("text_word"));
     while(peekToken() && peekToken()->isCharacterCat(Token::CC_LETTER)) {
-        processTextCharacter(peekToken()->value()[0]);
+        if(mode() != MATH && mode() != DMATH)
+            processTextCharacter(peekToken()->value()[0], peekToken());
+        if(!value.empty()) traceCommand(peekToken());
+
         value += peekToken()->value();
         nextToken(&node->tokens());
     }
     node->setValue(value);
+
     return node;
+}
+
+void Parser::traceCommand(Token::ptr token, bool expanding)
+{
+    int tracingcommands = symbol("tracingcommands", int(0));
+    if(tracingcommands > 0) {
+        string str;
+        if(token->isControl()) {
+            Command::ptr cmd = symbol(token, Command::ptr());
+            if(dynamic_pointer_cast<base::TheMacro>(cmd)
+                    && mode() == NULLMODE) {
+                return;
+            } else if(dynamic_pointer_cast<Macro>(cmd)) {
+                if(expanding) {
+                    if(tracingcommands < 2) return;
+                    if(dynamic_pointer_cast<base::UserMacro>(cmd)) return;
+                    str += cmd->texRepr(this);
+                } else {
+                    str += escapestr();
+                    str += "relax";
+                }
+                //std::remove(str.begin(), str.end(), '\n');
+            } else if(cmd) {
+                str += cmd->texRepr(this);
+            } else {
+                str = "undefined";
+            }
+        } else {
+            str = token->meaning(this);
+        }
+        if(m_prevMode != m_mode) {
+            str = modeName() + " mode: " + str;
+            m_prevMode = m_mode;
+        }
+        //logger()->log(Logger::TRACING, str, *this, lastToken());
+        logger()->log(Logger::TRACING, str, *this, token);
+    }
 }
 
 Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
@@ -1381,9 +1916,9 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
                 node->appendChild("group_begin", parseToken());
                 ok = true;
             }
-        } else if(groupType == GROUP_MMATH) {
+        } else if(groupType == GROUP_DMATH) {
             if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                node->appendChild("group_begin", parseMMathToken());
+                node->appendChild("group_begin", parseDMathToken());
                 ok = true;
             }
         }
@@ -1408,6 +1943,8 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             break;
         }
 
+        traceCommand(peekToken());
+
         if(parseBeginEnd) {
             if(groupType == GROUP_NORMAL) {
                 if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
@@ -1421,9 +1958,14 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
                     //endGroup();
                     break;
                 }
-            } else if(groupType == GROUP_MMATH) {
+            } else if(groupType == GROUP_DMATH) {
                 if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                    node->appendChild("group_end", parseMMathToken());
+                    Node::ptr dmathNode = parseDMathToken();
+                    node->appendChild("group_end", dmathNode);
+                    if(helperIsImplicitCharacter(Token::CC_SPACE, false)) {
+                        nextToken(&dmathNode->tokens());
+                    }
+
                     //endGroup();
                     break;
                 }
@@ -1444,19 +1986,31 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
         } else if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
             Node::ptr t1 = parseToken();
             // XXX: is the following line correct ?
-            bool mmath = helperIsImplicitCharacter(Token::CC_MATHSHIFT);
+            bool dmath = helperIsImplicitCharacter(Token::CC_MATHSHIFT,
+                                                                false);
             pushBack(&t1->tokens());
+
+            if(mode() != HORIZONTAL) {
+                setMode(HORIZONTAL);
+                traceCommand(t1->value(Token::ptr()));
+            }
 
             beginGroup();
             Mode prevMode = mode();
-            setMode(MATH);
-            node->appendChild("inline_math", parseGroup(
-                    mmath ? GROUP_MMATH : GROUP_MATH, true));
+            setMode(dmath ? DMATH : MATH);
 
-            if(prevMode == RHORIZONTAL || prevMode == RVERTICAL)
-                setMode(RHORIZONTAL);
-            else
-                setMode(HORIZONTAL);
+            setSymbol("fam", int(-1));
+
+            if(dmath) {
+                setSymbol("predisplaysize", Dimen(0));
+                setSymbol("displaywidth", Dimen(0));
+                setSymbol("displayindent", Dimen(0));
+            }
+
+            node->appendChild("inline_math", parseGroup(
+                    dmath ? GROUP_DMATH : GROUP_MATH, true));
+
+            setMode(prevMode);
 
             endGroup();
 
@@ -1464,17 +2018,30 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             node->appendChild("text_word", parseTextWord());
 
         } else if(peekToken()->isCharacterCat(Token::CC_SPACE)) {
-            node->appendChild("text_space",
-                        parseCharacter("text_space"));
+            if(mode() == HORIZONTAL || mode() == RHORIZONTAL) {
+                node->appendChild("text_space", parseTextCharacter());
+            } else {
+                node->appendChild("space", parseToken());
+            }
 
         } else if(peekToken()->isCharacterCat(Token::CC_OTHER)) {
-            node->appendChild("text_character",
-                        parseCharacter("text_character"));
+            node->appendChild("text_character", parseTextCharacter());
+
+        } else if(peekToken()->isCharacterCat(Token::CC_PARAM)) {
+            m_logger->log(Logger::ERROR,
+                "You can't use `" + peekToken()->meaning(this) + "' in " +
+                modeName() + " mode", *this, lastToken());
+            node->appendChild("error_param", parseToken());
 
         } else if(peekToken()->isControl()) {
             Command::ptr cmd = symbol(peekToken(), Command::ptr());
             Node::ptr cmdNode;
             if(cmd) {
+                Mode prevMode = mode();
+                cmd->presetMode(*this);
+                if(mode() != prevMode)
+                    traceCommand(peekToken());
+
                 cmdNode = parseCommand(cmd);
                 //node->appendChild("control", parseCommand(cmd));
             } else {
@@ -1514,6 +2081,17 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
 
 Node::ptr Parser::parse()
 {
+    if(!lexer()->fileName().empty()) {
+        string fname = lexer()->fileName();
+        logger()->log(Logger::MESSAGE,
+            "**" + fname + "\n", *this, Token::ptr());
+        bool p = std::find(fname.begin(), fname.end(), PATH_SEP)!=fname.end();
+        logger()->log(Logger::MESSAGE,
+            (p ? "(" : "(." + string(1, PATH_SEP))
+            + lexer()->fileName() + "\n", *this, Token::ptr());
+    }
+
+    setMode(VERTICAL);
     Node::ptr document = parseGroup(GROUP_DOCUMENT, false);
     document->setType("document");
     
@@ -1524,6 +2102,11 @@ Node::ptr Parser::parse()
         node = node->child(node->childrenCount()-1);
 
     nextToken(&node->tokens());
+
+    if(!lexer()->fileName().empty()) {
+        logger()->log(Logger::MESSAGE,
+            " )", *this, Token::ptr());
+    }
 
     return document;
 }

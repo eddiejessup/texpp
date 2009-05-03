@@ -1,3 +1,8 @@
+\tracingonline=2
+\tracingcommands=2
+\tracingmacros=2
+\tracingrestores=2
+
 \catcode`{=1
 \catcode`}=2
 
@@ -5,13 +10,17 @@
 \global\outer\long\relax\show\x\par
 
 {
-\outer\let\x=3
+\outer\let\x=2
+\show\x
 
 \global\outer\let\x=3
+\show\x
 
 \let\y=4
+\show\y
 
 \global\let\y=5
+\show\y
 
 \outer\global\chardef\c1=3
 \outer\global\countdef\c2=3
@@ -35,8 +44,11 @@
 \outer\global\hyphenation{aa}
 \outer\global\patterns{aa}
 \outer\global\font\f=cmr10
+\show\f
 \outer\global\f
+\show\f
 \outer\global\hyphenchar\f=11
+\showthe\hyphenchar\f
 
 }
 

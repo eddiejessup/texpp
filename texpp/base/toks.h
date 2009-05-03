@@ -36,7 +36,7 @@ public:
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
     static string toksToString(Parser& parser, const Token::list& toks);
 };

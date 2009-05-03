@@ -26,11 +26,51 @@
 namespace texpp {
 namespace base {
 
+bool Immediate::invokeWithPrefixes(Parser& parser, shared_ptr<Node>,
+                                std::set<string>& prefixes)
+{
+    size_t immediate = prefixes.count(name());
+    if(prefixes.size() != immediate) {
+        parser.logger()->log(Logger::ERROR,
+            "You can't use a prefix with `" +
+            texRepr(&parser) + "'",
+            parser, parser.lastToken());
+    }
+    prefixes.insert(name());
+    return true;
+}
 
-bool Message::invoke(Parser& parser, Node::ptr node)
+bool Write::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    std::set<string> prefixes;
+    return invokeWithPrefixes(parser, node, prefixes);
+}
+
+bool Write::invokeWithPrefixes(Parser& parser,
+                Node::ptr node, std::set<string>& prefixes)
 {
     using boost::lexical_cast;
-    Node::ptr text = parser.parseGeneralText();
+
+    size_t immediate = prefixes.count("\\immediate");
+    if(prefixes.size() != immediate) {
+        parser.logger()->log(Logger::ERROR,
+            "You can't use a prefix with `" +
+            texRepr(&parser) + "'",
+            parser, parser.lastToken());
+    }
+
+    prefixes.clear();
+
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+    int stream = number->value(int(0));
+
+    // TODO: expand text later
+    Parser::Mode oldmode = parser.mode();
+    parser.setMode(Parser::NULLMODE);
+    Node::ptr text = parser.parseGeneralText(true);
+    parser.setMode(oldmode);
+
     node->appendChild("text", text);
     
     string str;
@@ -38,27 +78,47 @@ bool Message::invoke(Parser& parser, Node::ptr node)
         text->child("balanced_text")->value(Token::list_ptr());
 
     if(tokens) {
-        char newlinechar = parser.symbol("newlinechar", int(0));
-        char escapechar = parser.symbol("escapechar", int(0));
+        Token::list tokens_show;
         BOOST_FOREACH(Token::ptr token, *tokens) {
             Command::ptr cmd = parser.symbol(token, Command::ptr());
-            if(cmd) {
-                str += token->texRepr(escapechar);
-                if(token->value().size() > 1 &&
-                        token->value()[0] == '\\') {
-                     int ccode = parser.symbol("catcode" +
-                        lexical_cast<string>(int(token->value()[1])), int(0));
-                    if(ccode == Token::CC_LETTER) str += ' ';
-                }
-            } else if(token->isControl()) {
+            if(token->isControl() && !cmd) {
                 parser.logger()->log(Logger::ERROR,
                     "Undefined control sequence", parser, token);
-            } else if(token->isCharacter(newlinechar)) {
-                str += '\n';
-            } else if(token->isCharacter()) {
-                str += token->value();
+            } else {
+                tokens_show.push_back(token);
             }
         }
+        str = Token::texReprList(tokens_show, &parser);
+    }
+    parser.logger()->log(Logger::WRITE, str, parser, parser.lastToken());
+                //text->child("right_brace")->value(Token::ptr()));
+    return true;
+}
+
+bool Message::invoke(Parser& parser, Node::ptr node)
+{
+    using boost::lexical_cast;
+    // TODO: expand text later
+    //
+    Node::ptr text = parser.parseGeneralText(true);
+    node->appendChild("text", text);
+    
+    string str;
+    Token::list_ptr tokens =
+        text->child("balanced_text")->value(Token::list_ptr());
+
+    if(tokens) {
+        Token::list tokens_show;
+        BOOST_FOREACH(Token::ptr token, *tokens) {
+            Command::ptr cmd = parser.symbol(token, Command::ptr());
+            if(token->isControl() && !cmd) {
+                parser.logger()->log(Logger::ERROR,
+                    "Undefined control sequence", parser, token);
+            } else {
+                tokens_show.push_back(token);
+            }
+        }
+        str = Token::texReprList(tokens_show, &parser);
     }
     parser.logger()->log(Logger::MESSAGE, str, parser, parser.lastToken());
                 //text->child("right_brace")->value(Token::ptr()));

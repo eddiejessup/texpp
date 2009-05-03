@@ -24,12 +24,12 @@ namespace texpp {
 namespace base {
 
 bool Hyphenation::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                        shared_ptr<Node> node, Operation op, bool)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        Node::ptr internal = parser.parseGeneralText();
+        Node::ptr internal = parser.parseGeneralText(true);
         Token::list_ptr tokens = internal->child("balanced_text")
                                     ->value(Token::list_ptr());
         node->setValue(tokens ? *tokens : Token::list());
@@ -37,7 +37,7 @@ bool Hyphenation::invokeOperation(Parser& parser,
         node->appendChild("rvalue", internal);
 
         if(tokens) {
-            Token::list h = parser.symbol(name, Token::list(), true);
+            Token::list h = parser.symbol(name, Token::list());
             std::copy(tokens->begin(), tokens->end(), std::back_inserter(h));
             parser.setSymbol(name, h, true); // global
         }

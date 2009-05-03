@@ -24,49 +24,45 @@
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
+#include <texpp/base/func.h>
+
 namespace texpp {
 namespace base {
 
-class Variable: public Command
+class Variable: public Assignment
 {
 public:
     enum Operation { GET, ASSIGN, ADVANCE, MULTIPLY, DIVIDE, EXPAND };
 
     Variable(const string& name, const any& initValue = any())
-        : Command(name), m_initValue(initValue) {}
+        : Assignment(name), m_initValue(initValue) {}
 
     const any& initValue() const { return m_initValue; }
 
     virtual string parseName(Parser& parser, shared_ptr<Node> node);
     virtual bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
-    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
+                                std::set<string>& prefixes);
 
     template<class Var>
     static Node::ptr tryParseVariableValue(Parser& parser);
-
-    bool checkPrefixes(Parser& parser) {
-        return checkPrefixesGlobal(parser);
-    }
 
 protected:
     any m_initValue;
 };
 
-class ArithmeticCommand: public Command
+class ArithmeticCommand: public Assignment
 {
 public:
     explicit ArithmeticCommand(const string& name, Variable::Operation op)
-        : Command(name), m_op(op) {}
+        : Assignment(name), m_op(op) {}
 
     Variable::Operation operation() const { return m_op; }
 
-    bool invoke(Parser& parser, shared_ptr<Node> node);
-    bool checkPrefixes(Parser& parser) {
-        return checkPrefixesGlobal(parser);
-    }
-
+    bool invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
+                                std::set<string>& prefixes);
 protected:
     Variable::Operation m_op;
 };
@@ -75,11 +71,12 @@ template<class Var>
 class Register: public Var
 {
 public:
-    Register(const string& name, const any& initValue = any(0))
+    Register(const string& name, const any& initValue)
         : Var(name, initValue) {}
 
     string parseName(Parser& parser, shared_ptr<Node> node);
-    bool createDef(Parser& parser, shared_ptr<Token> token, int num);
+    bool createDef(Parser& parser, shared_ptr<Token> token,
+                            int num, bool global);
 };
 
 template<class Var>
@@ -90,7 +87,7 @@ public:
         : Var(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Variable::Operation op);
+                shared_ptr<Node> node, Variable::Operation op, bool global);
 };
 
 template<class Var>
@@ -101,7 +98,7 @@ Node::ptr Variable::tryParseVariableValue(Parser& parser)
 
     Node::ptr node(new Node("variable"));
     node->appendChild("control_token", parser.parseToken());
-    if(var->invokeOperation(parser, node, base::Variable::GET))
+    if(var->invokeOperation(parser, node, base::Variable::GET, false))
         return node;
 
     parser.pushBack(&node->tokens());
@@ -122,11 +119,14 @@ string Register<Var>::parseName(Parser& parser, shared_ptr<Node> node)
         n = 0;
     }
 
-    return this->name().substr(1) + boost::lexical_cast<string>(n);
+    string s = this->name().substr(1) + boost::lexical_cast<string>(n);
+    parser.setSymbolDefault(s, this->m_initValue);
+    return s;
 }
 
 template<class Var>
-bool Register<Var>::createDef(Parser& parser, Token::ptr token, int num)
+bool Register<Var>::createDef(Parser& parser, Token::ptr token,
+                                int num, bool global)
 {
     if(num < 0 || num > 255) {
         parser.logger()->log(Logger::ERROR,
@@ -136,22 +136,22 @@ bool Register<Var>::createDef(Parser& parser, Token::ptr token, int num)
     }
 
     string iname = this->name() + boost::lexical_cast<string>(num);
-    parser.setSymbol(token, Command::ptr(new Var(iname, this->initValue())),
-                        parser.isPrefixActive("\\global"));
+    parser.setSymbol(token,
+        Command::ptr(new Var(iname, this->initValue())), global);
     return true;
 }
 
 template<class Var>
 bool ReadOnlyVariable<Var>::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Variable::Operation op)
+            shared_ptr<Node> node, Variable::Operation op, bool global)
 {
     if(op == Variable::ASSIGN) {
         parser.logger()->log(Logger::ERROR, "You can't use `" +
-            this->texRepr() + "' in " + parser.modeName() + " mode",
+            this->texRepr(&parser) + "' in " + parser.modeName() + " mode",
             parser, parser.lastToken());
         return true;
     } else {
-        return Var::invokeOperation(parser, node, op);
+        return Var::invokeOperation(parser, node, op, global);
     }
 }
 

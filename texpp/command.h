@@ -21,6 +21,7 @@
 
 #include <texpp/common.h>
 
+#include <set>
 #include <boost/lexical_cast.hpp>
 
 namespace texpp {
@@ -40,27 +41,29 @@ public:
     const string& name() const { return m_name; }
 
     virtual string repr() const;
-    virtual string texRepr(char escape = '\\') const;
+    virtual string texRepr(Parser* parser = NULL) const;
 
-    virtual bool checkPrefixes(Parser&);
     virtual bool invoke(Parser&, shared_ptr<Node>) { return true; }
+    virtual bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>&) { return false; }
+
+    virtual bool presetMode(Parser&) { return false; }
 
 protected:
-    bool checkPrefixesGlobal(Parser&);
-    bool checkPrefixesMacro(Parser&);
-
     string m_name;
 };
 
 class TokenCommand: public Command
 {
 public:
+    typedef shared_ptr<TokenCommand> ptr;
+
     TokenCommand(shared_ptr<Token> token)
         : Command("token_command"), m_token(token) {}
 
     const shared_ptr<Token>& token() const { return m_token; }
 
-    string texRepr(char escape = '\\') const;
+    string texRepr(Parser* parser = NULL) const;
     bool invoke(Parser& parser, shared_ptr<Node> node);
 
 protected:
@@ -70,10 +73,46 @@ protected:
 class Macro: public Command
 {
 public:
+    typedef shared_ptr<Macro> ptr;
+
     Macro(const string& name = string()): Command(name) {}
 
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>&) { return true; }
     virtual bool expand(Parser&, shared_ptr<Node>) { return false; }
+
+    static vector<shared_ptr<Token> > stringToTokens(const string& str);
 };
+
+class ConditionalBegin: public Macro
+{
+public:
+    typedef shared_ptr<ConditionalBegin> ptr;
+    ConditionalBegin(const string& name = string()): Macro(name) {}
+    virtual bool evaluate(Parser&, shared_ptr<Node>) { return true; }
+};
+
+class ConditionalOr: public Macro
+{
+public:
+    typedef shared_ptr<ConditionalOr> ptr;
+    ConditionalOr(const string& name = string()): Macro(name) {}
+};
+
+class ConditionalElse: public Macro
+{
+public:
+    typedef shared_ptr<ConditionalElse> ptr;
+    ConditionalElse(const string& name = string()): Macro(name) {}
+};
+
+class ConditionalEnd: public Macro
+{
+public:
+    typedef shared_ptr<ConditionalEnd> ptr;
+    ConditionalEnd(const string& name = string()): Macro(name) {}
+};
+
 
 } // namespace texpp
 

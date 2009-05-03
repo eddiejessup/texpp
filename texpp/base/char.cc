@@ -70,7 +70,8 @@ bool Delimiter::invoke(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
-bool Char::createDef(Parser& parser, shared_ptr<Token> token, int num)
+bool Char::createDef(Parser& parser, shared_ptr<Token> token,
+                            int num, bool global)
 {
     if(num < 0 || num > 255) {
         parser.logger()->log(Logger::ERROR,
@@ -80,12 +81,12 @@ bool Char::createDef(Parser& parser, shared_ptr<Token> token, int num)
     }
 
     std::ostringstream s; s << name() << '"' << std::hex << num;
-    parser.setSymbol(token, Command::ptr(new CharDef(s.str(), num)),
-                        parser.isPrefixActive("\\global"));
+    parser.setSymbol(token, Command::ptr(new CharDef(s.str(), num)), global);
     return true;
 }
 
-bool MathChar::createDef(Parser& parser, shared_ptr<Token> token, int num)
+bool MathChar::createDef(Parser& parser, shared_ptr<Token> token,
+                            int num, bool global)
 {
     if(num < 0 || num > 32767) {
         parser.logger()->log(Logger::ERROR,
@@ -96,13 +97,12 @@ bool MathChar::createDef(Parser& parser, shared_ptr<Token> token, int num)
 
     std::ostringstream s;
     s << name() << '"' << std::hex << std::uppercase << num;
-    parser.setSymbol(token, Command::ptr(new CharDef(s.str(), num)),
-                        parser.isPrefixActive("\\global"));
+    parser.setSymbol(token, Command::ptr(new CharDef(s.str(), num)), global);
     return true;
 }
 
 bool CharDef::invokeOperation(Parser&,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool)
 {
     if(op == GET) {
         node->setValue(m_initValue);

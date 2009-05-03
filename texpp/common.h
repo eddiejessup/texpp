@@ -30,6 +30,12 @@
 
 #include <tr1/unordered_map>
 
+#ifndef WINDOWS
+#define PATH_SEP '/'
+#else
+#define PATH_SEP '\\'
+#endif
+
 #define TEXPP_INT_INV    (int(-0x80000000))
 #define TEXPP_INT_MIN    (int(-0x7fffffff))
 #define TEXPP_INT_MAX    (int( 0x7fffffff))

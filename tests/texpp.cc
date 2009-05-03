@@ -23,8 +23,6 @@
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
-const char banner[] = "This is TeXpp, Version 0.0";
-
 int main(int argc, char** argv)
 {
     std::string fileName;
@@ -42,7 +40,6 @@ int main(int argc, char** argv)
         }
     } else {
         interactive = true;
-        std::cout << banner << std::endl;
         file = &std::cin;
     }
 

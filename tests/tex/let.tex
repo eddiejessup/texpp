@@ -1,3 +1,8 @@
+\tracingonline=2
+\tracingcommands=2
+\tracingmacros=2
+\tracingrestores=2
+
 % control->control
 \let\x\relax
 \show\x
@@ -13,6 +18,13 @@
 % control->token
 \let\x aa \show\x
 \let\x 11 \show\x
+
+% expandable tokens
+\let\string=\relax
+\show\string
+
+\let\x=\number
+\show\x
 
 % active symbol
 \catcode`!=13

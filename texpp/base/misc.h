@@ -42,7 +42,8 @@ class Relax: public Command
 {
 public:
     explicit Relax(const string& name): Command(name) {}
-    bool checkPrefixes(Parser&) { return false; }
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                        std::set<string>&) { return true; }
 };
 
 class End: public Command
@@ -57,6 +58,17 @@ class Par: public Command
 public:
     explicit Par(const string& name): Command(name) {}
     bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
+class Changecase: public Command
+{
+public:
+    explicit Changecase(const string& name, const string& table)
+        : Command(name), m_table(table) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+
+protected:
+    string m_table;
 };
 
 } // namespace base

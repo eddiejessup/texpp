@@ -31,7 +31,8 @@ class Char: public Command
 public:
     explicit Char(const string& name): Command(name) {}
     bool invoke(Parser& parser, shared_ptr<Node> node);
-    bool createDef(Parser& parser, shared_ptr<Token> token, int num);
+    bool createDef(Parser& parser, shared_ptr<Token> token,
+                        int num, bool global);
 };
 
 class MathChar: public Command
@@ -39,7 +40,8 @@ class MathChar: public Command
 public:
     explicit MathChar(const string& name): Command(name) {}
     bool invoke(Parser& parser, shared_ptr<Node> node);
-    bool createDef(Parser& parser, shared_ptr<Token> token, int num);
+    bool createDef(Parser& parser, shared_ptr<Token> token,
+                        int num, bool global);
 };
 
 class Delimiter: public Command
@@ -55,7 +57,7 @@ public:
     explicit CharDef(const string& name, const any& initValue = any(0))
         : InternalInteger(name, initValue) {}
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 } // namespace base

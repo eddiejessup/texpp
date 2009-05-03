@@ -23,35 +23,36 @@
 namespace texpp {
 namespace base {
 
-bool Box::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+bool BoxVariable::invokeOperation(Parser& parser,
+                        shared_ptr<Node> node, Operation op, bool)
 {
+    // TODO: box should not derive from Variable!
     if(op == ASSIGN || op == GET) {
         string name = parseName(parser, node);
-        Token::list tokens = parser.symbol(name, Token::list());
-        node->setValue(tokens);
+        Box box = parser.symbol(name, Box());
+        node->setValue(box);
         return true;
     }
     return false;
 }
 
 bool Lastbox::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                        shared_ptr<Node> node, Operation op, bool global)
 {
     if(parser.mode() == Parser::VERTICAL ||
                 parser.mode() == Parser::MATH) {
         parser.logger()->log(Logger::ERROR,
-            "You can't use `" + texRepr() + "' in " +
+            "You can't use `" + texRepr(&parser) + "' in " +
             parser.modeName() + " mode",
             parser, parser.lastToken());
         return true;
     }
-    return Box::invokeOperation(parser, node, op);
+    return BoxVariable::invokeOperation(parser, node, op, global);
 }
 
 string Vsplit::parseName(Parser& parser, shared_ptr<Node> node)
 {
-    string s = Register<Box>::parseName(parser, node);
+    string s = Register<BoxVariable>::parseName(parser, node);
     static vector<string> kw_to(1, "to");
     Node::ptr to = parser.parseKeyword(kw_to);
     if(!to) {
@@ -63,6 +64,7 @@ string Vsplit::parseName(Parser& parser, shared_ptr<Node> node)
     }
     node->appendChild("to", to);
     node->appendChild("dimen", parser.parseDimen());
+    //parser.setSymbolDefault(s, m_initValue);
     return s;
 }
 
@@ -79,26 +81,29 @@ string Setbox::parseName(Parser& parser, shared_ptr<Node> node)
         n = 0;
     }
 
-    return this->name().substr(1) + boost::lexical_cast<string>(n);
+    string s = this->name().substr(1) + boost::lexical_cast<string>(n);
+    if(s.substr(0, 6) == "setbox")
+        parser.setSymbolDefault(s.substr(3), m_initValue);
+    return s;
 }
 
 bool Setbox::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
-        node->appendChild("filler", parser.parseFiller());
+        node->appendChild("equals", parser.parseOptionalEquals());
+        node->appendChild("filler", parser.parseFiller(true));
 
         Node::ptr rvalue =
-            Variable::tryParseVariableValue<base::Box>(parser);
+            Variable::tryParseVariableValue<base::BoxVariable>(parser);
         if(!rvalue) {
             parser.logger()->log(Logger::ERROR,
                 "A <box> was supposed to be here",
                 parser, parser.lastToken());
             rvalue = Node::ptr(new Node("error_missing_box"));
-            rvalue->setValue(Token::list());
+            rvalue->setValue(Box());
         }
 
         node->appendChild("rvalue", rvalue);
@@ -106,16 +111,14 @@ bool Setbox::invokeOperation(Parser& parser,
 
         if(name.substr(0, 6) == "setbox")
             name = name.substr(3);
-        parser.setSymbol(name, rvalue->valueAny(),
-                    parser.isPrefixActive("\\global"));
-
+        parser.setSymbol(name, rvalue->valueAny(), global);
         return true;
     }
     return false;
 }
 
 bool BoxSpec::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool)
 {
     if(op == ASSIGN || op == GET) {
         string name = parseName(parser, node);
@@ -129,13 +132,18 @@ bool BoxSpec::invokeOperation(Parser& parser,
         Node::ptr spec = parser.parseOptionalKeyword(kw_spec);
         node->appendChild("spec_clause", spec);
 
+        Dimen to;
         if(spec->value(string()) == "to") {
-            node->appendChild("to", parser.parseDimen());
+            Node::ptr toNode = parser.parseDimen();
+            node->appendChild("to", toNode);
+            to = toNode->value(Dimen(0));
         } else if(spec->value(string()) == "spread") {
-            node->appendChild("spread", parser.parseDimen());
+            Node::ptr spreadNode = parser.parseDimen();
+            node->appendChild("spread", spreadNode);
+            to = spreadNode->value(Dimen(0));
         }
 
-        node->appendChild("filler", parser.parseFiller());
+        node->appendChild("filler", parser.parseFiller(true));
 
         Parser::Mode prevMode = parser.mode();
 
@@ -148,12 +156,57 @@ bool BoxSpec::invokeOperation(Parser& parser,
 
         node->appendChild("content", group);
 
+        Box box(m_mode, m_top);
+        box.value = Token::list_ptr(new Token::list());
 
-        node->setValue(group);
+        if(m_mode == Parser::RHORIZONTAL) {
+            box.height = to;
+        } else if(m_mode == Parser::RVERTICAL) {
+            if(m_top) box.skip = to;
+            else box.width = to;
+        }
+
+        // TODO: fill token list!
+
+        node->setValue(box);
         return true;
 
     }
     return false;
+}
+
+bool Rule::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    static vector<string> kw_spec;
+    if(kw_spec.empty()) {
+        kw_spec.push_back("width");
+        kw_spec.push_back("height");
+        kw_spec.push_back("depth");
+    }
+
+    while(true) {
+        Node::ptr spec = parser.parseOptionalKeyword(kw_spec);
+        string name = spec->value(string());
+        node->appendChild("spec_" + name, spec);
+        if(name.empty()) break;
+
+        Node::ptr dimen = parser.parseDimen();
+        node->appendChild("dimen_" + name, dimen);
+    }
+
+    return true;
+}
+
+bool Rule::presetMode(Parser& parser)
+{
+    if(m_mode == Parser::VERTICAL &&
+            parser.mode() != Parser::RHORIZONTAL) {
+        parser.setMode(Parser::HORIZONTAL);
+    } else if(m_mode == Parser::HORIZONTAL &&
+            parser.mode() != Parser::RVERTICAL) {
+        parser.setMode(Parser::VERTICAL);
+    }
+    return true;
 }
 
 } // namespace base
