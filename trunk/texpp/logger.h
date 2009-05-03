@@ -31,14 +31,21 @@ class Logger
 public:
     typedef shared_ptr<Logger> ptr;
 
-    enum Level { MESSAGE = 0, SHOW = 30,
-           ERROR = 40, CRITICAL = 50,
-           UNIMPLEMENTED = 100 };
+    enum Level {
+        MTRACING = 5,
+        TRACING = 10,
+        MESSAGE = 20,
+        WRITE = 25,
+        SHOW = 30,
+        ERROR = 40,
+        CRITICAL = 50,
+        UNIMPLEMENTED = 100
+    };
 
     Logger() {}
     virtual ~Logger() {}
 
-    const string& levelName(Level level) const;
+    //const string& levelName(Level level) const;
     string tokenLines(Parser& parser, shared_ptr<Token> token) const;
 
     virtual bool log(Level level, const string& message,
@@ -54,12 +61,12 @@ public:
 class ConsoleLogger: public Logger
 {
 public:
-    ConsoleLogger() {}
+    ConsoleLogger(): m_linePos(0) {}
     ~ConsoleLogger();
     bool log(Level level, const string& message,
                 Parser& parser, shared_ptr<Token> token);
 protected:
-    int m_atNewline;
+    unsigned int m_linePos;
 };
 
 } // namespace texpp

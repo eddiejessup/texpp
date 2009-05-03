@@ -26,12 +26,12 @@ namespace texpp {
 namespace base {
 
 bool Parshape::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                        shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
 
         Node::ptr countNode = parser.parseNumber();
         node->appendChild("count", countNode);
@@ -50,8 +50,7 @@ bool Parshape::invokeOperation(Parser& parser,
         }
 
         node->setValue(info);
-        parser.setSymbol(name, info,
-            parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, info, global);
         return true;
 
     } else if(op == GET) {

@@ -42,6 +42,7 @@ public:
 
     bool interactive() const { return m_interactive; }
 
+    string jobName() const;
     const string& fileName() const { return m_fileName; }
     size_t lineNo() const { return m_lineNo; }
     const string& line() const { return m_lineOrig; }

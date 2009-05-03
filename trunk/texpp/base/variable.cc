@@ -32,7 +32,7 @@ string Variable::parseName(Parser&, shared_ptr<Node>)
 }
 
 bool Variable::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool)
 {
     if(op == GET) {
         string name = parseName(parser, node);
@@ -43,13 +43,20 @@ bool Variable::invokeOperation(Parser& parser,
     return false;
 }
 
-bool Variable::invoke(Parser& parser, shared_ptr<Node> node)
+bool Variable::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
+                                    std::set<string>& prefixes)
 {
-    return invokeOperation(parser, node, ASSIGN);
+    bool global = checkPrefixes(parser, prefixes);
+    prefixes.clear();
+    return invokeOperation(parser, node, ASSIGN, global);
 }
 
-bool ArithmeticCommand::invoke(Parser& parser, shared_ptr<Node> node)
+bool ArithmeticCommand::invokeWithPrefixes(Parser& parser,
+            shared_ptr<Node> node, std::set<string>& prefixes)
 {
+    bool global = checkPrefixes(parser, prefixes);
+    prefixes.clear();
+
     Node::ptr lvalue = parser.parseToken();
     Token::ptr token = lvalue->value(Token::ptr());
 
@@ -57,18 +64,18 @@ bool ArithmeticCommand::invoke(Parser& parser, shared_ptr<Node> node)
     shared_ptr<Variable> var = parser.symbolCommand<Variable>(token);
     if(var) {
         node->appendChild("lvalue", lvalue);
-        ok = var->invokeOperation(parser, node, m_op);
+        ok = var->invokeOperation(parser, node, m_op, global);
         if(!ok) node->children().pop_back();
     }
 
     if(!ok) {
         string tname;
         Command::ptr cmd = parser.symbol(token, Command::ptr());
-        if(cmd) tname = cmd->texRepr();
-        else tname = token->meaning();
+        if(cmd) tname = cmd->texRepr(&parser);
+        else tname = token->meaning(&parser);
         parser.logger()->log(Logger::ERROR,
             string("You can't use `") + tname +
-            string("' after ") + texRepr(),
+            string("' after ") + texRepr(&parser),
             parser, token);
         node->setValue(int(0));
         node->appendChild("error_wrong_lvalue", lvalue);

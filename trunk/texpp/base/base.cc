@@ -18,6 +18,8 @@
 
 #include <texpp/base/base.h>
 
+#include <texpp/base/conditional.h>
+#include <texpp/base/miscmacros.h>
 #include <texpp/base/misc.h>
 #include <texpp/base/show.h>
 #include <texpp/base/func.h>
@@ -47,14 +49,84 @@ void initSymbols(Parser& parser)
     #define __TEXPP_SET_COMMAND(name, T, ...) \
         parser.setSymbol("\\" name, \
             Command::ptr(new T("\\" name, ##__VA_ARGS__)))
+
+    // conditionals
+    __TEXPP_SET_COMMAND("iftrue", Iftrue);
+    __TEXPP_SET_COMMAND("iffalse", Iffalse);
+
+    __TEXPP_SET_COMMAND("ifnum", Ifnum);
+    __TEXPP_SET_COMMAND("ifdim", Ifdim);
+    __TEXPP_SET_COMMAND("ifodd", Ifodd);
+
+    __TEXPP_SET_COMMAND("ifvmode", Ifmode,
+            (1<<Parser::VERTICAL) | (1<<Parser::RVERTICAL));
+    __TEXPP_SET_COMMAND("ifhmode", Ifmode,
+            (1<<Parser::HORIZONTAL) | (1<<Parser::RHORIZONTAL));
+    __TEXPP_SET_COMMAND("ifmmode", Ifmode,
+            (1<<Parser::MATH) | (1<<Parser::DMATH));
+    __TEXPP_SET_COMMAND("ifinner", Ifmode,
+            (1<<Parser::RVERTICAL) | (1<<Parser::RHORIZONTAL) |
+            (1<<Parser::MATH));
+
+    __TEXPP_SET_COMMAND("ifcat", Ifcat);
+    __TEXPP_SET_COMMAND("if", Ifcat, false);
+
+    __TEXPP_SET_COMMAND("ifx", Ifx);
+
+    __TEXPP_SET_COMMAND("ifvoid", Ifvoid);
+    __TEXPP_SET_COMMAND("ifhbox", Ifhbox);
+    __TEXPP_SET_COMMAND("ifvbox", Ifvbox);
+
+    __TEXPP_SET_COMMAND("ifcase", Ifcase);
+
+    __TEXPP_SET_COMMAND("or", ConditionalOr);
+    __TEXPP_SET_COMMAND("else", ConditionalElse);
+    __TEXPP_SET_COMMAND("fi", ConditionalEnd);
+
+    // macros
+    __TEXPP_SET_COMMAND("number", NumberMacro);
+    __TEXPP_SET_COMMAND("romannumeral", RomannumeralMacro);
+    __TEXPP_SET_COMMAND("string", StringMacro);
+    __TEXPP_SET_COMMAND("meaning", MeaningMacro);
+    __TEXPP_SET_COMMAND("the", TheMacro);
+
+    __TEXPP_SET_COMMAND("expandafter", ExpandafterMacro);
+    __TEXPP_SET_COMMAND("noexpand", NoexpandMacro);
+
+    __TEXPP_SET_COMMAND("fontname", FontnameMacro);
+    __TEXPP_SET_COMMAND("jobname", JobnameMacro);
+
+    __TEXPP_SET_COMMAND("csname", CsnameMacro);
+    __TEXPP_SET_COMMAND("endcsname", EndcsnameMacro);
     
-    __TEXPP_SET_COMMAND("end",        End);
-    __TEXPP_SET_COMMAND("par",        Par);
-    __TEXPP_SET_COMMAND("relax",      Relax);
-    __TEXPP_SET_COMMAND("let",        Let);
-    __TEXPP_SET_COMMAND("show",       Show);
-    __TEXPP_SET_COMMAND("showthe",    ShowThe);
-    __TEXPP_SET_COMMAND("message",    Message);
+    // various commands
+    __TEXPP_SET_COMMAND("end", End);
+    __TEXPP_SET_COMMAND("par", Par);
+    __TEXPP_SET_COMMAND("relax", Relax);
+
+    __TEXPP_SET_COMMAND("uppercase", Changecase, "uccode");
+    __TEXPP_SET_COMMAND("lowercase", Changecase, "lccode");
+
+    __TEXPP_SET_COMMAND("let", Let);
+    __TEXPP_SET_COMMAND("futurelet", Futurelet);
+
+    __TEXPP_SET_COMMAND("def", Def);
+    __TEXPP_SET_COMMAND("gdef", Def, true);
+    __TEXPP_SET_COMMAND("edef", Def, false, true);
+    __TEXPP_SET_COMMAND("xdef", Def, true, true);
+
+    __TEXPP_SET_COMMAND("show", Show);
+    __TEXPP_SET_COMMAND("showthe", ShowThe);
+
+    __TEXPP_SET_COMMAND("immediate", Immediate);
+    __TEXPP_SET_COMMAND("write", Write);
+    __TEXPP_SET_COMMAND("message", Message);
+
+    // horizontal mode
+    __TEXPP_SET_COMMAND("vrule", Rule, Parser::VERTICAL);
+
+    // vertical mode
+    __TEXPP_SET_COMMAND("hrule", Rule, Parser::HORIZONTAL);
 
     // prefixes
     __TEXPP_SET_COMMAND("global", Prefix);
@@ -71,12 +143,12 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("hyphenation", Hyphenation);
     __TEXPP_SET_COMMAND("patterns", Hyphenation);
 
-    __TEXPP_SET_COMMAND("hbox", BoxSpec, Parser::RHORIZONTAL);
-    __TEXPP_SET_COMMAND("vbox", BoxSpec, Parser::RVERTICAL);
-    __TEXPP_SET_COMMAND("vtop", BoxSpec, Parser::RVERTICAL);
+    __TEXPP_SET_COMMAND("hbox", BoxSpec, Parser::RHORIZONTAL, false);
+    __TEXPP_SET_COMMAND("vbox", BoxSpec, Parser::RVERTICAL, false);
+    __TEXPP_SET_COMMAND("vtop", BoxSpec, Parser::RVERTICAL, true);
 
-    __TEXPP_SET_COMMAND("box", Register<Box>);
-    __TEXPP_SET_COMMAND("copy", Register<Box>);
+    __TEXPP_SET_COMMAND("box", Register<BoxVariable>, Box());
+    __TEXPP_SET_COMMAND("copy", Register<BoxVariable>, Box());
     __TEXPP_SET_COMMAND("vsplit", Vsplit);
     __TEXPP_SET_COMMAND("lastbox", Lastbox);
 
@@ -100,14 +172,14 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("catcode", CharcodeVariable, int(0), 0, 15);
     __TEXPP_SET_COMMAND("lccode", CharcodeVariable, int(0), 0, 255);
-    __TEXPP_SET_COMMAND("uscode", CharcodeVariable, int(0), 0, 255);
+    __TEXPP_SET_COMMAND("uccode", CharcodeVariable, int(0), 0, 255);
     __TEXPP_SET_COMMAND("sfcode", CharcodeVariable, int(0), 0, 32767);
     __TEXPP_SET_COMMAND("mathcode", CharcodeVariable, int(0), 0, 32768);
     __TEXPP_SET_COMMAND("delcode", CharcodeVariable, int(0),
                                         TEXPP_INT_MIN, 16777215);
 
     #define __TEXPP_SET_REGISTER(name, T, v) \
-        __TEXPP_SET_COMMAND(name, Register<T>); \
+        __TEXPP_SET_COMMAND(name, Register<T>, v); \
         parser.setSymbol("\\" name "def", \
             Command::ptr(new RegisterDef<Register<T> >("\\" name "def", \
                 static_pointer_cast<Register<T> >( \
@@ -115,13 +187,13 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_REGISTER("count", IntegerVariable, int(0));
 
-    __TEXPP_SET_REGISTER("dimen", DimenVariable, int(0));
-    __TEXPP_SET_REGISTER("ht", BoxDimen, int(0));
-    __TEXPP_SET_REGISTER("wd", BoxDimen, int(0));
-    __TEXPP_SET_REGISTER("dp", BoxDimen, int(0));
+    __TEXPP_SET_REGISTER("dimen", DimenVariable, Dimen(0));
+    __TEXPP_SET_REGISTER("ht", BoxDimen, Dimen(0));
+    __TEXPP_SET_REGISTER("wd", BoxDimen, Dimen(0));
+    __TEXPP_SET_REGISTER("dp", BoxDimen, Dimen(0));
 
-    __TEXPP_SET_REGISTER("skip", GlueVariable, Glue(0));
-    __TEXPP_SET_REGISTER("muskip", MuGlueVariable, Glue(0));
+    __TEXPP_SET_REGISTER("skip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_REGISTER("muskip", MuGlueVariable, Glue(1,0));
     __TEXPP_SET_REGISTER("toks", ToksVariable, Token::list());
 
     #define __TEXPP_SET_CHAR(name, T) \
@@ -149,10 +221,10 @@ void initSymbols(Parser& parser)
             ReadOnlyVariable<InternalInteger>, int(0));
 
     __TEXPP_SET_VARIABLE("lastkern",
-            ReadOnlyVariable<InternalDimen>, int(0));
+            ReadOnlyVariable<InternalDimen>, Dimen(0));
 
     __TEXPP_SET_VARIABLE("lastskip",
-            ReadOnlyVariable<InternalGlue>, Glue(0));
+            ReadOnlyVariable<InternalGlue>, Glue(0,0));
 
     __TEXPP_SET_VARIABLE("endlinechar", IntegerVariable, int(0));
     __TEXPP_SET_VARIABLE("mag", IntegerVariable, int(0));
@@ -211,47 +283,47 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_VARIABLE("showboxdepth", IntegerVariable, int(0));
     __TEXPP_SET_VARIABLE("errorcontextlines", IntegerVariable, int(0));
 
-    __TEXPP_SET_VARIABLE("hfuzz", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("vfuzz", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("overfullrule", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("emergencystretch", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("hsize", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("vsize", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("maxdepth", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("splitmaxdepth", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("boxmaxdepth", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("lineskiplimit", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("delimitershortfall", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("nulldelimiterspace", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("scriptspace", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("mathsurround", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("predisplaysize", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("displaywidth", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("displayindent", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("parindent", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("hangindent", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("hoffset", DimenVariable, int(0));
-    __TEXPP_SET_VARIABLE("voffset", DimenVariable, int(0));
+    __TEXPP_SET_VARIABLE("hfuzz", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("vfuzz", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("overfullrule", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("emergencystretch", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("hsize", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("vsize", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("maxdepth", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("splitmaxdepth", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("boxmaxdepth", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("lineskiplimit", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("delimitershortfall", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("nulldelimiterspace", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("scriptspace", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("mathsurround", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("predisplaysize", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("displaywidth", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("displayindent", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("parindent", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("hangindent", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("hoffset", DimenVariable, Dimen(0));
+    __TEXPP_SET_VARIABLE("voffset", DimenVariable, Dimen(0));
 
-    __TEXPP_SET_VARIABLE("baselineskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("lineskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("parskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("abovedisplayskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("abovedisplayshortskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("belowdisplayskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("belowdisplayshortskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("leftskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("rightskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("topskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("splittopskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("tabskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("spaceskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("xspaceskip", GlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("parfillskip", GlueVariable, Glue(0));
+    __TEXPP_SET_VARIABLE("baselineskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("lineskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("parskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("abovedisplayskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("abovedisplayshortskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("belowdisplayskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("belowdisplayshortskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("leftskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("rightskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("topskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("splittopskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("tabskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("spaceskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("xspaceskip", GlueVariable, Glue(0,0));
+    __TEXPP_SET_VARIABLE("parfillskip", GlueVariable, Glue(0,0));
 
-    __TEXPP_SET_VARIABLE("thinmuskip", MuGlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("medmuskip", MuGlueVariable, Glue(0));
-    __TEXPP_SET_VARIABLE("thickmuskip", MuGlueVariable, Glue(0));
+    __TEXPP_SET_VARIABLE("thinmuskip", MuGlueVariable, Glue(1,0));
+    __TEXPP_SET_VARIABLE("medmuskip", MuGlueVariable, Glue(1,0));
+    __TEXPP_SET_VARIABLE("thickmuskip", MuGlueVariable, Glue(1,0));
 
     __TEXPP_SET_VARIABLE("output", ToksVariable, Token::list());
     __TEXPP_SET_VARIABLE("everypar", ToksVariable, Token::list());
@@ -269,15 +341,15 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("deadcycles", SpecialInteger, int(0));
     __TEXPP_SET_COMMAND("insertpenalties", SpecialInteger, int(0));
 
-    __TEXPP_SET_COMMAND("prevdepth", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagegoal", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagetotal", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagestretch", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagefilstrerch", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagefillstrerch", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagefilllstrerch", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pageshrink", SpecialDimen, int(0));
-    __TEXPP_SET_COMMAND("pagedepth", SpecialDimen, int(0));
+    __TEXPP_SET_COMMAND("prevdepth", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagegoal", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagetotal", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagestretch", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagefilstrerch", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagefillstrerch", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagefilllstrerch", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pageshrink", SpecialDimen, Dimen(0));
+    __TEXPP_SET_COMMAND("pagedepth", SpecialDimen, Dimen(0));
 
     // Ignored commands
     __TEXPP_SET_COMMAND("errorstopmode", IgnoredCommand);
@@ -288,10 +360,6 @@ void initSymbols(Parser& parser)
 
     // Unimplemented commands
 
-    __TEXPP_SET_COMMAND("def", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("gdef", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("edef", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("xdef", UnimplementedCommand);
     __TEXPP_SET_COMMAND("read", UnimplementedCommand);
     __TEXPP_SET_COMMAND("spread", UnimplementedCommand);
 
@@ -303,15 +371,11 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("ignorespaces", UnimplementedCommand);
     __TEXPP_SET_COMMAND("afterassignment", UnimplementedCommand);
     __TEXPP_SET_COMMAND("aftergroup", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("uppercase", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("lowercase", UnimplementedCommand);
     __TEXPP_SET_COMMAND("errmessage", UnimplementedCommand);
     __TEXPP_SET_COMMAND("openin", UnimplementedCommand);
     __TEXPP_SET_COMMAND("closein", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("immediate", UnimplementedCommand);
     __TEXPP_SET_COMMAND("openout", UnimplementedCommand);
     __TEXPP_SET_COMMAND("closeout", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("write", UnimplementedCommand);
     __TEXPP_SET_COMMAND("special", UnimplementedCommand);
     __TEXPP_SET_COMMAND("penalty", UnimplementedCommand);
     __TEXPP_SET_COMMAND("kern", UnimplementedCommand);
@@ -332,8 +396,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("leaders", UnimplementedCommand);
     __TEXPP_SET_COMMAND("cleaders", UnimplementedCommand);
     __TEXPP_SET_COMMAND("xleaders", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("vrule", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("hrule", UnimplementedCommand);
     __TEXPP_SET_COMMAND("moveleft", UnimplementedCommand);
     __TEXPP_SET_COMMAND("moveright", UnimplementedCommand);
     __TEXPP_SET_COMMAND("unvbox", UnimplementedCommand);
@@ -395,17 +457,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("abovewithdelims", UnimplementedCommand);
 
     // unimplemented macros
-    __TEXPP_SET_COMMAND("csname", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("endcsname", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("expandafter", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("noexpand", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("the", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("number", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("romannumeral", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("string", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("fontname", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("jobname", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("meaning", UnimplementedCommand);
     __TEXPP_SET_COMMAND("topmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("firstmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("botmark", UnimplementedCommand);
@@ -415,26 +466,7 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("endinput", UnimplementedCommand);
 
     // conditionals
-    __TEXPP_SET_COMMAND("if", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifcat", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifx", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifcase", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifnum", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifodd", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifhmode", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifvmode", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifmmode", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifinner", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifdim", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifvoid", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifhbox", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("ifvbox", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ifeof", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("iftrue", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("iffalse", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("fi", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("else", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("or", UnimplementedCommand);
 
     // INITEX context
     for(int i=0; i<256; ++i) {

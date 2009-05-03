@@ -99,16 +99,13 @@ void export_node()
 }
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_symbol_overloads, symbol, 1, 2)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Parser_setSymbol_overloads, setSymbol, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Parser_parseGroup_overloads, parseGroup, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
-    Parser_parseGeneralText_overloads, parseGeneralText, 0, 1)
+    Parser_parseGeneralText_overloads, parseGeneralText, 1, 2)
 
 void export_parser()
 {
@@ -140,13 +137,12 @@ void export_parser()
         .def("parseControlSequence", &Parser::parseControlSequence)
 
         // Symbols
-        .def("symbol", (const any& (Parser::*)(const string&, bool) const)(
+        .def("symbol", (const any& (Parser::*)(const string&) const)(
                         &Parser::symbolAny),
-                        return_value_policy<return_by_value>(),
-                        Parser_symbol_overloads())
-        .def("symbol", (const any& (Parser::*)(Token::ptr, bool) const)(
-                        &Parser::symbolAny), return_value_policy<return_by_value>(),
-                        Parser_symbol_overloads())
+                        return_value_policy<return_by_value>())
+        .def("symbol", (const any& (Parser::*)(Token::ptr) const)(
+                        &Parser::symbolAny),
+                        return_value_policy<return_by_value>())
         .def("setSymbol", (void (Parser::*)(const string&, const any&, bool))
                         (&Parser::setSymbol),
                         Parser_setSymbol_overloads())

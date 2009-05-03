@@ -27,26 +27,25 @@ namespace texpp {
 namespace base {
 
 bool InternalToks::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
 
         Node::ptr internal =
             Variable::tryParseVariableValue<base::InternalToks>(parser);
         if(internal) {
             node->setValue(internal->valueAny());
         } else {
-            internal = parser.parseGeneralText();
+            internal = parser.parseGeneralText(false);
             Token::list_ptr tokens = internal->child("balanced_text")
                                         ->value(Token::list_ptr());
             node->setValue(tokens ? *tokens : Token::list());
         }
         node->appendChild("rvalue", internal);
-        parser.setSymbol(name, node->valueAny(),
-                    parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, node->valueAny(), global);
         return true;
 
     } else if(op == EXPAND) {
@@ -56,12 +55,13 @@ bool InternalToks::invokeOperation(Parser& parser,
         return true;
 
     }
-    return Variable::invokeOperation(parser, node, op);
+    return Variable::invokeOperation(parser, node, op, global);
 }
 
 string InternalToks::toksToString(Parser& parser, const Token::list& toks)
 {
-    string str;
+    return Token::texReprList(toks, &parser);
+    /*
     char newlinechar = parser.symbol("newlinechar", int(0));
     char escapechar = parser.symbol("escapechar", int(0));
     BOOST_FOREACH(Token::ptr token, toks) {
@@ -81,6 +81,7 @@ string InternalToks::toksToString(Parser& parser, const Token::list& toks)
         }
     }
     return str;
+    */
 }
 
 } // namespace base

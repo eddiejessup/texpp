@@ -34,7 +34,7 @@ public:
         : Variable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class IntegerVariable: public InternalInteger
@@ -44,7 +44,7 @@ public:
         : InternalInteger(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class CharcodeVariable: public InternalInteger
@@ -56,7 +56,7 @@ public:
 
     string parseName(Parser& parser, shared_ptr<Node> node);
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
     int min() const { return m_min; }
     int max() const { return m_max; }
@@ -73,7 +73,7 @@ public:
         : InternalInteger(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class Spacefactor: public SpecialInteger
@@ -83,7 +83,7 @@ public:
         : SpecialInteger(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 } // namespace base

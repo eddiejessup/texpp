@@ -18,6 +18,7 @@
 
 #include <boost/python.hpp>
 #include <texpp/token.h>
+#include <texpp/parser.h>
 
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 

@@ -26,31 +26,30 @@ namespace texpp {
 namespace base {
 
 bool InternalDimen::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 
         node->setValue(rvalue->valueAny());
-        parser.setSymbol(name, rvalue->valueAny(),
-                    parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, rvalue->valueAny(), global);
         return true;
     } else if(op == EXPAND) {
         string name = parseName(parser, node);
-        int val = parser.symbol(name, int(0));
+        Dimen val = parser.symbol(name, Dimen(0));
         node->setValue(dimenToString(val));
         return true;
     } else {
-        return Variable::invokeOperation(parser, node, op);
+        return Variable::invokeOperation(parser, node, op, global);
     }
 }
 
 bool DimenVariable::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     static vector<string> kw_by(1, "by");
     if(op == ADVANCE) {
@@ -61,11 +60,11 @@ bool DimenVariable::invokeOperation(Parser& parser,
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 
-        int v = parser.symbol(name, int(0));
-        v += rvalue->value(int(0));
+        Dimen v = parser.symbol(name, Dimen(0));
+        v.value += rvalue->value(Dimen(0)).value;
 
         node->setValue(v);
-        parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
+        parser.setSymbol(name, v, global);
         return true;
 
     } else if(op == MULTIPLY || op == DIVIDE) {
@@ -76,16 +75,16 @@ bool DimenVariable::invokeOperation(Parser& parser,
         Node::ptr rvalue = parser.parseNumber();
         node->appendChild("rvalue", rvalue);
 
-        int v = parser.symbol(name, int(0));
+        Dimen v = parser.symbol(name, Dimen(0));
         int rv = rvalue->value(int(0));
         bool overflow = false;
 
         if(op == MULTIPLY) {
-            pair<int,bool> p = safeMultiply(v, rv,  TEXPP_SCALED_MAX);
-            v = p.first; overflow = p.second;
+            pair<int,bool> p = safeMultiply(v.value, rv,  TEXPP_SCALED_MAX);
+            v.value = p.first; overflow = p.second;
         } else if(op == DIVIDE) {
-            pair<int,bool> p = safeDivide(v, rv);
-            v = p.first; overflow = p.second;
+            pair<int,bool> p = safeDivide(v.value, rv);
+            v.value = p.first; overflow = p.second;
         }
 
         if(overflow) {
@@ -94,12 +93,12 @@ bool DimenVariable::invokeOperation(Parser& parser,
                 parser, parser.lastToken());
         } else {
             node->setValue(v);
-            parser.setSymbol(name, v, parser.isPrefixActive("\\global"));
+            parser.setSymbol(name, v, global);
         }
         return true;
     }
 
-    return InternalDimen::invokeOperation(parser, node, op);
+    return InternalDimen::invokeOperation(parser, node, op, global);
 }
 
 tuple<int,int,bool> InternalDimen::multiplyIntFrac(int x, int n, int d)
@@ -115,9 +114,10 @@ tuple<int,int,bool> InternalDimen::multiplyIntFrac(int x, int n, int d)
                     sign * (v % d), false);
 }
 
-string InternalDimen::dimenToString(int n, int o, bool mu)
+string InternalDimen::dimenToString(Dimen nn, int o, bool mu)
 {
     std::ostringstream s;
+    int n = nn.value;
     if(n<0) { s << '-'; n=-n; }
 
     s << n/0x10000 << '.';
@@ -140,12 +140,12 @@ string InternalDimen::dimenToString(int n, int o, bool mu)
 }
 
 bool SpecialDimen::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 
@@ -154,16 +154,16 @@ bool SpecialDimen::invokeOperation(Parser& parser,
         return true;
     } else if(op == GET) {
         string name = parseName(parser, node);
-        const any& ret = parser.symbolAny(name, true); // global
+        const any& ret = parser.symbolAny(name);
         node->setValue(ret.empty() ? m_initValue : ret);
         return true;
     } else if(op == EXPAND) {
         string name = parseName(parser, node);
-        int val = parser.symbol(name, int(0), true); // global
+        Dimen val = parser.symbol(name, Dimen(0));
         node->setValue(dimenToString(val));
         return true;
     } else {
-        return InternalDimen::invokeOperation(parser, node, op);
+        return InternalDimen::invokeOperation(parser, node, op, global);
     }
 }
 
@@ -180,23 +180,25 @@ string BoxDimen::parseName(Parser& parser, shared_ptr<Node> node)
         n = 0;
     }
 
-    return name().substr(1) + boost::lexical_cast<string>(n);
+    string s = name().substr(1) + boost::lexical_cast<string>(n);
+    parser.setSymbolDefault(s, m_initValue);
+    return s;
 }
 
 bool BoxDimen::invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op)
+                shared_ptr<Node> node, Operation op, bool global)
 {
     if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        node->appendChild("equals", parser.parseOptionalEquals(false));
+        node->appendChild("equals", parser.parseOptionalEquals());
         Node::ptr rvalue = parser.parseDimen();
         node->appendChild("rvalue", rvalue);
 
         node->setValue(rvalue->valueAny());
         return true;
     } else {
-        return InternalDimen::invokeOperation(parser, node, op);
+        return InternalDimen::invokeOperation(parser, node, op, global);
     }
 }
 

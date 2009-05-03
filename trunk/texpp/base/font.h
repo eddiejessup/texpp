@@ -35,10 +35,12 @@ struct FontInfo
 
     string selector;
     string file;
+    Dimen at;
 
     FontInfo() {}
-    explicit FontInfo(string s, string f = "nullfont")
-        : selector(s), file(f) {}
+    explicit FontInfo(string s, string f = "nullfont", Dimen a = Dimen(0))
+        : selector(s), file(f), at(a) {}
+
 };
 
 extern shared_ptr<FontInfo> defaultFontInfo;
@@ -49,6 +51,8 @@ public:
     FontVariable(const string& name,
         const any& initValue = any(defaultFontInfo))
         : Variable(name, initValue) {}
+
+    static string fontToString(const FontInfo& fontInfo);
 };
 
 class FontSelector: public FontVariable
@@ -64,9 +68,9 @@ public:
     }
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 
-    string texRepr(char escape = '\\') const;
+    string texRepr(Parser* parser = NULL) const;
 };
 
 class Font: public FontVariable
@@ -77,7 +81,7 @@ public:
         : FontVariable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
 };
 
 class FontFamily: public FontVariable
@@ -88,7 +92,7 @@ public:
         : FontVariable(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
     string parseName(Parser& parser, shared_ptr<Node> node);
 };
 
@@ -108,8 +112,15 @@ public:
         : SpecialDimen(name, initValue) {}
 
     bool invokeOperation(Parser& parser,
-                        shared_ptr<Node> node, Operation op);
+                shared_ptr<Node> node, Operation op, bool global);
     string parseName(Parser& parser, shared_ptr<Node> node);
+};
+
+class FontnameMacro: public Macro
+{
+public:
+    explicit FontnameMacro(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node);
 };
 
 } // namespace base

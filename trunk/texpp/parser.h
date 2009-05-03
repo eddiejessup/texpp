@@ -41,6 +41,10 @@ class Lexer;
 class Logger;
 class Parser;
 
+namespace base {
+    class ExpandafterMacro;
+} // namespace base
+
 class Node
 {
 public:
@@ -91,11 +95,12 @@ protected:
 class Parser
 {
 public:
-    enum Mode { VERTICAL, HORIZONTAL,
+    enum Mode { NULLMODE,
+                VERTICAL, HORIZONTAL,
                 RVERTICAL, RHORIZONTAL,
-                MATH };
+                MATH, DMATH };
     enum GroupType { GROUP_DOCUMENT, GROUP_NORMAL,
-                     GROUP_MATH, GROUP_MMATH,
+                     GROUP_MATH, GROUP_DMATH,
                      GROUP_CUSTOM };
 
     Parser(const string& fileName, std::istream* file,
@@ -112,36 +117,40 @@ public:
     Mode mode() const { return m_mode; }
     void setMode(Mode mode) { m_mode = mode; }
 
-    std::set<string>& activePrefixes() { return m_activePrefixes; }
-    bool isPrefixActive(const string& prefix);
+    bool hasOutput() const { return m_hasOutput; }
+
+    void traceCommand(Token::ptr token, bool expanding = false);
 
     //////// Tokens
     Token::ptr lastToken();
-    Token::ptr peekToken();
-    Token::ptr nextToken(vector< Token::ptr >* tokens = NULL);
+    Token::ptr peekToken(bool expand = true);
+    Token::ptr nextToken(vector< Token::ptr >* tokens = NULL,
+                         bool expand = true);
+    void setNoexpand(Token::ptr token) { m_noexpandToken = token; }
+    void resetNoexpand() { m_noexpandToken.reset(); pushBack(NULL); }
     void pushBack(vector< Token::ptr >* tokens);
 
     void end() { m_end = true; }
 
     //////// Parse helpers
-    bool helperIsImplicitCharacter(Token::CatCode catCode);
+    bool helperIsImplicitCharacter(Token::CatCode catCode,
+                                        bool expand = true);
 
     Node::ptr parseGroup(GroupType groupType,
                                 bool parseBeginEnd = true);
 
     Node::ptr parseCommand(Command::ptr command);
 
-    Node::ptr parseToken();
-    Node::ptr parseMMathToken();
-    Node::ptr parseControlSequence();
-    Node::ptr parseCharacter(const string& type = string("character"));
+    Node::ptr parseToken(bool expand = true);
+    Node::ptr parseDMathToken();
+    Node::ptr parseControlSequence(bool expand = true);
 
     Node::ptr parseOptionalSpaces();
 
     Node::ptr parseKeyword(const vector<string>& keywords);
     Node::ptr parseOptionalKeyword(const vector<string>& keywords);
 
-    Node::ptr parseOptionalEquals(bool oneSpaceAfter);
+    Node::ptr parseOptionalEquals();
     Node::ptr parseOptionalSigns();
     Node::ptr parseNormalInteger();
     Node::ptr parseNumber();
@@ -150,15 +159,17 @@ public:
     Node::ptr parseDimen(bool fil = false, bool mu = false);
     Node::ptr parseGlue(bool mu = false);
 
-    Node::ptr parseFiller();
-    Node::ptr parseBalancedText();
-    Node::ptr parseGeneralText(bool implicit_rbrace = true);
+    Node::ptr parseFiller(bool expand);
+    Node::ptr parseBalancedText(bool expand, int paramCount = -1,
+                                    Token::ptr nameToken = Token::ptr());
+    Node::ptr parseGeneralText(bool expand, bool implicitLbrace = true);
 
     Node::ptr parseFileName();
 
     Node::ptr parseTextWord();
+    Node::ptr parseTextCharacter();
 
-    void processTextCharacter(char ch);
+    void processTextCharacter(char ch, Token::ptr token);
     void resetParagraphIndent();
 
     //////// Symbols
@@ -167,31 +178,33 @@ public:
         if(token && token->isControl())
             setSymbol(token->value(), value, global);
     }
+
+    void setSymbolDefault(const string& name, const any& defaultValue);
     
-    const any& symbolAny(const string& name, bool global = false) const;
-    const any& symbolAny(Token::ptr token, bool global = false) const {
+    const any& symbolAny(const string& name) const;
+    const any& symbolAny(Token::ptr token) const {
         if(!token || !token->isControl()) return EMPTY_ANY;
-        else return symbolAny(token->value(), global);
+        else return symbolAny(token->value());
     }
     
     template<typename T>
-    T symbol(const string& name, T def, bool global = false) {
-        const any& v = symbolAny(name, global);
+    T symbol(const string& name, T def) const {
+        const any& v = symbolAny(name);
         if(v.type() != typeid(T)) return def;
         else return *unsafe_any_cast<T>(&v);
     }
 
     template<typename T>
-    T symbol(Token::ptr token, T def, bool global = false) {
-        const any& v = symbolAny(token, global);
+    T symbol(Token::ptr token, T def) const {
+        const any& v = symbolAny(token);
         if(v.type() != typeid(T)) return def;
         else return *unsafe_any_cast<T>(&v);
     }
 
     template<typename T>
-    shared_ptr<T> symbolCommand(Token::ptr token, bool global = false) {
+    shared_ptr<T> symbolCommand(Token::ptr token) const {
         return dynamic_pointer_cast<T>(
-                symbol(token, Command::ptr(), global));
+                symbol(token, Command::ptr()));
     }
 
     void beginGroup();
@@ -201,13 +214,24 @@ public:
         m_customGroupBegin = true; m_customGroupType = type; beginGroup(); }
     void endCustomGroup() { endGroup(); m_customGroupEnd = true; }
 
+    string escapestr() const {
+        int e = symbol("escapechar", int(0));
+        return e >= 0 && e <= 255 ? string(1, e) : string();
+    }
+
     //////// Others
     shared_ptr<Logger> logger() { return m_logger; }
     shared_ptr<Lexer> lexer() { return m_lexer; }
 
+    static const string& banner() { return BANNER; }
+
 protected:
-    Token::ptr rawNextToken();
+    Node::ptr rawExpandToken(Token::ptr token);
+    Token::ptr rawNextToken(bool expand = true);
+    Node::ptr parseFalseConditional(size_t level,
+                          bool sElse = false, bool sOr = false);
     void setSpecialSymbol(const string& name, const any& value);
+    void init();
 
     typedef std::deque<
         Token::ptr
@@ -217,11 +241,24 @@ protected:
     shared_ptr<Logger>  m_logger;
 
     Token::ptr      m_token;
+    Token::list     m_tokenSource;
+
     Token::ptr      m_lastToken;
+    Token::ptr      m_noexpandToken;
     TokenQueue      m_tokenQueue;
 
     int             m_groupLevel;
     bool            m_end;
+
+    struct ConditionalInfo {
+        bool parsed;
+        bool ifcase;
+        bool active;
+        int  value;
+        int  branch;
+    };
+    vector< ConditionalInfo >
+                    m_conditionals;
 
     typedef unordered_map<
         string, pair< int, any >
@@ -232,21 +269,25 @@ protected:
     > SymbolStack;
 
     SymbolTable     m_symbols;
-    SymbolTable     m_symbolsGlobal;
     SymbolStack     m_symbolsStack;
     vector<size_t>  m_symbolsStackLevels;
 
     size_t          m_lineNo;
     Mode            m_mode;
-    GroupType       m_currentGroupType;
+    Mode            m_prevMode;
 
-    std::set<string> m_activePrefixes;
+    bool            m_hasOutput;
+
+    GroupType       m_currentGroupType;
 
     string  m_customGroupType;
     bool    m_customGroupBegin;
     bool    m_customGroupEnd;
 
     static any EMPTY_ANY;
+    static string BANNER;
+
+    friend class base::ExpandafterMacro;
 };
 
 } // namespace texpp

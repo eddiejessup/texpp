@@ -1,5 +1,12 @@
+\tracingonline=2
+\tracingcommands=2
+\tracingmacros=2
+\tracingrestores=2
+
 \catcode`{=1
 \catcode`}=2
+
+{
 
 \hbox{ abc def }
 \hbox  \relax  \relax { abc def }
@@ -29,6 +36,21 @@
 \vsplit2 4pt
 \vsplit to 4pt
 
+\setbox0=\hbox to 10pt{abc}
+\setbox1=\hbox spread 11pt{abc}
+\setbox2=\vbox to 12pt{abc}
+\setbox3=\vbox spread 13pt{abc}
+\setbox4=\vtop to 14pt{abc}
+\setbox5=\vtop spread 15pt{abc}
+{
+    \setbox0=\hbox{a}
+    \setbox1=\hbox{a}
+    \setbox2=\hbox{a}
+    \setbox3=\hbox{a}
+    \setbox4=\hbox{a}
+    \setbox5=\hbox{a}
+}
+
 \lastbox
 
 \hbox abc }
@@ -39,6 +61,7 @@
 \setbox2=\hbox  \relax  \relax { abc def }
 \setbox2=\hbox to 2pt \relax { abd def }
 \setbox2=\hbox spread 2pt \relax { abd def }
+
 \setbox2=
 \setbox2=\vbox{ abc def }
 \setbox2=\vbox  \relax  \relax { abc def }
@@ -68,5 +91,7 @@ a\setbox2=\lastbox
 \setbox2=\hbox abc }
 \setbox2=\vbox abc }
 \setbox2=\vtop abc }
+
+}
 
 \end

@@ -24,6 +24,7 @@
 
 #include <texpp/parser.h>
 #include <texpp/logger.h>
+#include <texpp/command.h>
 #include <iostream>
 #include <sstream>
 
@@ -36,7 +37,8 @@ public:
                 Parser&, shared_ptr<Token> token) {
         logMessages.push_back(message);
         logPositions.push_back(
-            std::make_pair(token->lineNo(), token->charPos()));
+            token ? std::make_pair(token->lineNo(), token->charPos())
+                  : std::make_pair(size_t(0), size_t(0)));
         return true;
     }
     vector<string> logMessages;
@@ -70,7 +72,9 @@ BOOST_AUTO_TEST_CASE( parser_tokens )
         Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3).repr());*/
 
     vector< Token::ptr > tokens_t;
-    parser->nextToken(&tokens_t);
+    Token::ptr token0 = parser->nextToken(&tokens_t);
+    BOOST_CHECK_EQUAL(token0->repr(),
+        Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3).repr());
 
     BOOST_CHECK_EQUAL(parser->peekToken()->repr(),
         Token(Token::TOK_CHARACTER, Token::CC_SPACE, " ", " ", 1, 3, 4).repr());
@@ -85,8 +89,13 @@ BOOST_AUTO_TEST_CASE( parser_tokens )
         Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3).repr());
 
     tokens_t.clear();
-    parser->nextToken(&tokens_t);
-    parser->nextToken(&tokens_t);
+    token0 = parser->nextToken(&tokens_t);
+    BOOST_CHECK_EQUAL(token0->repr(),
+        Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3).repr());
+
+    token0 = parser->nextToken(&tokens_t);
+    BOOST_CHECK_EQUAL(token0->repr(),
+        Token(Token::TOK_CHARACTER, Token::CC_SPACE, " ", " ", 1, 3, 4).repr());
 
     BOOST_CHECK_EQUAL(parser->peekToken()->repr(),
         Token(Token::TOK_CONTROL, Token::CC_ESCAPE, "\\bb", "\\bb", 2, 2, 5).repr());
@@ -189,44 +198,34 @@ BOOST_AUTO_TEST_CASE( parser_symbols )
     BOOST_CHECK_EQUAL(string("x"), parser->symbol("c", string("x")));
     BOOST_CHECK_EQUAL(2, parser->symbol("b", 2));
 
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0));
 
     parser->beginGroup();
 
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0));
     
     parser->setSymbol("a", 2);
-    BOOST_CHECK_EQUAL(2, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(1, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(2, parser->symbol("a", 0));
 
     parser->setSymbol("a", 3, true);
-    BOOST_CHECK_EQUAL(2, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0));
 
     parser->setSymbol("d", 5);
-    BOOST_CHECK_EQUAL(5, parser->symbol("d", 0, false));
-    BOOST_CHECK_EQUAL(0, parser->symbol("d", 0, true));
+    BOOST_CHECK_EQUAL(5, parser->symbol("d", 0));
 
     parser->setSymbol("e", 7, true);
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, false));
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, true));
+    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0));
 
     parser->setSymbol("e", 8);
-    BOOST_CHECK_EQUAL(8, parser->symbol("e", 0, false));
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, true));
+    BOOST_CHECK_EQUAL(8, parser->symbol("e", 0));
 
     parser->endGroup();
 
-    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0, false));
-    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0, true));
+    BOOST_CHECK_EQUAL(3, parser->symbol("a", 0));
 
-    BOOST_CHECK_EQUAL(0, parser->symbol("d", 0, false));
-    BOOST_CHECK_EQUAL(0, parser->symbol("d", 0, true));
+    BOOST_CHECK_EQUAL(0, parser->symbol("d", 0));
 
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, false));
-    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0, true));
+    BOOST_CHECK_EQUAL(7, parser->symbol("e", 0));
 }
 
 BOOST_AUTO_TEST_CASE( parser_parse )
@@ -237,5 +236,115 @@ BOOST_AUTO_TEST_CASE( parser_parse )
     
     Node::ptr document = parser->parse();
     //std::cout << document->treeRepr();
+}
+
+class TestMacro: public Macro
+{
+public:
+    explicit TestMacro(const string& name): Macro(name) {}
+    bool expand(Parser& parser, shared_ptr<Node> node)
+    {
+        Node::ptr child(new Node("args"));
+        node->appendChild("args", child);
+
+        token1 = parser.peekToken();
+        token1a = parser.nextToken(&child->tokens());
+        token2 = parser.peekToken();
+        token2a = parser.nextToken(&child->tokens());
+
+        parser.peekToken();
+        parser.peekToken();
+
+        node->setValue(stringToTokens("89"));
+        return true;
+    }
+
+    Token::ptr token1, token1a;
+    Token::ptr token2, token2a;
+};
+
+BOOST_AUTO_TEST_CASE( parser_expansion )
+{
+    shared_ptr<Parser> parser = create_parser("\\macro1234");
+    shared_ptr<TestMacro> macro(new TestMacro("\\macro"));
+    parser->setSymbol("\\macro", Command::ptr(macro));
+
+    BOOST_CHECK_EQUAL(parser->lastToken(), Token::ptr());
+
+    Token::list tokens;
+    Token token;
+
+    token = Token(Token::TOK_CHARACTER, Token::CC_OTHER, "8", "", 0, 0, 0);
+    BOOST_CHECK_EQUAL(parser->peekToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(),
+            Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9).repr());
+    BOOST_CHECK_EQUAL(parser->nextToken(&tokens)->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(),
+            Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9).repr());
+
+    BOOST_CHECK_EQUAL(tokens.size(), 2);
+    if(tokens.size() == 2) {
+        BOOST_CHECK_EQUAL(tokens[0]->repr(),
+            Token(Token::TOK_SKIPPED, Token::CC_ESCAPE,
+                "\\macro", "\\macro12", 0, 0, 0).repr());
+        BOOST_CHECK_EQUAL(tokens[1]->repr(), token.repr());
+    }
+
+    BOOST_CHECK(macro->token1); BOOST_CHECK(macro->token1a);
+    BOOST_CHECK(macro->token2); BOOST_CHECK(macro->token2a);
+
+    BOOST_CHECK_EQUAL(macro->token1, macro->token1a);
+    BOOST_CHECK_EQUAL(macro->token2, macro->token2a);
+
+    BOOST_CHECK_EQUAL(macro->token1->repr(),
+        Token(Token::TOK_CHARACTER, Token::CC_OTHER, "1", "1", 1, 6, 7).repr());
+    BOOST_CHECK_EQUAL(macro->token2->repr(),
+        Token(Token::TOK_CHARACTER, Token::CC_OTHER, "2", "2", 1, 7, 8).repr());
+
+    tokens.clear();
+    token = Token(Token::TOK_CHARACTER, Token::CC_OTHER, "9", "", 0, 0, 0);
+    BOOST_CHECK_EQUAL(parser->peekToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(),
+            Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9).repr());
+    BOOST_CHECK_EQUAL(parser->nextToken(&tokens)->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(),
+            Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9).repr());
+
+    BOOST_CHECK_EQUAL(tokens.size(), 1);
+    if(tokens.size() == 1)
+        BOOST_CHECK_EQUAL(tokens[0]->repr(), token.repr());
+
+    tokens.clear();
+    token = Token(Token::TOK_CHARACTER, Token::CC_OTHER, "3", "3", 1, 8, 9);
+    BOOST_CHECK_EQUAL(parser->peekToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->nextToken(&tokens)->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+
+    BOOST_CHECK_EQUAL(tokens.size(), 1);
+    if(tokens.size() == 1)
+        BOOST_CHECK_EQUAL(tokens[0]->repr(), token.repr());
+
+    tokens.clear();
+    token = Token(Token::TOK_CHARACTER, Token::CC_OTHER, "4", "4", 1, 9, 10);
+    BOOST_CHECK_EQUAL(parser->peekToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->nextToken(&tokens)->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+
+    BOOST_CHECK_EQUAL(tokens.size(), 1);
+    if(tokens.size() == 1)
+        BOOST_CHECK_EQUAL(tokens[0]->repr(), token.repr());
+
+    tokens.clear();
+    token = Token(Token::TOK_CHARACTER, Token::CC_SPACE, " ", "", 1, 10, 10);
+    BOOST_CHECK_EQUAL(parser->peekToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->nextToken(&tokens)->repr(), token.repr());
+    BOOST_CHECK_EQUAL(parser->lastToken()->repr(), token.repr());
+
+    BOOST_CHECK_EQUAL(tokens.size(), 1);
+    if(tokens.size() == 1)
+        BOOST_CHECK_EQUAL(tokens[0]->repr(), token.repr());
 }
 
