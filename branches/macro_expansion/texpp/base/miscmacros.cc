@@ -127,18 +127,26 @@ bool ExpandafterMacro::expand(Parser& parser, shared_ptr<Node> node)
     Node::ptr child1 = parser.parseToken(false); // don't expand
     node->appendChild("token1", child1);
 
-    Node::ptr child2 = parser.parseToken(true); // expand
+    Node::ptr child2 = parser.parseToken(false); // expand
     node->appendChild("token2", child2);
 
-    Token::ptr token1 = child1->value(Token::ptr());
-    Token::ptr token2 = child2->value(Token::ptr());
     Token::list tokens;
-    if(token1)
-        tokens.push_back(Token::ptr(new Token(token1->type(),
-                        token1->catCode(), token1->value())));
-    if(token2)
-        tokens.push_back(Token::ptr(new Token(token2->type(),
-                        token2->catCode(), token2->value())));
+    Token::ptr token1 = child1->value(Token::ptr());
+    if(token1) {
+        tokens.push_back(token1->lcopy());
+    }
+
+    Token::ptr token2 = child2->value(Token::ptr());
+    if(token2) {
+        Node::ptr enode = parser.rawExpandToken(token2->lcopy());
+        if(enode) {
+            Token::list newTokens = enode->value(Token::list());
+            tokens.insert(tokens.end(),
+                    newTokens.begin(), newTokens.end());
+        } else {
+            tokens.push_back(token2->lcopy());
+        }
+    }
 
     parser.pushBack(&tokens);
 

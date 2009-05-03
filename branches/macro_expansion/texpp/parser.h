@@ -41,6 +41,10 @@ class Lexer;
 class Logger;
 class Parser;
 
+namespace base {
+    class ExpandafterMacro;
+} // namespace base
+
 class Node
 {
 public:
@@ -222,6 +226,7 @@ public:
     static const string& banner() { return BANNER; }
 
 protected:
+    Node::ptr rawExpandToken(Token::ptr token);
     Token::ptr rawNextToken(bool expand = true);
     Node::ptr parseFalseConditional(size_t level,
                           bool sElse = false, bool sOr = false);
@@ -281,6 +286,8 @@ protected:
 
     static any EMPTY_ANY;
     static string BANNER;
+
+    friend class base::ExpandafterMacro;
 };
 
 } // namespace texpp

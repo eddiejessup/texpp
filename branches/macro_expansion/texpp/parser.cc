@@ -316,6 +316,179 @@ void Parser::endGroup()
     --m_groupLevel;
 }
 
+Node::ptr Parser::rawExpandToken(Token::ptr token)
+{
+    Command::ptr cmd = symbol(token, Command::ptr());
+    Macro::ptr macro = dynamic_pointer_cast<Macro>(cmd);
+
+    if(!macro)
+        return Node::ptr();
+
+    if(m_conditionals.empty() || m_conditionals.back().active)
+        traceCommand(token, true);
+
+    Node::ptr node(new Node("macro"));
+    Node::ptr child(new Node("control_token"));
+    child->tokens().push_back(token);
+    child->setValue(token);
+    node->appendChild("control_sequence", child);
+    bool expanded = true;
+    
+    pushBack(NULL);
+
+    if(dynamic_pointer_cast<ConditionalBegin>(macro)) {
+        ConditionalBegin::ptr condBegin =
+            static_pointer_cast<ConditionalBegin>(macro);
+
+        ConditionalInfo cinfo0;
+        cinfo0.parsed = false;
+        cinfo0.ifcase = false;
+        cinfo0.active = true;
+        cinfo0.value = true;
+        cinfo0.branch = 0;
+
+        m_conditionals.push_back(cinfo0);
+        size_t level = m_conditionals.size();
+
+        // At this point the rawNextToken may be called recursively
+        condBegin->evaluate(*this, node);
+        pushBack(NULL);
+
+        assert(m_conditionals.size() >= level);
+        ConditionalInfo& cinfo = m_conditionals[level-1];
+
+        cinfo.ifcase = node->valueAny().type() == typeid(int);
+        if(cinfo.ifcase) {
+            cinfo.value = node->value(int(0));
+            cinfo.active = cinfo.value == 0;
+        } else {
+            cinfo.value = node->value(bool(false));
+            cinfo.active = cinfo.value;
+        }
+
+        cinfo.branch = 0;
+        cinfo.parsed = true;
+
+        if(symbol("tracingcommands", int(0)) > 1) {
+            string str;
+            if(cinfo.ifcase) {
+                str = "case " +
+                    boost::lexical_cast<string>(cinfo.value);
+            } else {
+                str = cinfo.value ? "true" : "false";
+            }
+            logger()->log(Logger::TRACING, str, *this, token);
+        }
+
+        //m_conditionals.push_back(cinfo);
+
+        if(!cinfo.active) {
+            node->appendChild("false_conditional",
+                    parseFalseConditional(level, true, cinfo.ifcase));
+            pushBack(NULL);
+        }
+
+    } else if(dynamic_pointer_cast<ConditionalOr>(macro)) {
+        if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
+            node->setValue(Token::list(1, token->lcopy()));
+            //m_tokenQueue.push_front(token->lcopy());
+            expanded = false;
+        } else if((m_conditionals.empty() ||
+                m_conditionals.back().branch < 0 ||
+                !m_conditionals.back().ifcase)) {
+            logger()->log(Logger::ERROR,
+                "Extra " + macro->texRepr(this), *this, token);
+        } else {
+            ConditionalInfo& cinfo = m_conditionals.back();
+            ++cinfo.branch;
+            cinfo.active = (cinfo.value == cinfo.branch);
+            if(!cinfo.active) {
+                node->appendChild("false_conditional",
+                    parseFalseConditional(
+                        m_conditionals.size(), true, true));
+                pushBack(NULL);
+            }
+        }
+    } else if(dynamic_pointer_cast<ConditionalElse>(macro)) {
+        if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
+            node->setValue(Token::list(1, token->lcopy()));
+            //m_tokenQueue.push_front(token->lcopy());
+            expanded = false;
+        } else if((m_conditionals.empty() ||
+                m_conditionals.back().branch < 0)) {
+            logger()->log(Logger::ERROR,
+                "Extra " + macro->texRepr(this), *this, token);
+        } else {
+            ConditionalInfo& cinfo = m_conditionals.back();
+            if(cinfo.ifcase) {
+                cinfo.active = cinfo.value < 0 ||
+                                cinfo.value > cinfo.branch;
+            } else {
+                cinfo.active = !cinfo.value;
+            }
+            cinfo.branch = -1;
+            if(!cinfo.active) {
+                node->appendChild("false_conditional",
+                    parseFalseConditional(
+                        m_conditionals.size(), false, false));
+                pushBack(NULL);
+            }
+        }
+    } else if(dynamic_pointer_cast<ConditionalEnd>(macro)) {
+        if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
+            node->setValue(Token::list(1, token->lcopy()));
+            //m_tokenQueue.push_front(token->lcopy());
+            expanded = false;
+        } else if(m_conditionals.empty()) {
+            logger()->log(Logger::ERROR,
+                "Extra " + macro->texRepr(this), *this, token);
+        } else {
+            m_conditionals.pop_back();
+        }
+
+    } else {
+        // At this point the rawNextToken may be called recursively
+        macro->expand(*this, node);
+        pushBack(NULL);
+
+    }
+
+    // TODO: the next lines is horible. Either Node::value should return
+    //       a reference or the value itself should be Token::list_ptr.
+    Token::list newTokens = node->value(Token::list());
+    newTokens.insert(newTokens.begin(),
+                Token::ptr(new Token(
+                    expanded ? Token::TOK_SKIPPED : token->type(),
+                    token->catCode(), token->value(), node->source()))
+            );
+    node->setValue(newTokens);
+
+    return node;
+
+    /*
+    Token::list newTokens = node->value(Token::list());
+    Token::list::reverse_iterator rend = newTokens.rend();
+    for(Token::list::reverse_iterator it = newTokens.rbegin();
+                it != rend; ++it) {
+        assert((*it)->source().empty());
+        m_tokenQueue.push_front(*it);
+    }
+
+    token = Token::ptr(new Token(
+                expanded ? Token::TOK_SKIPPED : token->type(),
+                token->catCode(), token->value(), node->source()));
+    */
+
+#warning TODO: uncomment the following code!
+    /* else if(!cmd) {
+        traceCommand(token, true);
+        logger()->log(Logger::ERROR,
+            "Undefined control sequence", *this, lastToken());
+        token = Token::ptr(new Token(Token::TOK_SKIPPED,
+                    token->catCode(), token->value(), token->source()));
+    }*/
+}
+
 Token::ptr Parser::rawNextToken(bool expand)
 {
     Token::ptr token;
@@ -329,156 +502,18 @@ Token::ptr Parser::rawNextToken(bool expand)
 
     if(token && token->isControl() && expand &&
                 token != m_noexpandToken) {
-
-        Command::ptr cmd = symbol(token, Command::ptr());
-        Macro::ptr macro = dynamic_pointer_cast<Macro>(cmd);
-
-        if(macro) {
-            if(m_conditionals.empty() || m_conditionals.back().active)
-                traceCommand(token, true);
-
-            Node::ptr node(new Node("macro"));
-            Node::ptr child(new Node("control_token"));
-            child->tokens().push_back(token);
-            child->setValue(token);
-            node->appendChild("control_sequence", child);
-            bool expanded = true;
-            
-            pushBack(NULL);
-
-            if(dynamic_pointer_cast<ConditionalBegin>(macro)) {
-                ConditionalBegin::ptr condBegin =
-                    static_pointer_cast<ConditionalBegin>(macro);
-
-                ConditionalInfo cinfo0;
-                cinfo0.parsed = false;
-                cinfo0.ifcase = false;
-                cinfo0.active = true;
-                cinfo0.value = true;
-                cinfo0.branch = 0;
-
-                m_conditionals.push_back(cinfo0);
-                size_t level = m_conditionals.size();
-
-                // At this point the rawNextToken may be called recursively
-                condBegin->evaluate(*this, node);
-                pushBack(NULL);
-
-                assert(m_conditionals.size() >= level);
-                ConditionalInfo& cinfo = m_conditionals[level-1];
-
-                cinfo.ifcase = node->valueAny().type() == typeid(int);
-                if(cinfo.ifcase) {
-                    cinfo.value = node->value(int(0));
-                    cinfo.active = cinfo.value == 0;
-                } else {
-                    cinfo.value = node->value(bool(false));
-                    cinfo.active = cinfo.value;
-                }
-
-                cinfo.branch = 0;
-                cinfo.parsed = true;
-
-                if(symbol("tracingcommands", int(0)) > 1) {
-                    string str;
-                    if(cinfo.ifcase) {
-                        str = "case " +
-                            boost::lexical_cast<string>(cinfo.value);
-                    } else {
-                        str = cinfo.value ? "true" : "false";
-                    }
-                    logger()->log(Logger::TRACING, str, *this, token);
-                }
-
-                //m_conditionals.push_back(cinfo);
-
-                if(!cinfo.active) {
-                    node->appendChild("false_conditional",
-                            parseFalseConditional(level, true, cinfo.ifcase));
-                    pushBack(NULL);
-                }
-
-            } else if(dynamic_pointer_cast<ConditionalOr>(macro)) {
-                if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-                    m_tokenQueue.push_front(token->lcopy());
-                    expanded = false;
-                } else if((m_conditionals.empty() ||
-                        m_conditionals.back().branch < 0 ||
-                        !m_conditionals.back().ifcase)) {
-                    logger()->log(Logger::ERROR,
-                        "Extra " + macro->texRepr(this), *this, token);
-                } else {
-                    ConditionalInfo& cinfo = m_conditionals.back();
-                    ++cinfo.branch;
-                    cinfo.active = (cinfo.value == cinfo.branch);
-                    if(!cinfo.active) {
-                        node->appendChild("false_conditional",
-                            parseFalseConditional(
-                                m_conditionals.size(), true, true));
-                        pushBack(NULL);
-                    }
-                }
-            } else if(dynamic_pointer_cast<ConditionalElse>(macro)) {
-                if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-                    m_tokenQueue.push_front(token->lcopy());
-                    expanded = false;
-                } else if((m_conditionals.empty() ||
-                        m_conditionals.back().branch < 0)) {
-                    logger()->log(Logger::ERROR,
-                        "Extra " + macro->texRepr(this), *this, token);
-                } else {
-                    ConditionalInfo& cinfo = m_conditionals.back();
-                    if(cinfo.ifcase) {
-                        cinfo.active = cinfo.value < 0 ||
-                                        cinfo.value > cinfo.branch;
-                    } else {
-                        cinfo.active = !cinfo.value;
-                    }
-                    cinfo.branch = -1;
-                    if(!cinfo.active) {
-                        node->appendChild("false_conditional",
-                            parseFalseConditional(
-                                m_conditionals.size(), false, false));
-                        pushBack(NULL);
-                    }
-                }
-            } else if(dynamic_pointer_cast<ConditionalEnd>(macro)) {
-                if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-                    m_tokenQueue.push_front(token->lcopy());
-                    expanded = false;
-                } else if(m_conditionals.empty()) {
-                    logger()->log(Logger::ERROR,
-                        "Extra " + macro->texRepr(this), *this, token);
-                } else {
-                    m_conditionals.pop_back();
-                }
-
-            } else {
-                // At this point the rawNextToken may be called recursively
-                macro->expand(*this, node);
-                pushBack(NULL);
-
-                Token::list newTokens = node->value(Token::list());
-                Token::list::reverse_iterator rend = newTokens.rend();
-                for(Token::list::reverse_iterator it = newTokens.rbegin();
-                            it != rend; ++it) {
-                    assert((*it)->source().empty());
-                    m_tokenQueue.push_front(*it);
-                }
+        Node::ptr node = rawExpandToken(token);
+        if(node) {
+            Token::list newTokens = node->value(Token::list());
+            Token::list::reverse_iterator rend = newTokens.rend();
+            Token::list::reverse_iterator it = newTokens.rbegin();
+            for(; it+1 != rend; ++it) {
+                assert((*it)->source().empty());
+                m_tokenQueue.push_front(*it);
             }
-
-            token = Token::ptr(new Token(
-                        expanded ? Token::TOK_SKIPPED : token->type(),
-                        token->catCode(), token->value(), node->source()));
+            if(it != rend)
+                token = *it;
         }
-#warning TODO: uncomment the following code!
-        /* else if(!cmd) {
-            traceCommand(token, true);
-            logger()->log(Logger::ERROR,
-                "Undefined control sequence", *this, lastToken());
-            token = Token::ptr(new Token(Token::TOK_SKIPPED,
-                        token->catCode(), token->value(), token->source()));
-        }*/
     }
 
     return token;

@@ -69,7 +69,7 @@ vector<string> read_log_file(const string& fname)
         } else if(buf[0] == '#' && std::isdigit(buf[1]) &&
                   buf[2] == '<' && buf[3] == '-') {
             n = 1;
-        } else if(std::strncmp(buf, "\\testmacro ", 11) == 0) {
+        } else if(std::strncmp(buf, "\\testmacro", 10) == 0) {
             n = 1;
         }
 
