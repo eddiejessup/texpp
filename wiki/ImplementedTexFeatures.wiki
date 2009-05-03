@@ -2,9 +2,9 @@
 #labels Featured
 
 =Introduction=
-Currently !TeXpp implements all TeX syntax rules from !TeXbook (chapter 24) except \futurelet, \read and <macro assignment>. However not all concrete commands are implemented (the most up-to-date statistic about it can be found in texpp/base/base.cc).
+Currently !TeXpp implements all TeX syntax rules from !TeXbook (chapter 24) except \read. However not all concrete commands are implemented (the most up-to-date statistic about it can be found in texpp/base/base.cc).
 
-Macro expansion is still NOT implemented, but I am working on it.
+TeXpp supports conditionals and macro expansion, however the representation of expanded items in the document tree still needs to be improved.
 
 =Details=
 
@@ -35,7 +35,8 @@ Macro expansion is still NOT implemented, but I am working on it.
 || token lists   || yes ||
 || font expressions || yes ||
 || fontdimen     || *stub* ||
-|| expansion     || *in progress* ||
-|| macros        || *in progress* ||
+|| expansion     || yes ||
+|| macros        || yes ||
+|| conditionals  || yes ||
 || file i/o      || *no* ||
 || ... (TODO)    || *no* ||
