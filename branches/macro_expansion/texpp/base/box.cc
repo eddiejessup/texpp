@@ -199,8 +199,13 @@ bool Rule::invoke(Parser& parser, shared_ptr<Node> node)
 
 bool Rule::presetMode(Parser& parser)
 {
-    parser.setMode(m_mode == Parser::VERTICAL ?
-                    Parser::HORIZONTAL : Parser::VERTICAL);
+    if(m_mode == Parser::VERTICAL &&
+            parser.mode() != Parser::RHORIZONTAL) {
+        parser.setMode(Parser::HORIZONTAL);
+    } else if(m_mode == Parser::HORIZONTAL &&
+            parser.mode() != Parser::RVERTICAL) {
+        parser.setMode(Parser::VERTICAL);
+    }
     return true;
 }
 
