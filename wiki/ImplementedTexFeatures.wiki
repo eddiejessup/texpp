@@ -4,7 +4,7 @@
 =Introduction=
 Currently !TeXpp implements all TeX syntax rules from !TeXbook (chapter 24) except \read. However not all concrete commands are implemented (the most up-to-date statistic about it can be found in texpp/base/base.cc).
 
-TeXpp supports conditionals and macro expansion, however the representation of expanded items in the document tree still needs to be improved.
+!TeXpp supports conditionals and macro expansion, however the representation of expanded items in the document tree still needs to be improved.
 
 =Details=
 
