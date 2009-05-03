@@ -356,7 +356,7 @@ def main(argv):
             result = test_one_file(fname, opt)
             etype = TestError.ET_SUCCESS
         except TestError, e:
-            result = e.result() + ': ' + e.message
+            result = e.result() + ': ' + str(e)
             etype = e.etype
 
         logfile.write(result + '\n')
