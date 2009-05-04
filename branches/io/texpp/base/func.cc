@@ -291,6 +291,7 @@ string UserMacro::texRepr(Parser* parser) const
 
 bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
+    // TODO: implement \long and \outer
     if(parser.symbol("tracingmacros", int(0)) > 0) {
         string str(1, '\n');
         str += Token::texReprControl(name(), &parser, true) +

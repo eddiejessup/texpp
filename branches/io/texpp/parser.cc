@@ -1832,8 +1832,8 @@ Node::ptr Parser::parseFileName()
     while(helperIsImplicitCharacter(Token::CC_SPACE))
         nextToken(&node->tokens());
 
-    while(peekToken()->isCharacterCat(Token::CC_LETTER) ||
-            peekToken()->isCharacterCat(Token::CC_OTHER)) {
+    while(peekToken() && peekToken()->isCharacter() &&
+            !peekToken()->isCharacterCat(Token::CC_SPACE)) {
         Token::ptr letter = nextToken(&node->tokens());
         fileName += letter->value();
     }

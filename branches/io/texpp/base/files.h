@@ -22,9 +22,39 @@
 #include <texpp/common.h>
 #include <texpp/command.h>
 #include <texpp/base/func.h>
+#include <texpp/lexer.h>
 
 namespace texpp {
 namespace base {
+
+struct InFile
+{
+    shared_ptr<Lexer> lexer;
+    explicit InFile(shared_ptr<Lexer> l = shared_ptr<Lexer>())
+        : lexer(l) {}
+};
+
+class Openin: public Command
+{
+public:
+    explicit Openin(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
+class Closein: public Command
+{
+public:
+    explicit Closein(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
+class Read: public Assignment
+{
+public:
+    explicit Read(const string& name): Assignment(name) {}
+    bool invokeWithPrefixes(Parser& parser, shared_ptr<Node>,
+                                    std::set<string>& prefixes);
+};
 
 class Immediate: public Prefix
 {

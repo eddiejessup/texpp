@@ -98,6 +98,11 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("csname", CsnameMacro);
     __TEXPP_SET_COMMAND("endcsname", EndcsnameMacro);
+
+    // I/O
+    __TEXPP_SET_COMMAND("openin", Openin);
+    __TEXPP_SET_COMMAND("closein", Closein);
+    __TEXPP_SET_COMMAND("read", Read);
     
     // various commands
     __TEXPP_SET_COMMAND("end", End);
@@ -360,7 +365,6 @@ void initSymbols(Parser& parser)
 
     // Unimplemented commands
 
-    __TEXPP_SET_COMMAND("read", UnimplementedCommand);
     __TEXPP_SET_COMMAND("spread", UnimplementedCommand);
 
     __TEXPP_SET_COMMAND("begingroup", UnimplementedCommand);
@@ -372,8 +376,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("afterassignment", UnimplementedCommand);
     __TEXPP_SET_COMMAND("aftergroup", UnimplementedCommand);
     __TEXPP_SET_COMMAND("errmessage", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("openin", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("closein", UnimplementedCommand);
     __TEXPP_SET_COMMAND("openout", UnimplementedCommand);
     __TEXPP_SET_COMMAND("closeout", UnimplementedCommand);
     __TEXPP_SET_COMMAND("special", UnimplementedCommand);
