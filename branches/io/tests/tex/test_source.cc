@@ -105,7 +105,7 @@ void test_source(const char* testfile)
                     Logger::ptr(new NullLogger));
     Node::ptr document = parser.parse();
     
-    string source = document->source();
+    string source = document->source(testfile);
 
     vector<string> sourceLines;
     boost::split(sourceLines, source, boost::is_any_of("\n"));

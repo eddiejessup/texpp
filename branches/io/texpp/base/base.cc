@@ -105,6 +105,9 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("openin", Openin);
     __TEXPP_SET_COMMAND("closein", Closein);
     __TEXPP_SET_COMMAND("read", Read);
+
+    __TEXPP_SET_COMMAND("input", Input);
+    __TEXPP_SET_COMMAND("endinput", Endinput);
     
     // various commands
     __TEXPP_SET_COMMAND("end", End);
@@ -469,8 +472,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("botmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("splitfirstmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("splitbotmark", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("input", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("endinput", UnimplementedCommand);
 
     // INITEX context
     for(int i=0; i<256; ++i) {

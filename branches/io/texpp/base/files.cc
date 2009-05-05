@@ -285,6 +285,25 @@ bool Message::invoke(Parser& parser, Node::ptr node)
     return true;
 }
 
+bool Input::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr fnameNode = parser.parseFileName();
+    node->appendChild("file_name", fnameNode);
+
+    string fname = fnameNode->value(string());
+    string fullname = kpsewhich(fname);
+
+    parser.input(fname, fullname);
+
+    return true;
+}
+
+bool Endinput::invoke(Parser& parser, shared_ptr<Node>)
+{
+    parser.endinput();
+    return true;
+}
+
 } // namespace base
 } // namespace texpp
 

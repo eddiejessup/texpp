@@ -72,8 +72,7 @@ bool parseThe(Parser& parser, shared_ptr<Node> node, bool show)
         Token::list toks = node->value(Token::list());
         Token::list toks_copy(toks.size());
         for(size_t n=0; n<toks.size(); ++n) {
-            toks_copy[n] = Token::ptr(new Token(
-                toks[n]->type(), toks[n]->catCode(), toks[n]->value()));
+            toks_copy[n] = toks[n]->lcopy();
         }
         node->setValue(toks_copy);
         return true;

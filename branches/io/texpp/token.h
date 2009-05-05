@@ -60,9 +60,12 @@ public:
 
     Token(Type type = TOK_SKIPPED, CatCode catCode = CC_INVALID,
             const string& value = string(), const string& source = string(),
-            size_t lineNo = 0, size_t charPos = 0, size_t charEnd = 0)
+            size_t lineNo = 0, size_t charPos = 0, size_t charEnd = 0,
+            bool lastInLine = false,
+            shared_ptr<string> fileName = shared_ptr<string>())
         : m_type(type), m_catCode(catCode), m_value(value), m_source(source),
-          m_lineNo(lineNo), m_charPos(charPos), m_charEnd(charEnd) {}
+          m_lineNo(lineNo), m_charPos(charPos), m_charEnd(charEnd),
+          m_lastInLine(lastInLine), m_fileName(fileName) {}
 
     Type type() const { return m_type; }
     void setType(Type type) { m_type = type; }
@@ -101,10 +104,12 @@ public:
         return m_type == TOK_CHARACTER && m_catCode == cat;
     }
 
-    bool isLastInLine() const {
-        char last = m_source.empty() ? 0 : m_source[m_source.size()-1];
-        return last == '\r' || last == '\n';
+    bool isLastInLine() const { return m_lastInLine; }
+
+    const string& fileName() const {
+        return m_fileName ? *m_fileName : EMPTY_STRING;
     }
+    shared_ptr<string> fileNamePtr() const { return m_fileName; }
 
     string texRepr(Parser* parser = NULL) const;
     string meaning(Parser* parser = NULL) const;
@@ -112,7 +117,8 @@ public:
 
     Token::ptr lcopy() const {
         return Token::ptr(new Token(
-            m_type, m_catCode, m_value, "", m_lineNo, m_charEnd, m_charEnd));
+            m_type, m_catCode, m_value, "", m_lineNo, m_charEnd, m_charEnd,
+            m_lastInLine, m_fileName));
     }
 
     static string texReprControl(const string& name,
@@ -129,6 +135,12 @@ protected:
     size_t      m_lineNo;
     size_t      m_charPos;
     size_t      m_charEnd;
+
+    bool        m_lastInLine;
+
+    shared_ptr<string> m_fileName;
+
+    static string EMPTY_STRING;
 };
 
 } // namespace texpp

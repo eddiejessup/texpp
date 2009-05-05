@@ -53,7 +53,7 @@ public:
 
     Node(const string& type): m_type(type) {}
 
-    string source() const;
+    string source(const string& fileName = string()) const;
 
     const string& type() const { return m_type; }
     void setType(const string& type) { m_type = type; }
@@ -135,7 +135,9 @@ public:
     void resetNoexpand() { m_noexpandToken.reset(); pushBack(NULL); }
     void pushBack(vector< Token::ptr >* tokens);
 
+    void input(const string& fileName, const string& fullName);
     void end() { m_end = true; }
+    void endinput() { m_endinput = true; }
 
     //////// Parse helpers
     bool helperIsImplicitCharacter(Token::CatCode catCode,
@@ -231,6 +233,7 @@ public:
     static const string& banner() { return BANNER; }
 
 protected:
+    void endinputNow();
     Node::ptr rawExpandToken(Token::ptr token);
     Token::ptr rawNextToken(bool expand = true);
     Node::ptr parseFalseConditional(size_t level,
@@ -241,6 +244,10 @@ protected:
     typedef std::deque<
         Token::ptr
     > TokenQueue;
+
+    typedef std::vector<
+        pair<shared_ptr<Lexer>, TokenQueue>
+    > InputStack;
 
     shared_ptr<Lexer>   m_lexer;
     shared_ptr<Logger>  m_logger;
@@ -254,6 +261,8 @@ protected:
 
     int             m_groupLevel;
     bool            m_end;
+    bool            m_endinput;
+    bool            m_endinputNow;
 
     struct ConditionalInfo {
         bool parsed;
@@ -290,6 +299,8 @@ protected:
     bool    m_customGroupEnd;
 
     Interaction m_interaction;
+
+    InputStack m_inputStack;
 
     static any EMPTY_ANY;
     static string BANNER;

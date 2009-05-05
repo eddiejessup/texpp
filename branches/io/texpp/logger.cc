@@ -95,6 +95,8 @@ bool ConsoleLogger::log(Level level, const string& message,
     } else if(level <= TRACING) {
         if(m_linePos) r << '\n';
         r << '{' << message << '}' << std::endl;
+    } else if(level <= PLAIN) {
+        r << message;
     } else if(level <= MESSAGE) {
         if(m_linePos) r << ' '; 
         r << message;
@@ -131,7 +133,7 @@ bool ConsoleLogger::log(Level level, const string& message,
     }
 
     string msg(r1.str());
-    std::cout << msg;
+    std::cout << msg << std::flush;
 
     if(parser.lexer()->interactive() && m_linePos) {
         std::cout << std::endl;

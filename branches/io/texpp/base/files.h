@@ -80,6 +80,20 @@ public:
     bool invoke(Parser& parser, shared_ptr<Node> node);
 };
 
+class Input: public Command
+{
+public:
+    explicit Input(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
+class Endinput: public Command
+{
+public:
+    explicit Endinput(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 

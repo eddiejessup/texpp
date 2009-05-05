@@ -25,7 +25,7 @@ namespace texpp {
 Lexer::Lexer(const string& fileName, std::istream* file,
                 bool interactive, bool saveLines)
     : m_fileShared(), m_file(file),
-      m_fileName(fileName),
+      m_fileName(new string(fileName)),
       m_lineNo(0), m_charPos(0), m_charEnd(0),
       m_state(ST_NEW_LINE), m_char(0), m_catCode(Token::CC_NONE),
       m_interactive(interactive), m_saveLines(saveLines)
@@ -37,7 +37,7 @@ Lexer::Lexer(const string& fileName, std::istream* file,
 Lexer::Lexer(const string& fileName, shared_ptr<std::istream> file,
                     bool interactive, bool saveLines)
     : m_fileShared(file), m_file(file.get()),
-      m_fileName(fileName),
+      m_fileName(new string(fileName)),
       m_lineNo(0), m_charPos(0), m_charEnd(0),
       m_state(ST_NEW_LINE), m_char(0), m_catCode(Token::CC_NONE),
       m_interactive(interactive), m_saveLines(saveLines)
@@ -71,7 +71,7 @@ void Lexer::init()
 
 string Lexer::jobName() const
 {
-    string jobname(m_fileName);
+    string jobname(*m_fileName);
 
     size_t n = jobname.rfind(PATH_SEP);
     if(n != jobname.npos)
@@ -191,9 +191,12 @@ inline Token::ptr Lexer::newToken(Token::Type type,
         type, m_catCode, 
         value.empty() && m_char ? string(1, m_char) : value,
         m_lineOrig.substr(std::min(m_charPos, m_lineOrig.size()),
-                    m_charEnd - m_charPos), m_lineNo,
+                    m_charEnd - m_charPos),
+                m_lineNo,
                 std::min(m_charPos, m_lineOrig.size()),
-                std::min(m_charEnd, m_lineOrig.size())));
+                std::min(m_charEnd, m_lineOrig.size()),
+                m_charEnd >= m_lineTex.size(),
+                m_fileName));
 }
 
 Token::ptr Lexer::nextToken()

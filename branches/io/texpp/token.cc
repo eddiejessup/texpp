@@ -73,6 +73,8 @@ const texpp::string catCodeNames[] = {
 
 namespace texpp {
 
+string Token::EMPTY_STRING;
+
 string Token::texReprControl(const string& name,
                         Parser* parser, bool space)
 {

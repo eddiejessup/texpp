@@ -30,6 +30,7 @@
 #include <texpp/base/box.h>
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <climits>
@@ -113,15 +114,16 @@ string Node::treeRepr(size_t indent) const
     return str;
 }
 
-string Node::source() const
+string Node::source(const string& fileName) const
 {
     string str;
     BOOST_FOREACH(Token::ptr token, m_tokens) {
-        str += token->source();
+        if(fileName.empty() || token->fileName() == fileName)
+            str += token->source();
     }
     typedef pair<string, Node::ptr> C;
     BOOST_FOREACH(C c, m_children) {
-        str += c.second->source();
+        str += c.second->source(fileName);
     }
     return str;
 }
@@ -129,6 +131,7 @@ string Node::source() const
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false),
+      m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false),
@@ -141,6 +144,7 @@ Parser::Parser(const string& fileName, std::istream* file,
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
     : m_logger(logger), m_groupLevel(0), m_end(false),
+      m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false),
@@ -461,8 +465,11 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
     newTokens.insert(newTokens.begin(),
                 Token::ptr(new Token(
                     expanded ? Token::TOK_SKIPPED : token->type(),
-                    token->catCode(), token->value(), node->source()))
+                    token->catCode(), token->value(), node->source(),
+                    0, 0, 0,
+                    false, lexer()->fileNamePtr()))
             );
+#warning XXX node can consists from tokens from several files!
     node->setValue(newTokens);
 
     return node;
@@ -487,7 +494,8 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         logger()->log(Logger::ERROR,
             "Undefined control sequence", *this, lastToken());
         token = Token::ptr(new Token(Token::TOK_SKIPPED,
-                    token->catCode(), token->value(), token->source()));
+                    token->catCode(), token->value(), token->source(),
+                    token->isLastInLine(), token->fileNamePtr()));
     }*/
 }
 
@@ -495,11 +503,28 @@ Token::ptr Parser::rawNextToken(bool expand)
 {
     Token::ptr token;
 
-    if(!m_tokenQueue.empty()) {
-        token = m_tokenQueue.front();
-        m_tokenQueue.pop_front();
-    } else {
-        token = m_lexer->nextToken();
+    while(true) {
+        if(!m_tokenQueue.empty()) {
+            token = m_tokenQueue.front();
+            m_tokenQueue.pop_front();
+        } else {
+            if(m_endinputNow) {
+                endinputNow();
+                continue;
+            }
+
+            token = m_lexer->nextToken();
+
+            if(!m_inputStack.empty()) {
+                if(!token) {
+                    endinputNow();
+                    continue;
+                } else if(m_endinput && token->isLastInLine()) {
+                    m_endinputNow = true;
+                }
+            }
+        }
+        break;
     }
 
     if(token && token->isControl() && expand &&
@@ -725,6 +750,44 @@ void Parser::pushBack(vector< Token::ptr >* tokens)
                     std::front_inserter(m_tokenQueue));
     }
     // NOTE: lastToken is NOT changed
+}
+
+void Parser::input(const string& fileName, const string& fullName)
+{
+    // TODO: stop scaning genericText on file boundary
+    // (for example \def\x{...} can't be spread across several files
+    shared_ptr<std::istream> istream(new std::ifstream(fullName.c_str()));
+    if(istream->fail()) {
+        logger()->log(Logger::ERROR,
+            "I can't find file `" + fileName + "'",
+            *this, lastToken());
+        return;
+    }
+
+    m_inputStack.push_back(std::make_pair(m_lexer, m_tokenQueue));
+
+    shared_ptr<Lexer> lexer(new Lexer(fileName, istream));
+    lexer->setEndlinechar(m_lexer->endlinechar());
+    for(int n=0; n<256; ++n) {
+        lexer->setCatcode(n, m_lexer->catcode(n));
+    }
+
+    m_lexer = lexer;
+    m_tokenQueue.clear();
+
+    logger()->log(Logger::MESSAGE, "(" + fullName, *this, lastToken());
+}
+
+void Parser::endinputNow()
+{
+    if(m_inputStack.empty())
+        return;
+    m_lexer = m_inputStack.back().first;
+    m_tokenQueue = m_inputStack.back().second;
+    m_inputStack.pop_back();
+    m_endinput = false;
+    m_endinputNow = false;
+    logger()->log(Logger::PLAIN, ")", *this, lastToken());
 }
 
 void Parser::processTextCharacter(char ch, Token::ptr token)
@@ -1828,7 +1891,15 @@ Node::ptr Parser::parseGeneralText(bool expand, bool implicitLbrace)
 
 Node::ptr Parser::parseFileName()
 {
+    static bool parsing = false;
+
     Node::ptr node(new Node("file_name"));
+
+    if(parsing)
+        return node;
+    else
+        parsing = true;
+
     string fileName;
 
     while(helperIsImplicitCharacter(Token::CC_SPACE))
@@ -1846,6 +1917,8 @@ Node::ptr Parser::parseFileName()
     node->setValue(fileName);
 
     resetNoexpand();
+
+    parsing = false;
     return node;
 }
 
