@@ -155,7 +155,7 @@ bool Lexer::nextChar()
     }
 
     m_char = m_lineTex[m_charPos];
-    m_catCode = Token::CatCode(m_catcode[int(m_char)]);
+    m_catCode = Token::CatCode(m_catcode[(unsigned char) m_char]);
 
     if(m_catCode == Token::CC_SUPER && m_charPos+2 < m_lineTex.size() &&
                                     m_lineTex[m_charPos+1] == m_char) {
@@ -173,7 +173,7 @@ bool Lexer::nextChar()
             m_char = (m_lineTex[m_charPos+2] + 64) & 0x7f;
             m_charEnd = m_charPos+3;
         }
-        m_catCode = Token::CatCode(m_catcode[int(m_char)]);
+        m_catCode = Token::CatCode(m_catcode[(unsigned char) m_char]);
     } else {
         m_charEnd = m_charPos + 1;
     }
