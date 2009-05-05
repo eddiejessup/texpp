@@ -95,6 +95,8 @@ protected:
 class Parser
 {
 public:
+    enum Interaction { ERRORSTOPMODE, SCROLLMODE,
+                       NONSTOPMODE, BATCHMODE };
     enum Mode { NULLMODE,
                 VERTICAL, HORIZONTAL,
                 RVERTICAL, RHORIZONTAL,
@@ -110,6 +112,9 @@ public:
     Parser(const string& fileName, shared_ptr<std::istream> file,
             bool interactive = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
+
+    Interaction interaction() const { return m_interaction; }
+    void setInteraction(Interaction intr) { m_interaction = intr; }
 
     Node::ptr parse();
 
@@ -283,6 +288,8 @@ protected:
     string  m_customGroupType;
     bool    m_customGroupBegin;
     bool    m_customGroupEnd;
+
+    Interaction m_interaction;
 
     static any EMPTY_ANY;
     static string BANNER;

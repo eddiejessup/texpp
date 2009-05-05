@@ -20,6 +20,7 @@
 #include <texpp/base/dimen.h>
 #include <texpp/base/func.h>
 #include <texpp/base/box.h>
+#include <texpp/base/files.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
@@ -282,6 +283,27 @@ bool Ifcase::evaluate(Parser& parser, shared_ptr<Node> node)
     Node::ptr number = parser.parseNumber();
     node->appendChild("number", number);
     node->setValue(int(number->value(int(0))));
+    return true;
+}
+
+bool Ifeof::evaluate(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+
+    int stream = number->value(int(0));
+    if(stream < 0 || stream > 15) {
+        parser.logger()->log(Logger::ERROR,
+                "Bad number (" + boost::lexical_cast<string>(stream) + ")",
+                parser, parser.lastToken());
+        stream = 0;
+    }
+
+    InFile infile = 
+       parser.symbol("read" + boost::lexical_cast<string>(stream), InFile());
+
+    bool res = !bool(infile.lexer);
+    node->setValue(res);
     return true;
 }
 

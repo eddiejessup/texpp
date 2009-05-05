@@ -83,6 +83,12 @@ bool Changecase::invoke(Parser& parser, shared_ptr<Node> node)
     return true;
 }
 
+bool SetInteraction::invoke(Parser& parser, shared_ptr<Node>)
+{
+    parser.setInteraction(m_interaction);
+    return true;
+}
+
 } // namespace base
 } // namespace texpp
 

@@ -78,6 +78,8 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("ifvbox", Ifvbox);
 
     __TEXPP_SET_COMMAND("ifcase", Ifcase);
+    
+    __TEXPP_SET_COMMAND("ifeof", Ifeof);
 
     __TEXPP_SET_COMMAND("or", ConditionalOr);
     __TEXPP_SET_COMMAND("else", ConditionalElse);
@@ -356,11 +358,14 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("pageshrink", SpecialDimen, Dimen(0));
     __TEXPP_SET_COMMAND("pagedepth", SpecialDimen, Dimen(0));
 
+    // interaction
+    __TEXPP_SET_COMMAND("errorstopmode", SetInteraction,
+                                            Parser::ERRORSTOPMODE);
+    __TEXPP_SET_COMMAND("scrollmode", SetInteraction, Parser::SCROLLMODE);
+    __TEXPP_SET_COMMAND("nonstopmode", SetInteraction, Parser::NONSTOPMODE);
+    __TEXPP_SET_COMMAND("batchmode", SetInteraction, Parser::BATCHMODE);
+
     // Ignored commands
-    __TEXPP_SET_COMMAND("errorstopmode", IgnoredCommand);
-    __TEXPP_SET_COMMAND("scrollmode", IgnoredCommand);
-    __TEXPP_SET_COMMAND("nonstopmode", IgnoredCommand);
-    __TEXPP_SET_COMMAND("batchmode", IgnoredCommand);
     __TEXPP_SET_COMMAND("dump", IgnoredCommand);
 
     // Unimplemented commands
@@ -466,9 +471,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("splitbotmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("input", UnimplementedCommand);
     __TEXPP_SET_COMMAND("endinput", UnimplementedCommand);
-
-    // conditionals
-    __TEXPP_SET_COMMAND("ifeof", UnimplementedCommand);
 
     // INITEX context
     for(int i=0; i<256; ++i) {

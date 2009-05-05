@@ -49,13 +49,18 @@ bool Openin::invoke(Parser& parser, shared_ptr<Node> node)
 
     string fname = fnameNode->value(string());
     string fullname = kpsewhich(fname);
-    //std::cout << "name: " << fnameNode->value(string()) << std::endl;
-    //std::cout << "fullname: " << fullname << std::endl;
+    //std::cout << "name: '" << fnameNode->value(string()) << "'\n";
+    //std::cout << "fullname: '" << fullname << "'\n";
 
     shared_ptr<std::istream> istream(new std::ifstream(fullname.c_str()));
-    shared_ptr<Lexer> lexer(new Lexer(fname, istream));
-    parser.setSymbol("read" + boost::lexical_cast<string>(stream),
-                                InFile(lexer), true);
+    if(!istream->fail()) {
+        shared_ptr<Lexer> lexer(new Lexer(fname, istream));
+        parser.setSymbol("read" + boost::lexical_cast<string>(stream),
+                                    InFile(lexer), true);
+    } else {
+        parser.setSymbol("read" + boost::lexical_cast<string>(stream),
+                                    InFile(), true);
+    }
 
     return true;
 }
@@ -118,6 +123,14 @@ bool Read::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
 
     shared_ptr<Lexer> lexer = infile.lexer;
     if(!lexer) {
+        if(parser.interaction() == Parser::NONSTOPMODE ||
+                parser.interaction() == Parser::BATCHMODE) {
+            parser.logger()->log(Logger::ERROR,
+                    "Emergency stop",
+                    parser, parser.lastToken());
+            parser.end();
+            return true;
+        }
         // read from terminal
         std::cin.sync();
         lexer = shared_ptr<Lexer>(new Lexer("", NULL));
@@ -138,13 +151,14 @@ bool Read::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     int level = 0;
     Token::ptr token;
     while(token = lexer->nextToken()) {
-        if(level >= 0) {
+        if(token->isCharacterCat(Token::CC_BGROUP))
+            ++level;
+        else if(token->isCharacterCat(Token::CC_EGROUP))
+            --level;
+
+        if(level >= 0)
             tokens->push_back(token->lcopy());
-            if(token->isCharacterCat(Token::CC_BGROUP))
-                ++level;
-            else if(token->isCharacterCat(Token::CC_EGROUP))
-                --level;
-        }
+
         if(level <= 0 && token->isLastInLine())
             break;
     }

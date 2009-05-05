@@ -21,6 +21,7 @@
 
 #include <texpp/common.h>
 #include <texpp/command.h>
+#include <texpp/parser.h>
 
 namespace texpp {
 namespace base {
@@ -69,6 +70,17 @@ public:
 
 protected:
     string m_table;
+};
+
+class SetInteraction: public Command
+{
+public:
+    explicit SetInteraction(const string& name, Parser::Interaction intr)
+        : Command(name), m_interaction(intr) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+
+protected:
+    Parser::Interaction m_interaction;
 };
 
 } // namespace base

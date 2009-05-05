@@ -85,6 +85,9 @@ std::string kpsewhich(const std::string& fname)
         return std::string();
     }
 
+    if(!fullname.empty() && fullname[fullname.size()-1] == '\n')
+        fullname.resize(fullname.size()-1);
+
     return fullname;
 }
 

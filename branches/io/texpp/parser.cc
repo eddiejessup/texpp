@@ -131,7 +131,8 @@ Parser::Parser(const string& fileName, std::istream* file,
     : m_logger(logger), m_groupLevel(0), m_end(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
-      m_customGroupBegin(false), m_customGroupEnd(false)
+      m_customGroupBegin(false), m_customGroupEnd(false),
+      m_interaction(ERRORSTOPMODE)
 {
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
     init();
@@ -142,7 +143,8 @@ Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
     : m_logger(logger), m_groupLevel(0), m_end(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
-      m_customGroupBegin(false), m_customGroupEnd(false)
+      m_customGroupBegin(false), m_customGroupEnd(false),
+      m_interaction(ERRORSTOPMODE)
 {
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
     init();
@@ -1837,6 +1839,9 @@ Node::ptr Parser::parseFileName()
         Token::ptr letter = nextToken(&node->tokens());
         fileName += letter->value();
     }
+
+    if(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&node->tokens());
 
     node->setValue(fileName);
 
