@@ -101,7 +101,8 @@ public:
                 VERTICAL, HORIZONTAL,
                 RVERTICAL, RHORIZONTAL,
                 MATH, DMATH };
-    enum GroupType { GROUP_DOCUMENT, GROUP_NORMAL,
+    enum GroupType { GROUP_DOCUMENT,
+                     GROUP_NORMAL, GROUP_SUPER,
                      GROUP_MATH, GROUP_DMATH,
                      GROUP_CUSTOM };
 
@@ -143,8 +144,7 @@ public:
     bool helperIsImplicitCharacter(Token::CatCode catCode,
                                         bool expand = true);
 
-    Node::ptr parseGroup(GroupType groupType,
-                                bool parseBeginEnd = true);
+    Node::ptr parseGroup(GroupType groupType);
 
     Node::ptr parseCommand(Command::ptr command);
 

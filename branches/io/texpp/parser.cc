@@ -1976,31 +1976,17 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
     }
 }
 
-Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
+Node::ptr Parser::parseGroup(GroupType groupType)
 {
     GroupType prevGroupType = m_currentGroupType;
     m_currentGroupType = groupType;
 
     Node::ptr node(new Node("group"));
-    if(parseBeginEnd) {
-        bool ok = false;
-        if(groupType == GROUP_NORMAL) {
-            if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
-                node->appendChild("group_begin", parseToken());
-                ok = true;
-            }
-        } else if(groupType == GROUP_MATH) {
-            if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                node->appendChild("group_begin", parseToken());
-                ok = true;
-            }
-        } else if(groupType == GROUP_DMATH) {
-            if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                node->appendChild("group_begin", parseDMathToken());
-                ok = true;
-            }
-        }
-        if(!ok) {
+
+    if(groupType == GROUP_NORMAL) {
+        if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
+            node->appendChild("group_begin", parseToken());
+        } else {
             logger()->log(Logger::ERROR, "Missing { inserted",
                                     *this, lastToken());
             Node::ptr left_brace(new Node("token"));
@@ -2008,61 +1994,88 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
                         Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
             node->appendChild("group_begin", left_brace);
         }
+    } else if(groupType == GROUP_MATH) {
+        if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
+            node->appendChild("group_begin", parseToken());
+        } else {
+            assert(false);
+        }
+    } else if(groupType == GROUP_DMATH) {
+        if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
+            node->appendChild("group_begin", parseDMathToken());
+        } else {
+            assert(false);
+        }
     }
 
     while(true) {
         if(!peekToken()) {
-            if(parseBeginEnd) {
-                // TODO: report error
+            if(groupType == GROUP_MATH) {
                 Node::ptr group_end(new Node("group_end"));
-                node->appendChild("group_end", parseToken());
-                //endGroup();
+                node->appendChild("group_end", group_end);
+                logger()->log(Logger::ERROR,
+                        "Missing $ inserted", *this, lastToken());
+            } else if(groupType == GROUP_DMATH) {
+                Node::ptr group_end(new Node("group_end"));
+                node->appendChild("group_end", group_end);
+                logger()->log(Logger::ERROR,
+                        "Missing $ inserted", *this, lastToken());
+                logger()->log(Logger::ERROR,
+                        "Display math should end with $$",
+                        *this, lastToken());
             }
             break;
         }
 
         traceCommand(peekToken());
 
-        if(parseBeginEnd) {
+        if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
             if(groupType == GROUP_NORMAL) {
-                if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
-                    node->appendChild("group_end", parseToken());
-                    //endGroup();
-                    break;
+                node->appendChild("group_end", parseToken());
+                break;
+            } else {
+                string msg;
+                switch(groupType) {
+                    case GROUP_DOCUMENT:
+                        msg = "Too many }'s";
+                        break;
+                    case GROUP_MATH:
+                    case GROUP_DMATH:
+                        msg = "Extra }, or forgotten $";
+                        break;
+                    case GROUP_SUPER:
+                        msg = "Extra }, or forgotten " +
+                            Token(Token::TOK_CONTROL, Token::CC_ESCAPE,
+                                    "\\endgroup").texRepr();
+                        break;
+                    default:
+                        msg = "Extra }";
                 }
-            } else if(groupType == GROUP_MATH) {
-                if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                    node->appendChild("group_end", parseToken());
-                    //endGroup();
-                    break;
-                }
-            } else if(groupType == GROUP_DMATH) {
-                if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                    Node::ptr dmathNode = parseDMathToken();
-                    node->appendChild("group_end", dmathNode);
-                    if(helperIsImplicitCharacter(Token::CC_SPACE, false)) {
-                        nextToken(&dmathNode->tokens());
-                    }
-
-                    //endGroup();
-                    break;
-                }
+                logger()->log(Logger::ERROR, msg, *this, lastToken());
+                node->appendChild("ignored_egroup", parseToken());
             }
-        }
 
-        if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
+        } else if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
             beginGroup();
             node->appendChild("group", parseGroup(GROUP_NORMAL));
             endGroup();
 
-        } else if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
-            m_logger->log(Logger::ERROR, "Too many }'s",
-                                            *this, lastToken());
-            node->appendChild("error_extra_group_end",
-                                            parseToken());
-
         } else if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
+
+            if(groupType == GROUP_MATH) {
+                node->appendChild("group_end", parseToken());
+                break;
+            } else if(groupType == GROUP_DMATH) {
+                Node::ptr dmathNode = parseDMathToken();
+                node->appendChild("group_end", dmathNode);
+                if(helperIsImplicitCharacter(Token::CC_SPACE, false)) {
+                    nextToken(&dmathNode->tokens());
+                }
+                break;
+            }
+
             Node::ptr t1 = parseToken();
+
             // XXX: is the following line correct ?
             bool dmath = helperIsImplicitCharacter(Token::CC_MATHSHIFT,
                                                                 false);
@@ -2086,7 +2099,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             }
 
             node->appendChild("inline_math", parseGroup(
-                    dmath ? GROUP_DMATH : GROUP_MATH, true));
+                    dmath ? GROUP_DMATH : GROUP_MATH));
 
             setMode(prevMode);
 
@@ -2132,7 +2145,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             if(m_customGroupBegin) {
                 m_customGroupBegin = false;
                 string type = m_customGroupType;
-                Node::ptr customGroup = parseGroup(GROUP_CUSTOM, false);
+                Node::ptr customGroup = parseGroup(GROUP_CUSTOM);
                 customGroup->setType(type);
                 customGroup->children().insert(customGroup->children().begin(),
                                                 std::make_pair("control", cmdNode));
@@ -2170,7 +2183,7 @@ Node::ptr Parser::parse()
     }
 
     setMode(VERTICAL);
-    Node::ptr document = parseGroup(GROUP_DOCUMENT, false);
+    Node::ptr document = parseGroup(GROUP_DOCUMENT);
     document->setType("document");
     
     // Some skipped tokens may still exists even when

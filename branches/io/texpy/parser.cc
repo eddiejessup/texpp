@@ -108,7 +108,6 @@ PARSER_OVERLOADS(peekToken, 0, 1)
 PARSER_OVERLOADS(nextToken, 0, 2)
 
 PARSER_OVERLOADS(parseToken, 0, 1)
-PARSER_OVERLOADS(parseGroup, 1, 2)
 PARSER_OVERLOADS(parseGeneralText, 1, 2)
 PARSER_OVERLOADS(parseControlSequence, 0, 1)
 
@@ -137,8 +136,7 @@ void export_parser()
         // parse*
         .def("parseToken", &Parser::parseToken,
             Parser_parseToken_overloads())
-        .def("parseGroup", &Parser::parseGroup,
-            Parser_parseGroup_overloads())
+        .def("parseGroup", &Parser::parseGroup)
         .def("parseGeneralText", &Parser::parseGeneralText,
             Parser_parseGeneralText_overloads())
         .def("parseControlSequence", &Parser::parseControlSequence,
