@@ -132,6 +132,9 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("write", Write);
     __TEXPP_SET_COMMAND("message", Message);
 
+    __TEXPP_SET_COMMAND("begingroup", Begingroup);
+    __TEXPP_SET_COMMAND("endgroup", Endgroup);
+
     // horizontal mode
     __TEXPP_SET_COMMAND("vrule", Rule, Parser::VERTICAL);
 
@@ -375,8 +378,6 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("spread", UnimplementedCommand);
 
-    __TEXPP_SET_COMMAND("begingroup", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("endgroup", UnimplementedCommand);
     __TEXPP_SET_COMMAND("showbox", UnimplementedCommand);
     __TEXPP_SET_COMMAND("showlists", UnimplementedCommand);
     __TEXPP_SET_COMMAND("shipout", UnimplementedCommand);

@@ -113,6 +113,17 @@ public:
     ConditionalEnd(const string& name = string()): Macro(name) {}
 };
 
+class Begingroup: public Command
+{
+public:
+    Begingroup(const string& name = string()): Command(name) {}
+};
+
+class Endgroup: public Command
+{
+public:
+    Endgroup(const string& name = string()): Command(name) {}
+};
 
 } // namespace texpp
 

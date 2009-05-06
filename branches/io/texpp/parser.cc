@@ -1994,33 +1994,32 @@ Node::ptr Parser::parseGroup(GroupType groupType)
                         Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
             node->appendChild("group_begin", left_brace);
         }
+    } else if(groupType == GROUP_SUPER) {
+        assert(symbolCommand<Begingroup>(peekToken()));
+        node->appendChild("group_begin", parseToken());
     } else if(groupType == GROUP_MATH) {
-        if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-            node->appendChild("group_begin", parseToken());
-        } else {
-            assert(false);
-        }
+        assert(helperIsImplicitCharacter(Token::CC_MATHSHIFT));
+        node->appendChild("group_begin", parseToken());
     } else if(groupType == GROUP_DMATH) {
-        if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-            node->appendChild("group_begin", parseDMathToken());
-        } else {
-            assert(false);
-        }
+        assert(helperIsImplicitCharacter(Token::CC_MATHSHIFT));
+        node->appendChild("group_begin", parseDMathToken());
     }
 
     while(true) {
         if(!peekToken()) {
-            if(groupType == GROUP_MATH) {
+            if(groupType == GROUP_MATH || groupType == GROUP_DMATH) {
                 Node::ptr group_end(new Node("group_end"));
+                Token::ptr t(new Token(Token::TOK_CHARACTER,
+                            Token::CC_MATHSHIFT, "$"));
+                group_end->setValue(t);
+                traceCommand(t);
+
                 node->appendChild("group_end", group_end);
                 logger()->log(Logger::ERROR,
                         "Missing $ inserted", *this, lastToken());
-            } else if(groupType == GROUP_DMATH) {
-                Node::ptr group_end(new Node("group_end"));
-                node->appendChild("group_end", group_end);
-                logger()->log(Logger::ERROR,
-                        "Missing $ inserted", *this, lastToken());
-                logger()->log(Logger::ERROR,
+
+                if(groupType == GROUP_DMATH)
+                    logger()->log(Logger::ERROR,
                         "Display math should end with $$",
                         *this, lastToken());
             }
@@ -2046,7 +2045,7 @@ Node::ptr Parser::parseGroup(GroupType groupType)
                     case GROUP_SUPER:
                         msg = "Extra }, or forgotten " +
                             Token(Token::TOK_CONTROL, Token::CC_ESCAPE,
-                                    "\\endgroup").texRepr();
+                                    "\\endgroup").texRepr(this);
                         break;
                     default:
                         msg = "Extra }";
@@ -2128,21 +2127,67 @@ Node::ptr Parser::parseGroup(GroupType groupType)
             Command::ptr cmd = symbol(peekToken(), Command::ptr());
             Node::ptr cmdNode;
             if(cmd) {
-                Mode prevMode = mode();
-                cmd->presetMode(*this);
-                if(mode() != prevMode)
-                    traceCommand(peekToken());
+                if(dynamic_pointer_cast<Begingroup>(cmd)) {
+                    beginGroup();
+                    node->appendChild("group", parseGroup(GROUP_SUPER));
+                    endGroup();
+                } else if(dynamic_pointer_cast<Endgroup>(cmd)) {
+                    if(groupType == GROUP_SUPER) {
+                        node->appendChild("group_end", parseToken());
+                        break;
+                    } else {
+                        string msg;
+                        Token::ptr t;
+                        if(groupType == GROUP_NORMAL) {
+                            msg = "Missing } inserted";
+                            t = Token::ptr(new Token(Token::TOK_CHARACTER,
+                                        Token::CC_EGROUP, "}"));
+                        } else if(groupType == GROUP_MATH) {
+                            msg = "Missing $ inserted";
+                            t = Token::ptr(new Token(Token::TOK_CHARACTER,
+                                        Token::CC_MATHSHIFT, "$"));
+                        } else if(groupType == GROUP_DMATH) {
+                            logger()->log(Logger::ERROR, 
+                                   "Missing $ inserted", *this, lastToken());
+                            msg = "Display math should end with $$";
+                            t = Token::ptr(new Token(Token::TOK_CHARACTER,
+                                        Token::CC_MATHSHIFT, "$"));
+                        } else {
+                            msg = "Extra " + Token(Token::TOK_CONTROL,
+                                Token::CC_ESCAPE, "\\endgroup").texRepr(this);
+                        }
+                        logger()->log(Logger::ERROR, msg, *this, lastToken());
+                        if(groupType != GROUP_DOCUMENT) {
+                            Node::ptr group_end(new Node("group_end"));
+                            if(t) {
+                                group_end->setValue(t);
+                                traceCommand(t);
+                            }
 
-                cmdNode = parseCommand(cmd);
-                //node->appendChild("control", parseCommand(cmd));
+                            node->appendChild("group_end", group_end);
+                            break;
+                        } else {
+                            node->appendChild("extra_endgroup", parseToken());
+                        }
+                    }
+                } else {
+                    Mode prevMode = mode();
+                    cmd->presetMode(*this);
+                    if(mode() != prevMode)
+                        traceCommand(peekToken());
+
+                    cmdNode = parseCommand(cmd);
+                    node->appendChild("control", cmdNode);
+                }
             } else {
                 m_logger->log(Logger::ERROR, "Undefined control sequence",
                                                 *this, lastToken());
                 cmdNode = parseToken();
+                node->appendChild("error_unknown_control", cmdNode);
                 //node->appendChild("error_unknown_control",
                 //                                parseToken());
             }
-            if(m_customGroupBegin) {
+            /*if(m_customGroupBegin) {
                 m_customGroupBegin = false;
                 string type = m_customGroupType;
                 Node::ptr customGroup = parseGroup(GROUP_CUSTOM);
@@ -2159,7 +2204,7 @@ Node::ptr Parser::parseGroup(GroupType groupType)
                 m_customGroupEnd = false;
                 if(groupType == GROUP_CUSTOM)
                     break;
-            }
+            }*/
 
         } else {
             node->appendChild("other_token", parseToken());
