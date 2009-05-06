@@ -298,8 +298,10 @@ bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
     // TODO: implement \long and \outer
     if(parser.symbol("tracingmacros", int(0)) > 0) {
+        Token::ptr t = node->child("control_sequence")->value(Token::ptr());
         string str(1, '\n');
-        str += Token::texReprControl(name(), &parser, true) +
+        str += //Token::texReprControl(name(), &parser, true) +
+                Token::texReprControl(t ? t->value():name(), &parser, true) +
                 Token::texReprList(*m_params, &parser) + "->" +
                 Token::texReprList(*m_definition, &parser);
         parser.logger()->log(Logger::MTRACING,

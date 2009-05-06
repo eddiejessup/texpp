@@ -270,7 +270,7 @@ void Parser::endGroup()
                 str += "undefined";
             } else if(value.type() == typeid(Command::ptr)) {
                 Command::ptr cmd = *unsafe_any_cast<Command::ptr>(&value);
-                string r = cmd->texRepr(this);
+                string r = cmd ? cmd->texRepr(this) : "undefined";
                 std::remove_copy(r.begin(), r.end(),
                         std::back_inserter(str), '\n');
             } else if(value.type() == typeid(base::ParshapeInfo)) {
@@ -1295,7 +1295,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit =
+        iunit =
             base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
@@ -1305,7 +1305,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit =
+        iunit =
             base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
@@ -1315,7 +1315,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit =
+        iunit =
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);

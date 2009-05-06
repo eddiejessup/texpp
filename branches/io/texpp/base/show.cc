@@ -22,10 +22,12 @@
 #include <texpp/base/glue.h>
 #include <texpp/base/toks.h>
 #include <texpp/base/font.h>
+#include <texpp/base/func.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace {
 
@@ -47,6 +49,10 @@ bool parseMeaning(Parser& parser, shared_ptr<Node> node, bool show)
         Command::ptr c = parser.symbol(token, Command::ptr());
         if(c) str += c->texRepr(&parser);
         else str += "undefined";
+
+        // XXX: the following line
+        if(!show && dynamic_pointer_cast<base::UserMacro>(c))
+            boost::algorithm::erase_all(str, "\n");
     }
 
     if(show)

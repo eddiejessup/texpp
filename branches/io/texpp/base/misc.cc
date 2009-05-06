@@ -72,6 +72,12 @@ bool Changecase::invoke(Parser& parser, shared_ptr<Node> node)
                         int(0));
                 if(newCode > 0 && newCode <= 255)
                     newToken->setValue(string(1, char(newCode)));
+            } else if(token->isControl() && token->value().substr(0,1)=="`"){
+                int newCode = parser.symbol(m_table +
+                        boost::lexical_cast<string>(int(token->value()[1])),
+                        int(0));
+                if(newCode > 0 && newCode <= 255)
+                    newToken->setValue("`" + string(1, char(newCode)));
             }
 
             newTokens.push_back(newToken);
