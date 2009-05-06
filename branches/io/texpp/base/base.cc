@@ -108,6 +108,13 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("input", Input);
     __TEXPP_SET_COMMAND("endinput", Endinput);
+
+    __TEXPP_SET_COMMAND("immediate", Immediate);
+    __TEXPP_SET_COMMAND("openout", Openout);
+    __TEXPP_SET_COMMAND("closeout", Closeout);
+    __TEXPP_SET_COMMAND("write", Write);
+
+    __TEXPP_SET_COMMAND("message", Message);
     
     // various commands
     __TEXPP_SET_COMMAND("end", End);
@@ -127,10 +134,6 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("show", Show);
     __TEXPP_SET_COMMAND("showthe", ShowThe);
-
-    __TEXPP_SET_COMMAND("immediate", Immediate);
-    __TEXPP_SET_COMMAND("write", Write);
-    __TEXPP_SET_COMMAND("message", Message);
 
     __TEXPP_SET_COMMAND("begingroup", Begingroup);
     __TEXPP_SET_COMMAND("endgroup", Endgroup);
@@ -385,8 +388,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("afterassignment", UnimplementedCommand);
     __TEXPP_SET_COMMAND("aftergroup", UnimplementedCommand);
     __TEXPP_SET_COMMAND("errmessage", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("openout", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("closeout", UnimplementedCommand);
     __TEXPP_SET_COMMAND("special", UnimplementedCommand);
     __TEXPP_SET_COMMAND("penalty", UnimplementedCommand);
     __TEXPP_SET_COMMAND("kern", UnimplementedCommand);

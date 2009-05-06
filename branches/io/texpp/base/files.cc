@@ -200,6 +200,103 @@ bool Immediate::invokeWithPrefixes(Parser& parser, shared_ptr<Node>,
     return true;
 }
 
+bool Openout::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    std::set<string> prefixes;
+    return invokeWithPrefixes(parser, node, prefixes);
+}
+
+bool Openout::invokeWithPrefixes(Parser& parser,
+                Node::ptr node, std::set<string>& prefixes)
+{
+    size_t immediate = prefixes.count("\\immediate");
+    if(prefixes.size() != immediate) {
+        parser.logger()->log(Logger::ERROR,
+            "You can't use a prefix with `" +
+            texRepr(&parser) + "'",
+            parser, parser.lastToken());
+    }
+
+    prefixes.clear();
+
+    if(!immediate) {
+        parser.logger()->log(Logger::ERROR,
+                "Openout without immediate is NOT supported",
+                parser, parser.lastToken());
+    }
+
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+    int stream = number->value(int(0));
+
+    if(stream < 0 || stream > 15) {
+        parser.logger()->log(Logger::ERROR,
+                "Bad number (" + boost::lexical_cast<string>(stream) + ")",
+                parser, parser.lastToken());
+        stream = 0;
+    }
+
+    node->appendChild("equals", parser.parseOptionalEquals());
+
+    Node::ptr fnameNode = parser.parseFileName();
+    node->appendChild("file_name", fnameNode);
+
+    string fname = fnameNode->value(string());
+
+    shared_ptr<std::ostream> ostream(new std::ofstream(fname.c_str()));
+    if(!ostream->fail()) {
+        parser.setSymbol("write" + boost::lexical_cast<string>(stream),
+                                    OutFile(ostream), true);
+    } else {
+        parser.setSymbol("write" + boost::lexical_cast<string>(stream),
+                                    OutFile(), true);
+    }
+
+    return true;
+}
+
+bool Closeout::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    std::set<string> prefixes;
+    return invokeWithPrefixes(parser, node, prefixes);
+}
+
+bool Closeout::invokeWithPrefixes(Parser& parser,
+                Node::ptr node, std::set<string>& prefixes)
+{
+    size_t immediate = prefixes.count("\\immediate");
+    if(prefixes.size() != immediate) {
+        parser.logger()->log(Logger::ERROR,
+            "You can't use a prefix with `" +
+            texRepr(&parser) + "'",
+            parser, parser.lastToken());
+    }
+
+    prefixes.clear();
+
+    if(!immediate) {
+        parser.logger()->log(Logger::ERROR,
+                "Closeout without immediate is NOT supported",
+                parser, parser.lastToken());
+    }
+
+    Node::ptr number = parser.parseNumber();
+    node->appendChild("number", number);
+    int stream = number->value(int(0));
+
+    if(stream < 0 || stream > 15) {
+        parser.logger()->log(Logger::ERROR,
+                "Bad number (" + boost::lexical_cast<string>(stream) + ")",
+                parser, parser.lastToken());
+        stream = 0;
+    }
+
+    parser.setSymbol("write" + boost::lexical_cast<string>(stream),
+                                OutFile(), true);
+
+    return true;
+}
+
 bool Write::invoke(Parser& parser, shared_ptr<Node> node)
 {
     std::set<string> prefixes;
@@ -220,6 +317,12 @@ bool Write::invokeWithPrefixes(Parser& parser,
     }
 
     prefixes.clear();
+
+    if(!immediate) {
+        parser.logger()->log(Logger::ERROR,
+                "Write without immediate is NOT supported",
+                parser, parser.lastToken());
+    }
 
     Node::ptr number = parser.parseNumber();
     node->appendChild("number", number);
@@ -250,8 +353,17 @@ bool Write::invokeWithPrefixes(Parser& parser,
         }
         str = Token::texReprList(tokens_show, &parser);
     }
-    parser.logger()->log(Logger::WRITE, str, parser, parser.lastToken());
+
+    OutFile outfile = 
+        parser.symbol("write" + boost::lexical_cast<string>(stream), OutFile());
+
+    if(outfile.ostream) {
+        (*outfile.ostream) << str << std::endl;
+    } else {
+        parser.logger()->log(Logger::WRITE, str, parser, parser.lastToken());
                 //text->child("right_brace")->value(Token::ptr()));
+    }
+
     return true;
 }
 

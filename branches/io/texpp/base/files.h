@@ -34,6 +34,13 @@ struct InFile
         : lexer(l) {}
 };
 
+struct OutFile
+{
+    shared_ptr<std::ostream> ostream;
+    explicit OutFile(shared_ptr<std::ostream> s = shared_ptr<std::ostream>())
+        : ostream(s) {}
+};
+
 class Openin: public Command
 {
 public:
@@ -62,6 +69,24 @@ public:
     explicit Immediate(const string& name = string()): Prefix(name) {}
     bool invokeWithPrefixes(Parser& parser, shared_ptr<Node>,
                                     std::set<string>& prefixes);
+};
+
+class Openout: public Command
+{
+public:
+    explicit Openout(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>& prefixes);
+};
+
+class Closeout: public Command
+{
+public:
+    explicit Closeout(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+    bool invokeWithPrefixes(Parser&, shared_ptr<Node>,
+                                std::set<string>& prefixes);
 };
 
 class Write: public Command

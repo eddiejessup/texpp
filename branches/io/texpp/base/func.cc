@@ -227,8 +227,13 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
                     Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
     }
 
+    // TODO: implement correct list expansion
+    int prevInEdef = parser.symbol("in_edef", int(0));
+    parser.setSymbol("in_edef", int(m_expand || prevInEdef), true);
     Node::ptr definition =
         parser.parseBalancedText(m_expand, paramNum, ltoken);
+    parser.setSymbol("in_edef", prevInEdef, true);
+
     if(m_expand) {
         Token::list_ptr tokens = definition->value(Token::list_ptr());
         Token::list_ptr tokens_copy(new Token::list());

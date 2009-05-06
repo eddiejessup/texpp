@@ -761,6 +761,12 @@ void Parser::input(const string& fileName, const string& fullName)
         logger()->log(Logger::ERROR,
             "I can't find file `" + fileName + "'",
             *this, lastToken());
+
+        logger()->log(Logger::ERROR,
+            "Emergency stop",
+            *this, lastToken());
+
+        end();
         return;
     }
 
@@ -1946,9 +1952,9 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
         string str;
         if(token->isControl()) {
             Command::ptr cmd = symbol(token, Command::ptr());
-            if(dynamic_pointer_cast<base::TheMacro>(cmd)
-                    && mode() == NULLMODE) {
-                return;
+            if(dynamic_pointer_cast<base::TheMacro>(cmd) &&
+                (mode() == NULLMODE || symbol("in_edef", int(0)))) {
+                    return;
             } else if(dynamic_pointer_cast<Macro>(cmd)) {
                 if(expanding) {
                     if(tracingcommands < 2) return;
