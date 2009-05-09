@@ -228,11 +228,14 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     }
 
     // TODO: implement correct list expansion
-    int prevInEdef = parser.symbol("in_edef", int(0));
-    parser.setSymbol("in_edef", int(m_expand || prevInEdef), true);
+    //int prevInEdef = parser.symbol("in_edef", int(0));
+    //parser.setSymbol("in_edef", int(m_expand || prevInEdef), true);
+    bool prevInEdef = parser.inEdef();
+    parser.setInEdef(m_expand || prevInEdef);
     Node::ptr definition =
         parser.parseBalancedText(m_expand, paramNum, ltoken);
-    parser.setSymbol("in_edef", prevInEdef, true);
+    parser.setInEdef(prevInEdef);
+    //parser.setSymbol("in_edef", prevInEdef, true);
 
     /*
     if(m_expand) {

@@ -132,9 +132,15 @@ public:
     Token::ptr peekToken(bool expand = true);
     Token::ptr nextToken(vector< Token::ptr >* tokens = NULL,
                          bool expand = true);
-    void setNoexpand(Token::ptr token) { m_noexpandToken = token; }
-    void resetNoexpand() { m_noexpandToken.reset(); pushBack(NULL); }
+
     void pushBack(vector< Token::ptr >* tokens);
+
+    //void setNoexpand(Token::ptr token) { m_noexpandToken = token; }
+    void addNoexpand(Token::ptr token) { m_noexpandTokens.insert(token); }
+    void resetNoexpand() { m_noexpandTokens.clear(); pushBack(NULL); }
+
+    void setInEdef(bool inEdef) { m_inEdef = inEdef; }
+    bool inEdef() const { return m_inEdef; }
 
     void input(const string& fileName, const string& fullName);
     void end() { m_end = true; }
@@ -216,6 +222,7 @@ public:
 
     void beginGroup();
     void endGroup();
+    int groupLevel() const { return m_groupLevel; }
 
     void beginCustomGroup(const string& type) {
         m_customGroupBegin = true; m_customGroupType = type; beginGroup(); }
@@ -245,6 +252,10 @@ protected:
         Token::ptr
     > TokenQueue;
 
+    typedef std::set<
+        Token::ptr
+    > TokenSet;
+
     typedef std::vector<
         pair<shared_ptr<Lexer>, TokenQueue>
     > InputStack;
@@ -256,10 +267,11 @@ protected:
     Token::list     m_tokenSource;
 
     Token::ptr      m_lastToken;
-    Token::ptr      m_noexpandToken;
+    TokenSet        m_noexpandTokens;
     TokenQueue      m_tokenQueue;
 
     int             m_groupLevel;
+    bool            m_inEdef;
     bool            m_end;
     bool            m_endinput;
     bool            m_endinputNow;

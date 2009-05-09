@@ -28,6 +28,7 @@
 #include <texpp/base/parshape.h>
 #include <texpp/base/font.h>
 #include <texpp/base/box.h>
+#include <texpp/base/misc.h>
 
 #include <iostream>
 #include <fstream>
@@ -36,6 +37,7 @@
 #include <climits>
 #include <cassert>
 #include <iterator>
+#include <ctime>
 
 #include <boost/foreach.hpp>
 
@@ -55,11 +57,7 @@ const texpp::string modeNames[] = {
 
 namespace texpp {
 
-string Parser::BANNER = "This is TeXpp, Version 0.0"
-#ifdef __GNUC__
-    "  " __DATE__ " " __TIME__
-#endif
-    "\n";
+string Parser::BANNER = "This is TeXpp, Version 0.0";
 
 using base::Dimen;
 
@@ -130,8 +128,8 @@ string Node::source(const string& fileName) const
 
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_end(false),
-      m_endinput(false), m_endinputNow(false),
+    : m_logger(logger), m_groupLevel(0), m_inEdef(false),
+      m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false),
@@ -143,8 +141,8 @@ Parser::Parser(const string& fileName, std::istream* file,
 
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_end(false),
-      m_endinput(false), m_endinputNow(false),
+    : m_logger(logger), m_groupLevel(0), m_inEdef(false),
+      m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
       m_customGroupBegin(false), m_customGroupEnd(false),
@@ -162,7 +160,15 @@ void Parser::init()
                         shared_ptr<Logger>(new NullLogger);
 
     base::initSymbols(*this);
-    m_logger->log(Logger::MESSAGE, BANNER, *this, Token::ptr());
+    
+    string banner = BANNER;
+    if(!lexer()->interactive()) {
+        char t[256];
+        time_t tt = std::time(NULL);
+        std::strftime(t, sizeof(t), " %e %b %Y %H:%M", std::localtime(&tt));
+        banner += t;
+    }
+    m_logger->log(Logger::WRITE, banner, *this, Token::ptr());
 }
 
 const string& Parser::modeName() const
@@ -303,6 +309,9 @@ void Parser::endGroup()
                 } else {
                     str += "void";
                 }
+            } else if(value.type() == typeid(Token::list)) {
+                str += Token::texReprList(
+                        *unsafe_any_cast<Token::list>(&value), this);
             } else {
                 str += reprAny(value);
             }
@@ -540,7 +549,7 @@ Token::ptr Parser::rawNextToken(bool expand)
     }
 
     if(token && token->isControl() && expand &&
-                token != m_noexpandToken) {
+                m_noexpandTokens.count(token) == 0) {
         Node::ptr node = rawExpandToken(token);
         if(node) {
             Token::list newTokens = node->value(Token::list());
@@ -1855,8 +1864,9 @@ Node::ptr Parser::parseFiller(bool expand)
             nextToken(&filler->tokens(), expand);
             continue;
         } else if(peekToken(expand)->isControl()) {
-            Command::ptr obj = symbol(peekToken(expand), Command::ptr());
-            if(obj && obj->name() == "\\relax") {
+            //Command::ptr obj = symbol(peekToken(expand), Command::ptr());
+            Command::ptr cmd = symbolCommand<base::Relax>(peekToken(expand));
+            if(cmd) {
                 nextToken(&filler->tokens(), expand);
                 continue;
             }
@@ -1967,7 +1977,7 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
         if(token->isControl()) {
             Command::ptr cmd = symbol(token, Command::ptr());
             if(dynamic_pointer_cast<base::TheMacro>(cmd) &&
-                (mode() == NULLMODE || symbol("in_edef", int(0)))) {
+                (mode() == NULLMODE || m_inEdef)) {
                     return;
             } else if(dynamic_pointer_cast<Macro>(cmd)) {
                 if(expanding) {

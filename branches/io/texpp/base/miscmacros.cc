@@ -104,7 +104,7 @@ bool CsnameMacro::expand(Parser& parser, shared_ptr<Node> node)
 
     if(!parser.symbol(name, Command::ptr())) {
         // TODO: Do not create new "\\relax", use exising one instead!
-        parser.setSymbol(name, Command::ptr(new Relax("\\relax")));
+        parser.setSymbol(name, parser.symbolAny("relax"));
     }
 
     node->setValue(Token::list(1, Token::ptr(
@@ -159,7 +159,7 @@ bool NoexpandMacro::expand(Parser& parser, shared_ptr<Node> node)
     node->appendChild("token", child);
 
     Token::ptr token = child->value(Token::ptr())->lcopy();
-    parser.setNoexpand(token);
+    parser.addNoexpand(token);
     node->setValue(Token::list(1, token));
 
     return true;

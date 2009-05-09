@@ -119,7 +119,9 @@ void initSymbols(Parser& parser)
     // various commands
     __TEXPP_SET_COMMAND("end", End);
     __TEXPP_SET_COMMAND("par", Par);
+
     __TEXPP_SET_COMMAND("relax", Relax);
+    parser.setSymbol("relax", parser.symbolAny("\\relax"));
 
     __TEXPP_SET_COMMAND("uppercase", Changecase, "uccode");
     __TEXPP_SET_COMMAND("lowercase", Changecase, "lccode");
