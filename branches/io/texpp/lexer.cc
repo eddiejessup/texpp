@@ -27,7 +27,7 @@ Lexer::Lexer(const string& fileName, std::istream* file,
     : m_fileShared(), m_file(file),
       m_fileName(new string(fileName)),
       m_lineNo(0), m_charPos(0), m_charEnd(0),
-      m_state(ST_NEW_LINE), m_char(0), m_catCode(Token::CC_NONE),
+      m_state(ST_NEW_LINE), m_char(-1), m_catCode(Token::CC_NONE),
       m_interactive(interactive), m_saveLines(saveLines)
 {
     if(!m_file) { m_file = &std::cin; }
@@ -39,7 +39,7 @@ Lexer::Lexer(const string& fileName, shared_ptr<std::istream> file,
     : m_fileShared(file), m_file(file.get()),
       m_fileName(new string(fileName)),
       m_lineNo(0), m_charPos(0), m_charEnd(0),
-      m_state(ST_NEW_LINE), m_char(0), m_catCode(Token::CC_NONE),
+      m_state(ST_NEW_LINE), m_char(-1), m_catCode(Token::CC_NONE),
       m_interactive(interactive), m_saveLines(saveLines)
 {
     if(!m_file) { m_file = &std::cin; }
@@ -94,7 +94,7 @@ bool Lexer::nextLine()
     m_charPos = 0;
     m_charEnd = 0;
 
-    m_char = 0;
+    m_char = -1;
     m_catCode = Token::CC_NONE;
 
     m_lineOrig.clear();
@@ -149,7 +149,7 @@ bool Lexer::nextChar()
     m_charPos = m_charEnd;
 
     if(m_charPos >= m_lineTex.size()) {
-        m_char = 0;
+        m_char = -1;
         m_catCode = Token::CC_EOL;
         return false;
     }
@@ -189,7 +189,7 @@ inline Token::ptr Lexer::newToken(Token::Type type,
 {
     return Token::ptr(new Token(
         type, m_catCode, 
-        value.empty() ? string(1, m_char) : value,
+        value.empty() && m_char >= 0 ? string(1, m_char) : value,
         m_lineOrig.substr(std::min(m_charPos, m_lineOrig.size()),
                     m_charEnd - m_charPos),
                 m_lineNo,
@@ -274,11 +274,11 @@ Token::ptr Lexer::nextToken()
                 string value("\\");
 
                 if(nextChar()) {
-                    value += m_char;
+                    value += char(m_char);
 
                     if(m_catCode == Token::CC_LETTER) {
                         while(nextChar() && m_catCode == Token::CC_LETTER)
-                            value += m_char;
+                            value += char(m_char);
 
                         m_state = ST_SKIP_SPACES;
                         m_charEnd = m_charPos;
@@ -298,7 +298,8 @@ Token::ptr Lexer::nextToken()
             }
             //// CC_ACTIVE
             else if(m_catCode == Token::CC_ACTIVE) {
-                return newToken(Token::TOK_CONTROL, string("`") + m_char);
+                return newToken(Token::TOK_CONTROL,
+                                    string("`") + char(m_char));
             }
             //// CC_SPACE
             else if(m_catCode == Token::CC_SPACE) {

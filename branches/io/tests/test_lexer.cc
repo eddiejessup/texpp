@@ -295,7 +295,8 @@ BOOST_AUTO_TEST_CASE( lexer_other )
     Token tokens[] = {
         Token(Token::TOK_SKIPPED, Token::CC_SPACE, " ", "  ", 1, 0, 2),
         Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3),
-        Token(Token::TOK_SKIPPED, Token::CC_IGNORED, "", string("\0",1), 1, 3, 4),
+        Token(Token::TOK_SKIPPED, Token::CC_IGNORED,
+                string("\0", 1), string("\0",1), 1, 3, 4),
         Token(Token::TOK_CHARACTER, Token::CC_LETTER, "z", "z", 1, 4, 5),
         Token(Token::TOK_CHARACTER, Token::CC_LETTER, "c", "c", 1, 5, 6),
         Token(Token::TOK_SKIPPED, Token::CC_COMMENT, "%", "%def", 1, 6, 10),

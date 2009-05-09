@@ -86,8 +86,10 @@ ConsoleLogger::~ConsoleLogger()
 bool ConsoleLogger::log(Level level, const string& message,
                             Parser& parser, Token::ptr token)
 {
+    /*
     if(level <= TRACING && parser.symbol("tracingonline", int(0)) <= 0)
         return true;
+    */
 
     std::ostringstream r;
     

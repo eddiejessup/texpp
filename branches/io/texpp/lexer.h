@@ -86,7 +86,7 @@ protected:
     size_t  m_charEnd;
 
     State   m_state;
-    char    m_char;
+    int     m_char;
     Token::CatCode
             m_catCode;
 

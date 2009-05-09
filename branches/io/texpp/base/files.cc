@@ -328,6 +328,25 @@ bool Write::invokeWithPrefixes(Parser& parser,
     node->appendChild("number", number);
     int stream = number->value(int(0));
 
+    if(parser.symbol("tracingmacros", int(0)) >= 2) {
+        // read the tokens without expanding to show them in the trace
+        Node::ptr text = parser.parseGeneralText(false);
+        Token::list_ptr tokens =
+            text->child("balanced_text")->value(Token::list_ptr());
+
+        parser.logger()->log(Logger::MTRACING,
+                texRepr(&parser) + "->" +
+                (tokens ? Token::texReprList(*tokens, &parser) : ""),
+                parser, parser.lastToken());
+
+        // push tokens back and re-read them with expansion turned on
+        Node::ChildrenList::reverse_iterator rend = text->children().rend();
+        for(Node::ChildrenList::reverse_iterator it =
+                text->children().rbegin(); it != rend; ++it) {
+            parser.pushBack(&(it->second->tokens()));
+        }
+    }
+
     // TODO: expand text later
     Parser::Mode prevMode = parser.mode();
     parser.setMode(Parser::NULLMODE);
