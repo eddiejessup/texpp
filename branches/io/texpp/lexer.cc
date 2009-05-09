@@ -189,7 +189,7 @@ inline Token::ptr Lexer::newToken(Token::Type type,
 {
     return Token::ptr(new Token(
         type, m_catCode, 
-        value.empty() && m_char ? string(1, m_char) : value,
+        value.empty() ? string(1, m_char) : value,
         m_lineOrig.substr(std::min(m_charPos, m_lineOrig.size()),
                     m_charEnd - m_charPos),
                 m_lineNo,

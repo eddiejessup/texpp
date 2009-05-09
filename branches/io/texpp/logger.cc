@@ -55,22 +55,24 @@ string Logger::tokenLines(Parser& parser, Token::ptr token) const
     if(parser.lexer()->fileName().empty()) r << "<*> ";
     else r << "l." << token->lineNo() << " ";
 
-    const string& line = parser.lexer()->line(token->lineNo());
-    if(!line.empty()) {
-        string line1 = line.substr(0, token->charEnd());
-        if(!line1.empty() && line1[line1.size()-1] == '\n')
-            line1 = line1.substr(0, line1.size()-1);
-        int d = line1.size() + r.str().size() - MAX_TLINE_CHARS;
-        if(d > 0)
-            line1 = "..." + line1.substr(d+3, line1.size()-d-3);
-        r << line1 << '\n';
-        
-        string line2 = line.substr(token->charEnd(),
+    if(token->fileName() == parser.lexer()->fileName()) {
+        const string& line = parser.lexer()->line(token->lineNo());
+        if(!line.empty()) {
+            string line1 = line.substr(0, token->charEnd());
+            if(!line1.empty() && line1[line1.size()-1] == '\n')
+                line1 = line1.substr(0, line1.size()-1);
+            int d = line1.size() + r.str().size() - MAX_TLINE_CHARS;
+            if(d > 0)
+                line1 = "..." + line1.substr(d+3, line1.size()-d-3);
+            r << line1 << '\n';
+            
+            string line2 = line.substr(token->charEnd(),
                     line.find_last_not_of(" \r\n") + 1 - token->charEnd());
-        if(line2.size() + r.str().size() - 1 > MAX_LINE_CHARS)
-            line2 = line2.substr(0,
-                MAX_LINE_CHARS - r.str().size() - 2) + "...";
-        r << string(r.str().size()-1, ' ') << line2 << '\n';
+            if(line2.size() + r.str().size() - 1 > MAX_LINE_CHARS)
+                line2 = line2.substr(0,
+                    MAX_LINE_CHARS - r.str().size() - 2) + "...";
+            r << string(r.str().size()-1, ' ') << line2 << '\n';
+        }
     }
 
     return r.str();
@@ -122,7 +124,10 @@ bool ConsoleLogger::log(Level level, const string& message,
                 r1 << '\n';
                 m_linePos = 0;
             }
-            if(ch >= 0x7f) {
+            if(ch <= 0x1f) {
+                r1 << "^^" << char(ch+64);
+                m_linePos += 3;
+            } else if(ch >= 0x7f) {
                 r1 << "^^" << std::hex << int(ch);
                 m_linePos += 4;
             } else {
