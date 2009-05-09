@@ -53,4 +53,9 @@
 \let\newtoks=\relax
 \outer\def\newhelp#1#2{\newtoks#1#1\expandafter{\csname#2\endcsname}}
 
+%multiline
+\def\testmacro#1a#2{z#1z#2}
+
+\testmacro x a b
+
 \end

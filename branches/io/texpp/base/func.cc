@@ -325,6 +325,10 @@ bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
             Token::list_ptr tokens(new Token::list());
             child->setValue(tokens);
 
+            while(parser.peekToken(false) &&
+                    parser.helperIsImplicitCharacter(Token::CC_SPACE, false))
+                parser.nextToken(&child->tokens());
+
             Token::ptr etoken;
             ++it;
             if(it+1 < end && !(*(it+1))->isCharacterCat(Token::CC_PARAM))
