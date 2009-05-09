@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE( parser_tokens )
     BOOST_CHECK_EQUAL(token0->repr(),
         Token(Token::TOK_CHARACTER, Token::CC_SPACE, " ", " ", 1, 3, 4).repr());
 
-    BOOST_CHECK_EQUAL(parser->peekToken()->repr(),
+    BOOST_CHECK_EQUAL(parser->peekToken(false)->repr(),
         Token(Token::TOK_CONTROL, Token::CC_ESCAPE, "\\bb", "\\bb", 2, 2, 5).repr());
 
     parser->pushBack(&tokens_t);
@@ -139,12 +139,12 @@ BOOST_AUTO_TEST_CASE( parser_tokens )
     Token::ptr token, token1, token2;
 
     size_t n = 0;
-    while(token = parser->peekToken()) {
+    while(token = parser->peekToken(false)) {
         vector<Token::ptr> output_all;
         BOOST_CHECK_EQUAL(token->repr(), parser->lastToken()->repr());
 
         //token1 = parser->peekToken(2);
-        token2 = parser->nextToken(&output_all);
+        token2 = parser->nextToken(&output_all, false);
 
         BOOST_CHECK_EQUAL(token->repr(), token2->repr());
         BOOST_CHECK_EQUAL(token->repr(), parser->lastToken()->repr());

@@ -95,7 +95,7 @@ bool RegisterDef<Cmd>::invokeWithPrefixes(Parser& parser,
     bool global = checkPrefixes(parser, prefixes);
     prefixes.clear();
 
-    Node::ptr lvalue = parser.parseControlSequence();
+    Node::ptr lvalue = parser.parseControlSequence(false);
     node->appendChild("lvalue", lvalue);
     node->appendChild("equals", parser.parseOptionalEquals());
 

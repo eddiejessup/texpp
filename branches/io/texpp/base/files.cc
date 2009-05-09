@@ -341,6 +341,8 @@ bool Write::invokeWithPrefixes(Parser& parser,
         text->child("balanced_text")->value(Token::list_ptr());
 
     if(tokens) {
+        str = Token::texReprList(*tokens, &parser);
+        /*
         Token::list tokens_show;
         BOOST_FOREACH(Token::ptr token, *tokens) {
             Command::ptr cmd = parser.symbol(token, Command::ptr());
@@ -352,6 +354,7 @@ bool Write::invokeWithPrefixes(Parser& parser,
             }
         }
         str = Token::texReprList(tokens_show, &parser);
+        */
     }
 
     OutFile outfile = 
@@ -380,6 +383,8 @@ bool Message::invoke(Parser& parser, Node::ptr node)
         text->child("balanced_text")->value(Token::list_ptr());
 
     if(tokens) {
+        str = Token::texReprList(*tokens, &parser);
+        /*
         Token::list tokens_show;
         BOOST_FOREACH(Token::ptr token, *tokens) {
             Command::ptr cmd = parser.symbol(token, Command::ptr());
@@ -391,7 +396,9 @@ bool Message::invoke(Parser& parser, Node::ptr node)
             }
         }
         str = Token::texReprList(tokens_show, &parser);
+        */
     }
+
     parser.logger()->log(Logger::MESSAGE, str, parser, parser.lastToken());
                 //text->child("right_brace")->value(Token::ptr()));
     return true;

@@ -324,15 +324,6 @@ void Parser::endGroup()
 
 Node::ptr Parser::rawExpandToken(Token::ptr token)
 {
-    Command::ptr cmd = symbol(token, Command::ptr());
-    Macro::ptr macro = dynamic_pointer_cast<Macro>(cmd);
-
-    if(!macro)
-        return Node::ptr();
-
-    if(m_conditionals.empty() || m_conditionals.back().active)
-        traceCommand(token, true);
-
     Node::ptr node(new Node("macro"));
     Node::ptr child(new Node("control_token"));
     child->tokens().push_back(token);
@@ -342,7 +333,28 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
     
     pushBack(NULL);
 
-    if(dynamic_pointer_cast<ConditionalBegin>(macro)) {
+    Command::ptr cmd = symbol(token, Command::ptr());
+    Macro::ptr macro = dynamic_pointer_cast<Macro>(cmd);
+
+    if(cmd && !macro)
+        return Node::ptr();
+
+    if(m_conditionals.empty() || m_conditionals.back().active)
+        traceCommand(token, true);
+
+    if(!cmd) {
+        logger()->log(Logger::ERROR,
+            "Undefined control sequence", *this, token);
+        /*token = Token::ptr(new Token(Token::TOK_SKIPPED,
+                    token->catCode(), token->value(), token->source(),
+                    token->lineNo(), token->charPos(), token->charEnd(),
+                    token->isLastInLine(), token->fileNamePtr()));*/
+        //token = token->lcopy();
+        //token->setType(Token::TOK_SKIPPED);
+        //node->setValue(Token::list(1, token));
+        node->setType("undefined_control_sequence");
+
+    } else if(dynamic_pointer_cast<ConditionalBegin>(macro)) {
         ConditionalBegin::ptr condBegin =
             static_pointer_cast<ConditionalBegin>(macro);
 
@@ -532,6 +544,8 @@ Token::ptr Parser::rawNextToken(bool expand)
         Node::ptr node = rawExpandToken(token);
         if(node) {
             Token::list newTokens = node->value(Token::list());
+            assert(!newTokens.empty());
+
             Token::list::reverse_iterator rend = newTokens.rend();
             Token::list::reverse_iterator it = newTokens.rbegin();
             for(; it+1 != rend; ++it) {
@@ -2186,10 +2200,10 @@ Node::ptr Parser::parseGroup(GroupType groupType)
                     node->appendChild("control", cmdNode);
                 }
             } else {
-                m_logger->log(Logger::ERROR, "Undefined control sequence",
-                                                *this, lastToken());
+                /*m_logger->log(Logger::ERROR, "Undefined control sequence",
+                                                *this, lastToken());*/
                 cmdNode = parseToken();
-                node->appendChild("error_unknown_control", cmdNode);
+                node->appendChild("unexpanded_macro", cmdNode);
                 //node->appendChild("error_unknown_control",
                 //                                parseToken());
             }

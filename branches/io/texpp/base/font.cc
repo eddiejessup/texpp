@@ -81,7 +81,7 @@ bool Font::invokeOperation(Parser& parser,
     } else if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        Node::ptr lvalue = parser.parseControlSequence();
+        Node::ptr lvalue = parser.parseControlSequence(false);
         Token::ptr ltoken = lvalue->value(Token::ptr());
 
         node->appendChild("lvalue", lvalue);
