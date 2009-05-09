@@ -73,6 +73,8 @@ vector<string> read_log_file(const string& fname)
             n = 1;
         } else if(std::strncmp(buf, "\\write", 6) == 0) {
             n = 1;
+        } else if(std::strncmp(buf, "\\openout", 8) == 0) {
+            n = 1;
         }
 
         if(n) {

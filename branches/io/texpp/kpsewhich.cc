@@ -17,6 +17,7 @@
 */
 
 #include "kpsewhich.h"
+#include "common.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -27,6 +28,13 @@
 #include <errno.h>
 
 namespace texpp {
+
+std::string kpseextend(const std::string& fname)
+{
+    size_t n = fname.rfind(PATH_SEP);
+    size_t n1 = fname.substr(n == fname.npos ? 0 : n).rfind('.');
+    return n1 == fname.npos ? (fname + ".tex") : fname;
+}
 
 std::string kpsewhich(const std::string& fname)
 {

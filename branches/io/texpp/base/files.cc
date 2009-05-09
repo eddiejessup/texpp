@@ -241,15 +241,22 @@ bool Openout::invokeWithPrefixes(Parser& parser,
     Node::ptr fnameNode = parser.parseFileName();
     node->appendChild("file_name", fnameNode);
 
-    string fname = fnameNode->value(string());
+    string fname = kpseextend(fnameNode->value(string()));
 
     shared_ptr<std::ostream> ostream(new std::ofstream(fname.c_str()));
     if(!ostream->fail()) {
         parser.setSymbol("write" + boost::lexical_cast<string>(stream),
                                     OutFile(ostream), true);
+        string msg = texRepr(&parser) + boost::lexical_cast<string>(stream)
+                        + " = `" + fname + "'.\n";
+        parser.logger()->log(Logger::MTRACING, msg,
+                                parser, parser.lastToken());
     } else {
-        parser.setSymbol("write" + boost::lexical_cast<string>(stream),
-                                    OutFile(), true);
+        parser.logger()->log(Logger::ERROR, "Emergency stop",
+                                parser, parser.lastToken());
+        parser.end();
+        //parser.setSymbol("write" + boost::lexical_cast<string>(stream),
+        //                            OutFile(), true);
     }
 
     return true;

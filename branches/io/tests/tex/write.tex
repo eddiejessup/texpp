@@ -14,14 +14,14 @@
 \immediate\write1{zz}
 \immediate\write16{zz}
 
-\immediate\openout1=write.1.aux
+\immediate\openout1=write1.aux
 \immediate\write1{zz}
 \immediate\write1{ll}
 \immediate\closeout1
 
 \relax
 
-\openin1=./write.1.aux
+\openin1=./write1.aux
 \read1to\x \show\x
 \read1to\x \show\x
 \read1to\x \show\x
@@ -43,6 +43,16 @@
 \immediate\write-1{~aa}
 \immediate\write-1{~ee}
 \message{~ff@}
+
+% extension
+\immediate\openout0=write2.
+\immediate\closeout0
+
+\immediate\openout0=./write3
+\immediate\closeout0
+
+\immediate\openout0=write4
+\immediate\closeout0
 
 \end
 
