@@ -105,12 +105,16 @@ string Token::texReprControl(const string& name,
     return str;
 }
 
-string Token::texReprList(const Token::list& tokens, Parser* parser)
+string Token::texReprList(const Token::list& tokens,
+                            Parser* parser, bool param)
 {
     string str;
     BOOST_FOREACH(Token::ptr token, tokens) {
         if(token->isControl()) {
             str += Token::texReprControl(token->value(), parser, true);
+        } else if(!param && token->isCharacterCat(CC_PARAM)) {
+            str += token->value();
+            str += token->value();
         } else if(token->isCharacter()) {
             str += token->value();
         }

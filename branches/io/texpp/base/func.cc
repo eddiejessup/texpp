@@ -234,6 +234,7 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
         parser.parseBalancedText(m_expand, paramNum, ltoken);
     parser.setSymbol("in_edef", prevInEdef, true);
 
+    /*
     if(m_expand) {
         Token::list_ptr tokens = definition->value(Token::list_ptr());
         Token::list_ptr tokens_copy(new Token::list());
@@ -250,6 +251,7 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
         }
         definition->setValue(tokens_copy);
     }
+    */
 
     if(lbrace) {
         Token::list_ptr p = definition->value(Token::list_ptr());
@@ -288,8 +290,8 @@ string UserMacro::texRepr(Parser* parser) const
     if(!str.empty()) str += ' ';
 
     str += "macro:\n" +
-            Token::texReprList(*m_params, parser) + "->" +
-            Token::texReprList(*m_definition, parser);
+            Token::texReprList(*m_params, parser, true) + "->" +
+            Token::texReprList(*m_definition, parser, true);
 
     return str;
 }
@@ -302,8 +304,8 @@ bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
         string str(1, '\n');
         str += //Token::texReprControl(name(), &parser, true) +
                 Token::texReprControl(t ? t->value():name(), &parser, true) +
-                Token::texReprList(*m_params, &parser) + "->" +
-                Token::texReprList(*m_definition, &parser);
+                Token::texReprList(*m_params, &parser, true) + "->" +
+                Token::texReprList(*m_definition, &parser, true);
         parser.logger()->log(Logger::MTRACING,
             str, parser, Token::ptr());
     }

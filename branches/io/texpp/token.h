@@ -124,7 +124,7 @@ public:
     static string texReprControl(const string& name,
                                 Parser* parser = NULL, bool space = false);
     static string texReprList(const Token::list& tokens,
-                                Parser* parser = NULL);
+                                Parser* parser = NULL, bool param = false);
 
 protected:
     Type        m_type;

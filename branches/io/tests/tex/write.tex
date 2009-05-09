@@ -27,5 +27,22 @@
 \read1to\x \show\x
 \closein1
 
+\tracingcommands=0
+\tracingmacros=0
+\tracingrestores=0
+\tracingonline=0
+\newlinechar=`@
+\immediate\write16{~aa}
+\immediate\write16{~ee}
+\message{~ff@}
+
+\immediate\write17{~aa}
+\immediate\write17{~ee}
+\message{~ff@}
+
+\immediate\write-1{~aa}
+\immediate\write-1{~ee}
+\message{~ff@}
+
 \end
 

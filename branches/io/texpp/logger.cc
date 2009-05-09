@@ -102,7 +102,7 @@ bool ConsoleLogger::log(Level level, const string& message,
         r << message;
     } else if(level <= WRITE) {
         if(m_linePos) r << '\n'; 
-        r << message;
+        r << message << '\n';
     } else {
         if(m_linePos) r << '\n';
         if(level <= SHOW) r << "> " << message << ".\n";
