@@ -356,6 +356,13 @@ void Parser::endGroup()
 
 Node::ptr Parser::rawExpandToken(Token::ptr token)
 {
+    if(m_lockToken) {
+        if(token->type() == m_lockToken->type() &&
+                token->catCode() == m_lockToken->catCode() &&
+                token->value() == m_lockToken->value())
+            return Node::ptr();
+    }
+
     Node::ptr node(new Node("macro"));
     Node::ptr child(new Node("control_token"));
     child->tokens().push_back(token);
@@ -545,6 +552,8 @@ Token::ptr Parser::rawNextToken(bool expand)
             }
 
             token = m_lexer->nextToken();
+            if(token && !token->isSkipped())
+                m_lastToken = token;
 
             if(!m_inputStack.empty()) {
                 if(!token) {
@@ -706,8 +715,8 @@ Token::ptr Parser::peekToken(bool expand)
     // real token
     Token::ptr mtoken = token;
     if(token) {
-        if(token->lineNo())
-            m_lastToken = token;
+        //if(token->lineNo())
+        //    m_lastToken = token;
         tokenSource.push_back(token);
     }
 
@@ -1931,8 +1940,8 @@ Node::ptr Parser::parseGeneralText(bool expand, bool implicitLbrace)
 {
     Node::ptr node(new Node("general_text"));
 
-    // parse filler
-    node->appendChild("filler", parseFiller(expand));
+    // parse filler (always expanded)
+    node->appendChild("filler", parseFiller(true));
 
     // parse left_brace
     Node::ptr left_brace(new Node("left_brace"));

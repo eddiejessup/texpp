@@ -152,6 +152,7 @@ public:
             m_commandStack[m_commandStack.size()-1-n];
     }
 
+    void lockToken(Token::ptr token) { m_lockToken = token; }
     void setAfterassignmentToken(Token::ptr t) { m_afterassignmentToken = t; }
     void addAftergroupToken(Token::ptr t) {
         if(m_groupLevel > 0) m_aftergroupTokensStack.back().push_back(t);
@@ -328,6 +329,7 @@ protected:
 
     Interaction m_interaction;
     
+    Token::ptr          m_lockToken;
     Token::ptr          m_afterassignmentToken;
     vector<Token::list> m_aftergroupTokensStack;
 

@@ -157,8 +157,8 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     global |= m_global;
 
     Node::ptr lvalue = parser.parseControlSequence(false);
-    Token::ptr ltoken = lvalue->value(Token::ptr());
     node->appendChild("lvalue", lvalue);
+    Token::ptr ltoken = lvalue->value(Token::ptr());
 
     Node::ptr paramsNode(new Node("params"));
     node->appendChild("params", paramsNode);

@@ -80,4 +80,14 @@
 \toksdef\x=256
 \show\x
 
+%chains
+\def\L{\show\x}
+\def\M{\show\y}
+\toksdef\L0\M{}
+\show\L
+
+\def\L{\show\x}
+\toksdef\L0\L{}
+\show\L
+
 \end

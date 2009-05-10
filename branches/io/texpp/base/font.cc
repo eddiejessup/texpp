@@ -83,6 +83,7 @@ bool Font::invokeOperation(Parser& parser,
 
         Node::ptr lvalue = parser.parseControlSequence(false);
         Token::ptr ltoken = lvalue->value(Token::ptr());
+        parser.lockToken(ltoken);
 
         node->appendChild("lvalue", lvalue);
         node->appendChild("equals", parser.parseOptionalEquals());
@@ -140,6 +141,7 @@ bool Font::invokeOperation(Parser& parser,
             Command::ptr(new FontSelector(ltoken->value(), fontInfo)),
             global);
 
+        parser.lockToken(Token::ptr());
         return true;
 
     } else if(op == GET) {

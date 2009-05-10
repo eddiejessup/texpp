@@ -97,14 +97,17 @@ bool RegisterDef<Cmd>::invokeWithPrefixes(Parser& parser,
 
     Node::ptr lvalue = parser.parseControlSequence(false);
     node->appendChild("lvalue", lvalue);
+    Token::ptr ltoken = lvalue->value(Token::ptr());
+    parser.lockToken(ltoken);
+
     node->appendChild("equals", parser.parseOptionalEquals());
 
     Node::ptr rvalue = parser.parseNumber();
     node->appendChild("rvalue", rvalue);
 
-    Token::ptr ltoken = lvalue->value(Token::ptr());
     int num = rvalue->value(int(0));
 
+    parser.lockToken(Token::ptr());
     return m_group->createDef(parser, ltoken, num, global);
 }
 
