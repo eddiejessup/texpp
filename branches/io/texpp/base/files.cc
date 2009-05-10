@@ -151,22 +151,33 @@ bool Read::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     int level = 0;
     Token::ptr token;
     while(token = lexer->nextToken()) {
-        if(token->isCharacterCat(Token::CC_BGROUP))
-            ++level;
-        else if(token->isCharacterCat(Token::CC_EGROUP))
-            --level;
+        if(!token->isSkipped()) {
+            if(token->isCharacterCat(Token::CC_BGROUP))
+                ++level;
+            else if(token->isCharacterCat(Token::CC_EGROUP))
+                --level;
 
-        if(level >= 0)
-            tokens->push_back(token->lcopy());
+            if(level >= 0)
+                tokens->push_back(token->lcopy());
+        }
 
         if(level <= 0 && token->isLastInLine())
             break;
     }
 
-    if(tokens->empty()) {
+    if(!token) {
         // end of file
-        tokens->push_back(Token::ptr(new Token(
-                Token::TOK_CONTROL, Token::CC_ESCAPE, "\\par")));
+        int endlinechar = infile.lexer->endlinechar();
+        if(endlinechar >= 0 && endlinechar <= 255) {
+            int cc = infile.lexer->catcode(endlinechar);
+            if(cc == Token::CC_EOL)
+                tokens->push_back(Token::ptr(new Token(
+                    Token::TOK_CONTROL, Token::CC_ESCAPE, "\\par")));
+            else
+                tokens->push_back(Token::ptr(new Token(
+                    Token::TOK_CHARACTER, Token::CatCode(cc),
+                    string(1, char(endlinechar)))));
+        }
         if(infile.lexer)
             parser.setSymbol("read" + boost::lexical_cast<string>(stream),
                             InFile(), true); 

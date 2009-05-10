@@ -42,5 +42,18 @@
 \closein7
 \ifeof7\show\x\else\show\y\fi
 
+% emtpy lines
+\openin8=read.3.aux
+{
+\def\empty{}
+\endlinechar=-1
+\global\read8to\x \show\x
+\ifx\x\empty\show\z\fi
+\read8to\x \show\x
+\ifx\x\empty\show\z\fi
+\read8to\x \show\x
+\ifx\x\empty\show\z\fi
+}
+\closein8
 \end
 
