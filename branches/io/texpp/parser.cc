@@ -1185,11 +1185,11 @@ Node::ptr Parser::parseNormalInteger()
     if(peekToken()->isCharacter('`', Token::CC_OTHER)) {
         nextToken(&node->tokens());
         if(peekToken(false) && peekToken(false)->isCharacter()) {
-            node->setValue(int(peekToken(false)->value()[0]));
+            node->setValue(int((unsigned char) peekToken(false)->value()[0]));
             nextToken(&node->tokens(), false);
         } else if(peekToken(false) && peekToken(false)->isControl() &&
                     peekToken()->value().size() == 2) {
-            node->setValue(int(peekToken(false)->value()[1]));
+            node->setValue(int((unsigned char) peekToken(false)->value()[1]));
             nextToken(&node->tokens(), false);
         } else {
             logger()->log(Logger::ERROR,

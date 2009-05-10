@@ -252,7 +252,7 @@ string FontDimen::parseName(Parser& parser, shared_ptr<Node> node)
     node->appendChild("variable_font", font);
     FontInfo::ptr fontInfo = font->value(defaultFontInfo);
 
-    if(n <= 0 || n > 7) {
+    if(n <= 0/* || n > 7*/) { // TODO: read the number of dimen params
         // TODO: the following calc should be one function
         string str = fontInfo->selector;
         string escape = parser.escapestr();
