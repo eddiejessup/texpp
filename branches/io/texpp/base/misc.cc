@@ -97,7 +97,7 @@ bool SetInteraction::invoke(Parser& parser, shared_ptr<Node>)
 
 bool Afterassignment::invoke(Parser& parser, shared_ptr<Node> node)
 {
-    Node::ptr tokenNode = parser.parseToken();
+    Node::ptr tokenNode = parser.parseToken(false);
     node->appendChild("token", tokenNode);
 
     Token::ptr token = tokenNode->value(Token::ptr());
@@ -109,7 +109,7 @@ bool Afterassignment::invoke(Parser& parser, shared_ptr<Node> node)
 
 bool Aftergroup::invoke(Parser& parser, shared_ptr<Node> node)
 {
-    Node::ptr tokenNode = parser.parseToken();
+    Node::ptr tokenNode = parser.parseToken(false);
     node->appendChild("token", tokenNode);
 
     Token::ptr token = tokenNode->value(Token::ptr());
