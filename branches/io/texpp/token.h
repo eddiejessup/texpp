@@ -117,7 +117,8 @@ public:
 
     Token::ptr lcopy() const {
         return Token::ptr(new Token(
-            m_type, m_catCode, m_value, "", m_lineNo, m_charEnd, m_charEnd,
+            m_type, m_catCode, m_value, "", 0, 0, 0,
+            //m_lineNo, m_charEnd, m_charEnd,
             m_lastInLine, m_fileName));
     }
 

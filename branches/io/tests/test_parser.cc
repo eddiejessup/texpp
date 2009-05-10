@@ -122,9 +122,9 @@ BOOST_AUTO_TEST_CASE( parser_tokens )
             Token(Token::TOK_SKIPPED, Token::CC_SPACE, " ", "  ", 1, 0, 2),
             Token(Token::TOK_CHARACTER, Token::CC_LETTER, "a", "a", 1, 2, 3)
         },{
-            Token(Token::TOK_CHARACTER, Token::CC_SPACE, " ", " ", 1, 3, 4),
-            Token(Token::TOK_SKIPPED, Token::CC_COMMENT, "%", "%  \n", 1, 4, 8)
+            Token(Token::TOK_CHARACTER, Token::CC_SPACE, " ", " ", 1, 3, 4)
         },{
+            Token(Token::TOK_SKIPPED, Token::CC_COMMENT, "%", "%  \n", 1, 4, 8),
             Token(Token::TOK_SKIPPED, Token::CC_SPACE, " ", "  ", 2, 0, 2),
             Token(Token::TOK_CONTROL, Token::CC_ESCAPE, "\\bb", "\\bb", 2, 2, 5)
         },{
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE( parser_tokens )
             Token(Token::TOK_CONTROL, Token::CC_ESCAPE, "\\c", "\\c", 2, 7, 9)
         },
     };
-    int tokens_all_counts[] = {2,2,2,1,1};
+    int tokens_all_counts[] = {2,1,3,1,1};
 
     vector<string> output_repr;
     Token::ptr token, token1, token2;

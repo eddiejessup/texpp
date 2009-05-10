@@ -23,6 +23,7 @@
 
 #include <texpp/base/misc.h>
 
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace texpp {
@@ -124,27 +125,45 @@ bool EndcsnameMacro::invoke(Parser& parser, shared_ptr<Node>)
 
 bool ExpandafterMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
+    Token::list tokens;
+
     Node::ptr child1 = parser.parseToken(false); // don't expand
     node->appendChild("token1", child1);
 
-    Node::ptr child2 = parser.parseToken(false); // expand
-    node->appendChild("token2", child2);
-
-    Token::list tokens;
     Token::ptr token1 = child1->value(Token::ptr());
-    if(token1) {
+    if(token1)
         tokens.push_back(token1->lcopy());
-    }
 
-    Token::ptr token2 = child2->value(Token::ptr());
-    if(token2) {
-        Node::ptr enode = parser.rawExpandToken(token2->lcopy());
-        if(enode) {
-            Token::list newTokens = enode->value(Token::list());
-            tokens.insert(tokens.end(),
-                    newTokens.begin(), newTokens.end());
+    Node::ptr tokensNode(new Node("tokens"));
+    node->appendChild("token2", tokensNode);
+
+    // We can't just use parseToken(true) here: since it does
+    // recursive expansion. Instead we want one-step expansion only.
+
+    Token::ptr token;
+    while(token = parser.rawNextToken(false)) {
+        if(token->isControl()) { // TODO: check m_noexpandTokens ?
+            Node::ptr node = parser.rawExpandToken(token);
+            if(node) {
+                bool done = false;
+                Token::list newTokens = node->value(Token::list());
+                assert(!newTokens.empty());
+
+                BOOST_FOREACH(Token::ptr t, newTokens) {
+                    tokens.push_back(t);
+                    if(!t->isSkipped())
+                        done = true;
+                }
+                if(done) break;
+            } else {
+                tokens.push_back(token);
+                break;
+            }
+        } else if(token->isSkipped()) {
+            tokens.push_back(token);
         } else {
-            tokens.push_back(token2->lcopy());
+            tokens.push_back(token);
+            break;
         }
     }
 

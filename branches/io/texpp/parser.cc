@@ -40,6 +40,7 @@
 #include <ctime>
 
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace {
 
@@ -166,7 +167,9 @@ void Parser::init()
         char t[256];
         time_t tt = std::time(NULL);
         std::strftime(t, sizeof(t), " %e %b %Y %H:%M", std::localtime(&tt));
-        banner += t;
+        string ts(t);
+        boost::algorithm::to_upper(ts);
+        banner += ts;
     }
     m_logger->log(Logger::WRITE, banner, *this, Token::ptr());
 }
@@ -248,11 +251,18 @@ void Parser::endGroup()
         SymbolStack::reference item = m_symbolsStack.back();
         SymbolTable::iterator it = m_symbols.find(item.first);
 
+        int l = it->second.first;
+
+        if(l >= 0) {
+            it->second = item.second;
+            setSpecialSymbol(it->first, it->second.second);
+        }
+
         if(symbol("tracingrestores", int(0)) > 0) {
             string str;
             any value;
 
-            if(it->second.first >= 0) {
+            if(l >= 0) {
                 str = "restoring ";
                 value = item.second.second;
             } else {
@@ -322,11 +332,6 @@ void Parser::endGroup()
 
             logger()->log(Logger::TRACING,
                 str, *this, Token::ptr());
-        }
-
-        if(it->second.first >= 0) {
-            it->second = item.second;
-            setSpecialSymbol(it->first, it->second.second);
         }
 
         m_symbolsStack.pop_back();
@@ -421,8 +426,10 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
 
     } else if(dynamic_pointer_cast<ConditionalOr>(macro)) {
         if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-            node->setValue(Token::list(1, token->lcopy()));
-            //m_tokenQueue.push_front(token->lcopy());
+            node->setValue(Token::list(1, Token::ptr(new Token(
+                token->type(), token->catCode(), token->value(),
+                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if((m_conditionals.empty() ||
                 m_conditionals.back().branch < 0 ||
@@ -442,8 +449,10 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         }
     } else if(dynamic_pointer_cast<ConditionalElse>(macro)) {
         if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-            node->setValue(Token::list(1, token->lcopy()));
-            //m_tokenQueue.push_front(token->lcopy());
+            node->setValue(Token::list(1, Token::ptr(new Token(
+                token->type(), token->catCode(), token->value(),
+                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if((m_conditionals.empty() ||
                 m_conditionals.back().branch < 0)) {
@@ -467,8 +476,10 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         }
     } else if(dynamic_pointer_cast<ConditionalEnd>(macro)) {
         if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-            node->setValue(Token::list(1, token->lcopy()));
-            //m_tokenQueue.push_front(token->lcopy());
+            node->setValue(Token::list(1, Token::ptr(new Token(
+                token->type(), token->catCode(), token->value(),
+                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if(m_conditionals.empty()) {
             logger()->log(Logger::ERROR,
@@ -705,6 +716,8 @@ Token::ptr Parser::peekToken(bool expand)
         tokenSource.push_back(token);
     }
 
+    // XXX
+    /*
     // skipped tokens until EOL
     if(token && !token->isLastInLine()) {
         while(token = rawNextToken(false)) {
@@ -725,6 +738,7 @@ Token::ptr Parser::peekToken(bool expand)
             }
         }
     }
+    */
 
     pushBack(NULL); // peekToken may be called recursively
 
