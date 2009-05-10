@@ -152,6 +152,11 @@ public:
             m_commandStack[m_commandStack.size()-1-n];
     }
 
+    void setAfterassignmentToken(Token::ptr t) { m_afterassignmentToken = t; }
+    void addAftergroupToken(Token::ptr t) {
+        if(m_groupLevel > 0) m_aftergroupTokensStack.back().push_back(t);
+    }
+
     //////// Parse helpers
     bool helperIsImplicitCharacter(Token::CatCode catCode,
                                         bool expand = true);
@@ -322,6 +327,9 @@ protected:
     CommandStack m_commandStack;
 
     Interaction m_interaction;
+    
+    Token::ptr          m_afterassignmentToken;
+    vector<Token::list> m_aftergroupTokensStack;
 
     InputStack m_inputStack;
 

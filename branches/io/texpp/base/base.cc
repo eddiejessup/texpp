@@ -140,6 +140,10 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("begingroup", Begingroup);
     __TEXPP_SET_COMMAND("endgroup", Endgroup);
 
+    // TODO: implement everypar etc.
+    __TEXPP_SET_COMMAND("afterassignment", Afterassignment);
+    __TEXPP_SET_COMMAND("aftergroup", Aftergroup);
+
     // horizontal mode
     __TEXPP_SET_COMMAND("vrule", Rule, Parser::VERTICAL);
 
@@ -387,8 +391,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("showlists", UnimplementedCommand);
     __TEXPP_SET_COMMAND("shipout", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ignorespaces", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("afterassignment", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("aftergroup", UnimplementedCommand);
     __TEXPP_SET_COMMAND("errmessage", UnimplementedCommand);
     __TEXPP_SET_COMMAND("special", UnimplementedCommand);
     __TEXPP_SET_COMMAND("penalty", UnimplementedCommand);

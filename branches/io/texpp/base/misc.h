@@ -83,6 +83,20 @@ protected:
     Parser::Interaction m_interaction;
 };
 
+class Afterassignment: public Command
+{
+public:
+    explicit Afterassignment(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
+class Aftergroup: public Command
+{
+public:
+    explicit Aftergroup(const string& name): Command(name) {}
+    bool invoke(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 

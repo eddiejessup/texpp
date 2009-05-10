@@ -95,6 +95,30 @@ bool SetInteraction::invoke(Parser& parser, shared_ptr<Node>)
     return true;
 }
 
+bool Afterassignment::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr tokenNode = parser.parseToken();
+    node->appendChild("token", tokenNode);
+
+    Token::ptr token = tokenNode->value(Token::ptr());
+    if(token)
+        parser.setAfterassignmentToken(token->lcopy());
+
+    return true;
+}
+
+bool Aftergroup::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr tokenNode = parser.parseToken();
+    node->appendChild("token", tokenNode);
+
+    Token::ptr token = tokenNode->value(Token::ptr());
+    if(token)
+        parser.addAftergroupToken(token->lcopy());
+
+    return true;
+}
+
 } // namespace base
 } // namespace texpp
 

@@ -234,6 +234,7 @@ void Parser::setSpecialSymbol(const string& name, const any& value)
 void Parser::beginGroup()
 {
     m_symbolsStackLevels.push_back(m_symbolsStack.size());
+    m_aftergroupTokensStack.push_back(Token::list());
     ++m_groupLevel;
 }
 
@@ -345,6 +346,10 @@ void Parser::endGroup()
 
         m_symbolsStack.pop_back();
     }
+
+    pushBack(&m_aftergroupTokensStack.back());
+
+    m_aftergroupTokensStack.pop_back();
     m_symbolsStackLevels.pop_back();
     --m_groupLevel;
 }
@@ -960,6 +965,14 @@ Node::ptr Parser::parseCommand(Command::ptr command)
             } else if(prefixes.empty()) {
                 node->children()[lastChildNumber].first = "control_sequence";
                 resetNoexpand();
+
+                if(m_afterassignmentToken &&
+                        dynamic_pointer_cast<base::Assignment>(command)) {
+                    Token::list tokens(1, m_afterassignmentToken);
+                    pushBack(&tokens);
+                    m_afterassignmentToken.reset();
+                }
+
                 return node;
             }
         }
@@ -973,6 +986,13 @@ Node::ptr Parser::parseCommand(Command::ptr command)
         m_commandStack.push_back(command);
         command->invoke(*this, node); // XXX check errors
         m_commandStack.pop_back();
+
+        if(m_afterassignmentToken &&
+                dynamic_pointer_cast<base::Assignment>(command)) {
+            Token::list tokens(1, m_afterassignmentToken);
+            pushBack(&tokens);
+            m_afterassignmentToken.reset();
+        }
     }
 
     resetNoexpand();
@@ -2060,6 +2080,14 @@ Node::ptr Parser::parseGroup(GroupType groupType)
                         Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
             node->appendChild("group_begin", left_brace);
         }
+        if(m_afterassignmentToken &&
+                dynamic_pointer_cast<base::Setbox>(currentCommand())) {
+            // We are in \setbox=\?box{, afterassignment token should
+            // be inserted here
+            Token::list tokens(1, m_afterassignmentToken);
+            pushBack(&tokens);
+            m_afterassignmentToken.reset();
+        }
     } else if(groupType == GROUP_SUPER) {
         assert(symbolCommand<Begingroup>(peekToken()));
         node->appendChild("group_begin", parseToken());
@@ -2123,6 +2151,8 @@ Node::ptr Parser::parseGroup(GroupType groupType)
         } else if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
             beginGroup();
             node->appendChild("group", parseGroup(GROUP_NORMAL));
+            //pushBack(&m_aftergroupTokens);
+            //m_aftergroupTokens.clear();
             endGroup();
 
         } else if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
@@ -2196,6 +2226,8 @@ Node::ptr Parser::parseGroup(GroupType groupType)
                 if(dynamic_pointer_cast<Begingroup>(cmd)) {
                     beginGroup();
                     node->appendChild("group", parseGroup(GROUP_SUPER));
+                    //pushBack(&m_aftergroupTokens);
+                    //m_aftergroupTokens.clear();
                     endGroup();
                 } else if(dynamic_pointer_cast<Endgroup>(cmd)) {
                     if(groupType == GROUP_SUPER) {
