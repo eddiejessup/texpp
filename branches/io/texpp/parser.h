@@ -139,12 +139,18 @@ public:
     void addNoexpand(Token::ptr token) { m_noexpandTokens.insert(token); }
     void resetNoexpand() { m_noexpandTokens.clear(); pushBack(NULL); }
 
-    void setInEdef(bool inEdef) { m_inEdef = inEdef; }
-    bool inEdef() const { return m_inEdef; }
-
     void input(const string& fileName, const string& fullName);
     void end() { m_end = true; }
     void endinput() { m_endinput = true; }
+
+    Command::ptr currentCommand() const {
+        return m_commandStack.empty() ? Command::ptr() : m_commandStack.back();
+    }
+
+    Command::ptr prevCommand(size_t n = 1) const {
+        return m_commandStack.size() <= n ? Command::ptr() :
+            m_commandStack[m_commandStack.size()-1-n];
+    }
 
     //////// Parse helpers
     bool helperIsImplicitCharacter(Token::CatCode catCode,
@@ -257,6 +263,10 @@ protected:
     > TokenSet;
 
     typedef std::vector<
+        Command::ptr
+    > CommandStack;
+
+    typedef std::vector<
         pair<shared_ptr<Lexer>, TokenQueue>
     > InputStack;
 
@@ -271,7 +281,6 @@ protected:
     TokenQueue      m_tokenQueue;
 
     int             m_groupLevel;
-    bool            m_inEdef;
     bool            m_end;
     bool            m_endinput;
     bool            m_endinputNow;
@@ -309,6 +318,8 @@ protected:
     string  m_customGroupType;
     bool    m_customGroupBegin;
     bool    m_customGroupEnd;
+
+    CommandStack m_commandStack;
 
     Interaction m_interaction;
 

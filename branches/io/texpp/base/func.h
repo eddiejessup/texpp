@@ -116,6 +116,10 @@ public:
         : Assignment(name), m_global(global), m_expand(expand) {}
     bool invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
                                 std::set<string>& prefixes);
+
+    bool global() const { return m_global; }
+    bool expand() const { return m_expand; }
+
 protected:
     bool m_global;
     bool m_expand;
@@ -135,6 +139,8 @@ public:
     bool outerAttr() const { return m_outerAttr; }
     bool longAttr() const { return m_longAttr; }
 
+    string texRepr(Parser* parser,
+            bool newline, size_t limit = 0) const;
     string texRepr(Parser* parser = NULL) const;
     bool expand(Parser& parser, shared_ptr<Node> node);
 

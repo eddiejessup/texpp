@@ -106,11 +106,14 @@ string Token::texReprControl(const string& name,
 }
 
 string Token::texReprList(const Token::list& tokens,
-                            Parser* parser, bool param)
+                    Parser* parser, bool param, size_t limit)
 {
     string str;
     BOOST_FOREACH(Token::ptr token, tokens) {
-        if(token->isControl()) {
+        if(limit && str.length() >= limit) {
+            str += texReprControl("\\ETC.", parser);
+            break;
+        } else if(token->isControl()) {
             str += Token::texReprControl(token->value(), parser, true);
         } else if(!param && token->isCharacterCat(CC_PARAM)) {
             str += token->value();

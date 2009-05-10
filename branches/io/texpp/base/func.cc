@@ -228,14 +228,8 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     }
 
     // TODO: implement correct list expansion
-    //int prevInEdef = parser.symbol("in_edef", int(0));
-    //parser.setSymbol("in_edef", int(m_expand || prevInEdef), true);
-    bool prevInEdef = parser.inEdef();
-    parser.setInEdef(m_expand || prevInEdef);
     Node::ptr definition =
         parser.parseBalancedText(m_expand, paramNum, ltoken);
-    parser.setInEdef(prevInEdef);
-    //parser.setSymbol("in_edef", prevInEdef, true);
 
     /*
     if(m_expand) {
@@ -283,7 +277,7 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     return true;
 }
 
-string UserMacro::texRepr(Parser* parser) const
+string UserMacro::texRepr(Parser* parser, bool newline, size_t limit) const
 {
     string str;
 
@@ -292,11 +286,18 @@ string UserMacro::texRepr(Parser* parser) const
     if(m_outerAttr) str = str + escape + "outer";
     if(!str.empty()) str += ' ';
 
-    str += "macro:\n" +
-            Token::texReprList(*m_params, parser, true) + "->" +
-            Token::texReprList(*m_definition, parser, true);
+    str += string("macro:") + (newline ? "\n" : "") +
+            Token::texReprList(*m_params, parser, true) + "->";
+
+    if(limit) limit = limit > str.size() ? limit - str.size() : 1;
+    str += Token::texReprList(*m_definition, parser, true, limit);
 
     return str;
+}
+
+string UserMacro::texRepr(Parser* parser) const
+{
+    return texRepr(parser, true, 0);
 }
 
 bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)

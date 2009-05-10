@@ -248,7 +248,7 @@ bool Openout::invokeWithPrefixes(Parser& parser,
         parser.setSymbol("write" + boost::lexical_cast<string>(stream),
                                     OutFile(ostream), true);
         string msg = texRepr(&parser) + boost::lexical_cast<string>(stream)
-                        + " = `" + fname + "'.\n";
+                        + " = `" + fname + "'.\n\n";
         parser.logger()->log(Logger::MTRACING, msg,
                                 parser, parser.lastToken());
     } else {
@@ -357,12 +357,7 @@ bool Write::invokeWithPrefixes(Parser& parser,
     // TODO: expand text later
     Parser::Mode prevMode = parser.mode();
     parser.setMode(Parser::NULLMODE);
-    bool prevInEdef = parser.inEdef();
-    parser.setInEdef(true);
-
     Node::ptr text = parser.parseGeneralText(true);
-
-    parser.setInEdef(prevInEdef);
     parser.setMode(prevMode);
 
     node->appendChild("text", text);
@@ -406,11 +401,7 @@ bool Message::invoke(Parser& parser, Node::ptr node)
     using boost::lexical_cast;
     // TODO: expand text later
 
-    bool prevInEdef = parser.inEdef();
-    parser.setInEdef(true);
     Node::ptr text = parser.parseGeneralText(true);
-    parser.setInEdef(prevInEdef);
-
     node->appendChild("text", text);
     
     string str;

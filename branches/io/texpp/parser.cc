@@ -29,6 +29,7 @@
 #include <texpp/base/font.h>
 #include <texpp/base/box.h>
 #include <texpp/base/misc.h>
+#include <texpp/base/files.h>
 
 #include <iostream>
 #include <fstream>
@@ -129,7 +130,7 @@ string Node::source(const string& fileName) const
 
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_inEdef(false),
+    : m_logger(logger), m_groupLevel(0),
       m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
@@ -142,7 +143,7 @@ Parser::Parser(const string& fileName, std::istream* file,
 
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_inEdef(false),
+    : m_logger(logger), m_groupLevel(0),
       m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
@@ -286,9 +287,16 @@ void Parser::endGroup()
                 str += "undefined";
             } else if(value.type() == typeid(Command::ptr)) {
                 Command::ptr cmd = *unsafe_any_cast<Command::ptr>(&value);
-                string r = cmd ? cmd->texRepr(this) : "undefined";
-                std::remove_copy(r.begin(), r.end(),
-                        std::back_inserter(str), '\n');
+                shared_ptr<base::UserMacro> m =
+                    dynamic_pointer_cast<base::UserMacro >(cmd);
+                if(m) {
+                    str += m->texRepr(this, false, 38);
+                            //60 > str.length() ? 60-str.length() : 1);
+                } else {
+                    str += (cmd ? cmd->texRepr(this) : "undefined");
+                }
+                //std::remove_copy(r.begin(), r.end(),
+                //        std::back_inserter(str), '\n');
             } else if(value.type() == typeid(base::ParshapeInfo)) {
                 str += boost::lexical_cast<string>(
                     unsafe_any_cast<base::ParshapeInfo>(&value)
@@ -321,7 +329,8 @@ void Parser::endGroup()
                 }
             } else if(value.type() == typeid(Token::list)) {
                 str += Token::texReprList(
-                        *unsafe_any_cast<Token::list>(&value), this);
+                        *unsafe_any_cast<Token::list>(&value), this, false, 34);
+                        //false, 70 > str.length() ? 70-str.length() : 1);
             } else {
                 str += reprAny(value);
             }
@@ -387,7 +396,10 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         size_t level = m_conditionals.size();
 
         // At this point the rawNextToken may be called recursively
+        m_commandStack.push_back(condBegin);
         condBegin->evaluate(*this, node);
+        m_commandStack.pop_back();
+
         pushBack(NULL);
 
         assert(m_conditionals.size() >= level);
@@ -405,7 +417,7 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         cinfo.branch = 0;
         cinfo.parsed = true;
 
-        if(symbol("tracingcommands", int(0)) > 1 && mode() != NULLMODE) {
+        if(symbol("tracingcommands", int(0)) > 1/* && mode() != NULLMODE*/) {
             string str;
             if(cinfo.ifcase) {
                 str = "case " +
@@ -490,7 +502,9 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
 
     } else {
         // At this point the rawNextToken may be called recursively
+        m_commandStack.push_back(macro);
         macro->expand(*this, node);
+        m_commandStack.pop_back();
         pushBack(NULL);
 
     }
@@ -509,30 +523,6 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
     node->setValue(newTokens);
 
     return node;
-
-    /*
-    Token::list newTokens = node->value(Token::list());
-    Token::list::reverse_iterator rend = newTokens.rend();
-    for(Token::list::reverse_iterator it = newTokens.rbegin();
-                it != rend; ++it) {
-        assert((*it)->source().empty());
-        m_tokenQueue.push_front(*it);
-    }
-
-    token = Token::ptr(new Token(
-                expanded ? Token::TOK_SKIPPED : token->type(),
-                token->catCode(), token->value(), node->source()));
-    */
-
-#warning TODO: uncomment the following code!
-    /* else if(!cmd) {
-        traceCommand(token, true);
-        logger()->log(Logger::ERROR,
-            "Undefined control sequence", *this, lastToken());
-        token = Token::ptr(new Token(Token::TOK_SKIPPED,
-                    token->catCode(), token->value(), token->source(),
-                    token->isLastInLine(), token->fileNamePtr()));
-    }*/
 }
 
 Token::ptr Parser::rawNextToken(bool expand)
@@ -959,7 +949,11 @@ Node::ptr Parser::parseCommand(Command::ptr command)
             int lastChildNumber = node->childrenCount();
             node->appendChild("prefix", parseControlSequence());
 
-            if(!command->invokeWithPrefixes(*this, node, prefixes)) {
+            m_commandStack.push_back(command);
+            bool r = command->invokeWithPrefixes(*this, node, prefixes);
+            m_commandStack.pop_back();
+
+            if(!r) {
                 pushBack(&node->children().back().second->tokens());
                 node->children().pop_back();
                 break;
@@ -975,7 +969,10 @@ Node::ptr Parser::parseCommand(Command::ptr command)
             *this, lastToken());
     } else {
         node->appendChild("control_sequence", parseControlSequence());
+
+        m_commandStack.push_back(command);
         command->invoke(*this, node); // XXX check errors
+        m_commandStack.pop_back();
     }
 
     resetNoexpand();
@@ -2008,10 +2005,17 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
         string str;
         if(token->isControl()) {
             Command::ptr cmd = symbol(token, Command::ptr());
-            if(dynamic_pointer_cast<base::TheMacro>(cmd) &&
-                (mode() == NULLMODE || m_inEdef)) {
+            if(dynamic_pointer_cast<base::TheMacro>(cmd)) {
+                Command::ptr c = currentCommand();
+                if(mode() == NULLMODE ||
+                        dynamic_pointer_cast<base::Write>(c) ||
+                        dynamic_pointer_cast<base::Message>(c) ||
+                        (dynamic_pointer_cast<base::Def>(c) &&
+                         static_pointer_cast<base::Def>(c)->expand())) {
                     return;
-            } else if(dynamic_pointer_cast<Macro>(cmd)) {
+                }
+            }
+            if(dynamic_pointer_cast<Macro>(cmd)) {
                 if(expanding) {
                     if(tracingcommands < 2) return;
                     if(dynamic_pointer_cast<base::UserMacro>(cmd)) return;

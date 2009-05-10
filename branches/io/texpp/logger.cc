@@ -94,11 +94,11 @@ bool ConsoleLogger::log(Level level, const string& message,
     std::ostringstream r;
     
     if(level <= MTRACING) {
-        if(m_linePos) r << '\n';
-        r << message << std::endl;
+        //if(m_linePos) r << '\n';
+        r << message;// << std::endl;
     } else if(level <= TRACING) {
         if(m_linePos) r << '\n';
-        r << '{' << message << '}' << std::endl;
+        r << '{' << message << '}';// << std::endl;
     } else if(level <= PLAIN) {
         r << message;
     } else if(level <= MESSAGE) {
@@ -118,14 +118,14 @@ bool ConsoleLogger::log(Level level, const string& message,
     std::ostringstream r1;
     int newlinechar = parser.symbol("newlinechar", int(0));
     BOOST_FOREACH(unsigned char ch, r.str()) {
+        if(m_linePos >= MAX_LINE_CHARS) {
+            r1 << '\n';
+            m_linePos = 0;
+        }
         if(ch == newlinechar || ch == '\n') {
             r1 << '\n';
             m_linePos = 0;
         } else {
-            if(m_linePos >= MAX_LINE_CHARS) {
-                r1 << '\n';
-                m_linePos = 0;
-            }
             if(ch <= 0x1f) {
                 r1 << "^^" << char(ch+64);
                 m_linePos += 3;
@@ -142,7 +142,8 @@ bool ConsoleLogger::log(Level level, const string& message,
     string msg(r1.str());
     std::cout << msg << std::flush;
 
-    if(parser.lexer()->interactive() && m_linePos) {
+    if(m_linePos && (parser.lexer()->interactive() ||
+                        level <= TRACING)) {
         std::cout << std::endl;
         m_linePos = 0;
     }
