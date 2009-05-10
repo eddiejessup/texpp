@@ -898,6 +898,7 @@ Node::ptr Parser::parseFalseConditional(size_t level, bool sElse, bool sOr)
     Token::ptr token;
     while((token = peekToken(false)) && m_conditionals.size() >= level) {
         Command::ptr cmd = symbol(token, Command::ptr());
+        nextToken(&node->tokens(), false);
         
         if(dynamic_pointer_cast<ConditionalBegin>(cmd)) {
             ConditionalInfo cinfo;
@@ -907,22 +908,35 @@ Node::ptr Parser::parseFalseConditional(size_t level, bool sElse, bool sOr)
 
         } else if(dynamic_pointer_cast<ConditionalOr>(cmd)) {
             if(sOr && m_conditionals.size() == level) {
-                return node;
+                ConditionalInfo& cinfo = m_conditionals.back();
+                ++cinfo.branch;
+                cinfo.active = (cinfo.value == cinfo.branch);
+                if(cinfo.active)
+                    return node;
             }
 
         } else if(dynamic_pointer_cast<ConditionalElse>(cmd)) {
             if(sElse && m_conditionals.size() == level) {
-                return node;
+                ConditionalInfo& cinfo = m_conditionals.back();
+                if(cinfo.ifcase) {
+                    cinfo.active = cinfo.value < 0 ||
+                                    cinfo.value > cinfo.branch;
+                } else {
+                    cinfo.active = !cinfo.value;
+                }
+                cinfo.branch = -1;
+                sElse = sOr = false;
+                if(cinfo.active)
+                    return node;
             }
 
         } else if(dynamic_pointer_cast<ConditionalEnd>(cmd)) {
             if(m_conditionals.size() == level) {
+                m_conditionals.pop_back();
                 return node;
             }
             m_conditionals.pop_back();
         }
-
-        nextToken(&node->tokens(), false);
     }
 
     // TODO: error
