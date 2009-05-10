@@ -419,7 +419,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("halign", UnimplementedCommand);
     __TEXPP_SET_COMMAND("indent", UnimplementedCommand);
     __TEXPP_SET_COMMAND("noindent", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("dump", UnimplementedCommand);
 
     // horizontal mode
     __TEXPP_SET_COMMAND("hskip", UnimplementedCommand);
@@ -485,6 +484,7 @@ void initSymbols(Parser& parser)
 
         parser.lexer()->setCatcode(i, Token::CC_OTHER);
         parser.setSymbol("catcode"+n, int(Token::CC_OTHER));
+        parser.setSymbol("sfcode"+n, int(1000));
 
         parser.setSymbol("delcode"+n, int(-1));
         parser.setSymbol("mathcode"+n, int(i));
@@ -496,7 +496,6 @@ void initSymbols(Parser& parser)
         parser.lexer()->setCatcode(i, Token::CC_LETTER);
         parser.setSymbol("catcode"+n, int(Token::CC_LETTER));
 
-        parser.setSymbol("sfcode"+n, int(1000));
         parser.setSymbol("lccode"+n, int(i));
         parser.setSymbol("uccode"+n, int(i - 'a' + 'A'));
         parser.setSymbol("mathcode"+n, int(0x7100 + i));
