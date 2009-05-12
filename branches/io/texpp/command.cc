@@ -46,16 +46,16 @@ bool TokenCommand::invoke(Parser&, shared_ptr<Node> node)
     return true;
 }
 
-Token::list Macro::stringToTokens(const string& str)
+Token::list_ptr Macro::stringToTokens(const string& str)
 {
-    Token::list ret;
+    Token::list_ptr ret(new Token::list());
 
     BOOST_FOREACH(char ch, str) {
         Token::CatCode catcode = Token::CC_OTHER;
         if(ch == ' ') catcode = Token::CC_SPACE;
 
-        ret.push_back(Token::ptr(new Token(
-            Token::TOK_CHARACTER, catcode, string(1, ch))));
+        ret->push_back(Token::create(
+            Token::TOK_CHARACTER, catcode, string(1, ch)));
     }
 
     return ret;

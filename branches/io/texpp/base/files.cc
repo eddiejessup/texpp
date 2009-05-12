@@ -171,12 +171,12 @@ bool Read::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
         if(endlinechar >= 0 && endlinechar <= 255) {
             int cc = infile.lexer->catcode(endlinechar);
             if(cc == Token::CC_EOL)
-                tokens->push_back(Token::ptr(new Token(
-                    Token::TOK_CONTROL, Token::CC_ESCAPE, "\\par")));
+                tokens->push_back(Token::create(
+                    Token::TOK_CONTROL, Token::CC_ESCAPE, "\\par"));
             else
-                tokens->push_back(Token::ptr(new Token(
+                tokens->push_back(Token::create(
                     Token::TOK_CHARACTER, Token::CatCode(cc),
-                    string(1, char(endlinechar)))));
+                    string(1, char(endlinechar))));
         }
         if(infile.lexer)
             parser.setSymbol("read" + boost::lexical_cast<string>(stream),

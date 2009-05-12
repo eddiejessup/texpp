@@ -129,20 +129,19 @@ bool ConsoleLogger::log(Level level, const string& message,
         }
     }
 
-    std::ostringstream r2;
     BOOST_FOREACH(unsigned char ch, r1.str()) {
         if(m_linePos >= MAX_LINE_CHARS) {
-            r2 << '\n';
+            std::cout << '\n';
             m_linePos = 0;
         }
-        r2 << ch;
+        std::cout << ch;
         if(ch == '\n')
             m_linePos = 0;
         else
             ++m_linePos;
     }
 
-    std::cout << r2.str() << std::flush;
+    std::cout << std::flush;
 
     if(m_linePos && (parser.lexer()->interactive() ||
                         level <= TRACING)) {

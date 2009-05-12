@@ -198,9 +198,9 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
                 parser.logger()->log(Logger::ERROR,
                     "Parameters must be numbered consecutively",
                     parser, parser.lastToken());
-                params->push_back(Token::ptr(
-                    new Token(Token::TOK_CHARACTER, Token::CC_OTHER,
-                            boost::lexical_cast<string>(++paramNum))));
+                params->push_back(Token::create(
+                        Token::TOK_CHARACTER, Token::CC_OTHER,
+                        boost::lexical_cast<string>(++paramNum)));
             } else {
                 params->push_back(
                     parser.nextToken(&paramsNode->tokens(), false));
@@ -223,8 +223,8 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     } else {
         parser.logger()->log(Logger::ERROR, "Missing { inserted",
             parser, parser.lastToken());
-        left_brace->setValue(Token::ptr(new Token(
-                    Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
+        left_brace->setValue(Token::create(
+                    Token::TOK_CHARACTER, Token::CC_BGROUP, "{"));
     }
 
     // TODO: implement correct list expansion
@@ -264,8 +264,8 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
         right_brace->setValue(parser.nextToken(&right_brace->tokens(), false));
     } else {
         // TODO: error
-        right_brace->setValue(Token::ptr(new Token(
-                    Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
+        right_brace->setValue(Token::create(
+                    Token::TOK_CHARACTER, Token::CC_EGROUP, "}"));
     }
 
     parser.setSymbol(ltoken,
@@ -417,23 +417,25 @@ bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
         }
     }
 
-    Token::list result;
+    Token::list_ptr result(new Token::list());
+    result->reserve(m_definition->size());
+
     end = m_definition->end();
     for(Token::list::iterator it = m_definition->begin();
                                             it < end; ++it) {
         if((*it)->isCharacterCat(Token::CC_PARAM)) {
             if(++it >= end) break;
             if((*it)->isCharacterCat(Token::CC_PARAM)) {
-                result.push_back((*it)->lcopy());
+                result->push_back((*it)->lineNo() ? (*it)->lcopy() : *it);
             } else if((*it)->isCharacter()) {
                 char ch = (*it)->value()[0];
                 if(!isdigit(ch) || ch == '0' || !params[ch-'0'-1]) continue;
                 BOOST_FOREACH(Token::ptr token, *params[ch-'0'-1]) {
-                    result.push_back(token->lcopy());
+                    result->push_back(token->lineNo() ? token->lcopy() : token);
                 }
             }
         } else {
-            result.push_back((*it)->lcopy());
+            result->push_back((*it)->lineNo() ? (*it)->lcopy() : *it);
         }
     }
 

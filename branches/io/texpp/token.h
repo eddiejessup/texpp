@@ -20,10 +20,12 @@
 #define __TEXPP_TOKEN_H
 
 #include <texpp/common.h>
+#include <boost/pool/singleton_pool.hpp>
 
 namespace texpp {
 
 class Parser;
+class Token;
 
 class Token
 {
@@ -66,6 +68,16 @@ public:
         : m_type(type), m_catCode(catCode), m_value(value), m_source(source),
           m_lineNo(lineNo), m_charPos(charPos), m_charEnd(charEnd),
           m_lastInLine(lastInLine), m_fileName(fileName) {}
+
+    static Token::ptr create(Type type = TOK_SKIPPED, CatCode catCode = CC_INVALID,
+            const string& value = string(), const string& source = string(),
+            size_t lineNo = 0, size_t charPos = 0, size_t charEnd = 0,
+            bool lastInLine = false,
+            shared_ptr<string> fileName = shared_ptr<string>()) {
+        return Token::ptr(new Token(type, catCode, value, source,
+                    lineNo, charPos, charEnd, lastInLine, fileName)
+                );
+    }
 
     Type type() const { return m_type; }
     void setType(Type type) { m_type = type; }
@@ -116,10 +128,10 @@ public:
     string repr() const;
 
     Token::ptr lcopy() const {
-        return Token::ptr(new Token(
+        return Token::create(
             m_type, m_catCode, m_value, "", 0, 0, 0,
             //m_lineNo, m_charEnd, m_charEnd,
-            m_lastInLine, m_fileName));
+            m_lastInLine, m_fileName);
     }
 
     static string texReprControl(const string& name,

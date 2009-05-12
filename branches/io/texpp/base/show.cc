@@ -77,16 +77,16 @@ bool parseThe(Parser& parser, shared_ptr<Node> node, bool show)
     if(!show && dynamic_pointer_cast<base::ToksVariable>(var)) {
         var->invokeOperation(parser, node, base::Variable::GET, false);
         Token::list toks = node->value(Token::list());
-        Token::list toks_copy(toks.size());
+        Token::list_ptr toks_copy(new Token::list(toks.size()));
         for(size_t n=0; n<toks.size(); ++n) {
-            toks_copy[n] = toks[n]->lcopy();
+            (*toks_copy)[n] = toks[n]->lcopy();
             if(!show) {
                 Command::ptr c = parser.prevCommand();
                 if(dynamic_pointer_cast<base::Write>(c) ||
                         dynamic_pointer_cast<base::Message>(c) ||
                         (dynamic_pointer_cast<base::Def>(c) &&
                          static_pointer_cast<base::Def>(c)->expand())) {
-                    parser.addNoexpand(toks_copy[n]);
+                    parser.addNoexpand((*toks_copy)[n]);
                 }
             }
         }

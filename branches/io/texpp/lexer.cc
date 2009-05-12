@@ -187,7 +187,7 @@ bool Lexer::nextChar()
 inline Token::ptr Lexer::newToken(Token::Type type,
                                 const string& value)
 {
-    return Token::ptr(new Token(
+    return Token::create(
         type, m_catCode, 
         value.empty() && m_char >= 0 ? string(1, m_char) : value,
         m_lineOrig.substr(std::min(m_charPos, m_lineOrig.size()),
@@ -196,7 +196,7 @@ inline Token::ptr Lexer::newToken(Token::Type type,
                 std::min(m_charPos, m_lineOrig.size()),
                 std::min(m_charEnd, m_lineOrig.size()),
                 m_charEnd >= m_lineTex.size(),
-                m_fileName));
+                m_fileName);
 }
 
 Token::ptr Lexer::nextToken()
