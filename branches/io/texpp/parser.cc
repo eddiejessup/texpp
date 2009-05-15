@@ -581,7 +581,7 @@ Token::ptr Parser::rawNextToken(bool expand)
             Token::list::reverse_iterator rend = newTokens->rend();
             Token::list::reverse_iterator it = newTokens->rbegin();
             for(; it+1 != rend; ++it) {
-                assert((*it)->source().empty() && !(*it)->lineNo());
+                assert((*it)->source().empty());
                 m_tokenQueue.push_front(*it);
             }
             if(it != rend)
