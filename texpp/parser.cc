@@ -28,15 +28,20 @@
 #include <texpp/base/parshape.h>
 #include <texpp/base/font.h>
 #include <texpp/base/box.h>
+#include <texpp/base/misc.h>
+#include <texpp/base/files.h>
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <climits>
 #include <cassert>
 #include <iterator>
+#include <ctime>
 
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace {
 
@@ -54,11 +59,7 @@ const texpp::string modeNames[] = {
 
 namespace texpp {
 
-string Parser::BANNER = "This is TeXpp, Version 0.0"
-#ifdef __GNUC__
-    "  " __DATE__ " " __TIME__
-#endif
-    "\n";
+string Parser::BANNER = "This is TeXpp, Version 0.0";
 
 using base::Dimen;
 
@@ -113,25 +114,28 @@ string Node::treeRepr(size_t indent) const
     return str;
 }
 
-string Node::source() const
+string Node::source(const string& fileName) const
 {
     string str;
     BOOST_FOREACH(Token::ptr token, m_tokens) {
-        str += token->source();
+        if(fileName.empty() || token->fileName() == fileName)
+            str += token->source();
     }
     typedef pair<string, Node::ptr> C;
     BOOST_FOREACH(C c, m_children) {
-        str += c.second->source();
+        str += c.second->source(fileName);
     }
     return str;
 }
 
 Parser::Parser(const string& fileName, std::istream* file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_end(false),
+    : m_logger(logger), m_groupLevel(0),
+      m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
-      m_customGroupBegin(false), m_customGroupEnd(false)
+      m_customGroupBegin(false), m_customGroupEnd(false),
+      m_interaction(ERRORSTOPMODE)
 {
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
     init();
@@ -139,10 +143,12 @@ Parser::Parser(const string& fileName, std::istream* file,
 
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
                 bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0), m_end(false),
+    : m_logger(logger), m_groupLevel(0),
+      m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
-      m_customGroupBegin(false), m_customGroupEnd(false)
+      m_customGroupBegin(false), m_customGroupEnd(false),
+      m_interaction(ERRORSTOPMODE)
 {
     m_lexer = shared_ptr<Lexer>(new Lexer(fileName, file, interactive, true));
     init();
@@ -156,7 +162,17 @@ void Parser::init()
                         shared_ptr<Logger>(new NullLogger);
 
     base::initSymbols(*this);
-    m_logger->log(Logger::MESSAGE, BANNER, *this, Token::ptr());
+    
+    string banner = BANNER;
+    if(!lexer()->interactive()) {
+        char t[256];
+        time_t tt = std::time(NULL);
+        std::strftime(t, sizeof(t), " %e %b %Y %H:%M", std::localtime(&tt));
+        string ts(t);
+        boost::algorithm::to_upper(ts);
+        banner += ts;
+    }
+    m_logger->log(Logger::WRITE, banner, *this, Token::ptr());
 }
 
 const string& Parser::modeName() const
@@ -218,6 +234,7 @@ void Parser::setSpecialSymbol(const string& name, const any& value)
 void Parser::beginGroup()
 {
     m_symbolsStackLevels.push_back(m_symbolsStack.size());
+    m_aftergroupTokensStack.push_back(Token::list());
     ++m_groupLevel;
 }
 
@@ -236,11 +253,18 @@ void Parser::endGroup()
         SymbolStack::reference item = m_symbolsStack.back();
         SymbolTable::iterator it = m_symbols.find(item.first);
 
+        int l = it->second.first;
+
+        if(l >= 0) {
+            it->second = item.second;
+            setSpecialSymbol(it->first, it->second.second);
+        }
+
         if(symbol("tracingrestores", int(0)) > 0) {
             string str;
             any value;
 
-            if(it->second.first >= 0) {
+            if(l >= 0) {
                 str = "restoring ";
                 value = item.second.second;
             } else {
@@ -264,9 +288,16 @@ void Parser::endGroup()
                 str += "undefined";
             } else if(value.type() == typeid(Command::ptr)) {
                 Command::ptr cmd = *unsafe_any_cast<Command::ptr>(&value);
-                string r = cmd->texRepr(this);
-                std::remove_copy(r.begin(), r.end(),
-                        std::back_inserter(str), '\n');
+                shared_ptr<base::UserMacro> m =
+                    dynamic_pointer_cast<base::UserMacro >(cmd);
+                if(m) {
+                    str += m->texRepr(this, false, 38);
+                            //60 > str.length() ? 60-str.length() : 1);
+                } else {
+                    str += (cmd ? cmd->texRepr(this) : "undefined");
+                }
+                //std::remove_copy(r.begin(), r.end(),
+                //        std::back_inserter(str), '\n');
             } else if(value.type() == typeid(base::ParshapeInfo)) {
                 str += boost::lexical_cast<string>(
                     unsafe_any_cast<base::ParshapeInfo>(&value)
@@ -297,35 +328,46 @@ void Parser::endGroup()
                 } else {
                     str += "void";
                 }
+            } else if(value.type() == typeid(Token::list)) {
+                str += Token::texReprList(
+                        *unsafe_any_cast<Token::list>(&value), this, false, 34);
+                        //false, 70 > str.length() ? 70-str.length() : 1);
             } else {
                 str += reprAny(value);
             }
+
+            //if(str.size() > 72) {
+            //   str = str.substr(0, 72-5) + "\\ETC.";
+            //}
 
             logger()->log(Logger::TRACING,
                 str, *this, Token::ptr());
         }
 
-        if(it->second.first >= 0) {
-            it->second = item.second;
-            setSpecialSymbol(it->first, it->second.second);
-        }
-
         m_symbolsStack.pop_back();
     }
+
+    pushBack(&m_aftergroupTokensStack.back());
+
+    m_aftergroupTokensStack.pop_back();
     m_symbolsStackLevels.pop_back();
     --m_groupLevel;
 }
 
 Node::ptr Parser::rawExpandToken(Token::ptr token)
 {
+    if(m_lockToken) {
+        if(token->type() == m_lockToken->type() &&
+                token->catCode() == m_lockToken->catCode() &&
+                token->value() == m_lockToken->value())
+            return Node::ptr();
+    }
+
     Command::ptr cmd = symbol(token, Command::ptr());
     Macro::ptr macro = dynamic_pointer_cast<Macro>(cmd);
 
-    if(!macro)
+    if(cmd && !macro)
         return Node::ptr();
-
-    if(m_conditionals.empty() || m_conditionals.back().active)
-        traceCommand(token, true);
 
     Node::ptr node(new Node("macro"));
     Node::ptr child(new Node("control_token"));
@@ -336,7 +378,22 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
     
     pushBack(NULL);
 
-    if(dynamic_pointer_cast<ConditionalBegin>(macro)) {
+    if(m_conditionals.empty() || m_conditionals.back().active)
+        traceCommand(token, true);
+
+    if(!cmd) {
+        logger()->log(Logger::ERROR,
+            "Undefined control sequence", *this, token);
+        /*token = Token::create(Token::TOK_SKIPPED,
+                    token->catCode(), token->value(), token->source(),
+                    token->lineNo(), token->charPos(), token->charEnd(),
+                    token->isLastInLine(), token->fileNamePtr());*/
+        //token = token->lcopy();
+        //token->setType(Token::TOK_SKIPPED);
+        //node->setValue(Token::list(1, token));
+        node->setType("undefined_control_sequence");
+
+    } else if(dynamic_pointer_cast<ConditionalBegin>(macro)) {
         ConditionalBegin::ptr condBegin =
             static_pointer_cast<ConditionalBegin>(macro);
 
@@ -351,7 +408,10 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         size_t level = m_conditionals.size();
 
         // At this point the rawNextToken may be called recursively
+        m_commandStack.push_back(condBegin);
         condBegin->evaluate(*this, node);
+        m_commandStack.pop_back();
+
         pushBack(NULL);
 
         assert(m_conditionals.size() >= level);
@@ -369,7 +429,7 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         cinfo.branch = 0;
         cinfo.parsed = true;
 
-        if(symbol("tracingcommands", int(0)) > 1 && mode() != NULLMODE) {
+        if(symbol("tracingcommands", int(0)) > 1/* && mode() != NULLMODE*/) {
             string str;
             if(cinfo.ifcase) {
                 str = "case " +
@@ -390,8 +450,11 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
 
     } else if(dynamic_pointer_cast<ConditionalOr>(macro)) {
         if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-            node->setValue(Token::list(1, token->lcopy()));
-            //m_tokenQueue.push_front(token->lcopy());
+            node->setValue(Token::list_ptr(
+                new Token::list(1, Token::create(
+                token->type(), token->catCode(), token->value(),
+                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if((m_conditionals.empty() ||
                 m_conditionals.back().branch < 0 ||
@@ -411,8 +474,11 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         }
     } else if(dynamic_pointer_cast<ConditionalElse>(macro)) {
         if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-            node->setValue(Token::list(1, token->lcopy()));
-            //m_tokenQueue.push_front(token->lcopy());
+            node->setValue(Token::list_ptr(
+                new Token::list(1, Token::create(
+                token->type(), token->catCode(), token->value(),
+                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if((m_conditionals.empty() ||
                 m_conditionals.back().branch < 0)) {
@@ -436,8 +502,11 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
         }
     } else if(dynamic_pointer_cast<ConditionalEnd>(macro)) {
         if(!m_conditionals.empty() && !m_conditionals.back().parsed) {
-            node->setValue(Token::list(1, token->lcopy()));
-            //m_tokenQueue.push_front(token->lcopy());
+            node->setValue(Token::list_ptr(
+                new Token::list(1, Token::create(
+                token->type(), token->catCode(), token->value(),
+                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if(m_conditionals.empty()) {
             logger()->log(Logger::ERROR,
@@ -448,65 +517,69 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
 
     } else {
         // At this point the rawNextToken may be called recursively
+        m_commandStack.push_back(macro);
         macro->expand(*this, node);
+        m_commandStack.pop_back();
         pushBack(NULL);
 
     }
 
     // TODO: the next lines is horible. Either Node::value should return
     //       a reference or the value itself should be Token::list_ptr.
-    Token::list newTokens = node->value(Token::list());
-    newTokens.insert(newTokens.begin(),
-                Token::ptr(new Token(
+    Token::list_ptr newTokens = node->value(Token::list_ptr());
+    if(!newTokens) newTokens = Token::list_ptr(new Token::list());
+    newTokens->insert(newTokens->begin(),
+                Token::create(
                     expanded ? Token::TOK_SKIPPED : token->type(),
-                    token->catCode(), token->value(), node->source()))
+                    token->catCode(), token->value(), node->source(),
+                    0, 0, 0,
+                    false, lexer()->fileNamePtr())
             );
+#warning XXX node can consists from tokens from several files!
     node->setValue(newTokens);
 
     return node;
-
-    /*
-    Token::list newTokens = node->value(Token::list());
-    Token::list::reverse_iterator rend = newTokens.rend();
-    for(Token::list::reverse_iterator it = newTokens.rbegin();
-                it != rend; ++it) {
-        assert((*it)->source().empty());
-        m_tokenQueue.push_front(*it);
-    }
-
-    token = Token::ptr(new Token(
-                expanded ? Token::TOK_SKIPPED : token->type(),
-                token->catCode(), token->value(), node->source()));
-    */
-
-#warning TODO: uncomment the following code!
-    /* else if(!cmd) {
-        traceCommand(token, true);
-        logger()->log(Logger::ERROR,
-            "Undefined control sequence", *this, lastToken());
-        token = Token::ptr(new Token(Token::TOK_SKIPPED,
-                    token->catCode(), token->value(), token->source()));
-    }*/
 }
 
 Token::ptr Parser::rawNextToken(bool expand)
 {
     Token::ptr token;
 
-    if(!m_tokenQueue.empty()) {
-        token = m_tokenQueue.front();
-        m_tokenQueue.pop_front();
-    } else {
-        token = m_lexer->nextToken();
+    while(true) {
+        if(!m_tokenQueue.empty()) {
+            token = m_tokenQueue.front();
+            m_tokenQueue.pop_front();
+        } else {
+            if(m_endinputNow) {
+                endinputNow();
+                continue;
+            }
+
+            token = m_lexer->nextToken();
+            if(token && !token->isSkipped())
+                m_lastToken = token;
+
+            if(!m_inputStack.empty()) {
+                if(!token) {
+                    endinputNow();
+                    continue;
+                } else if(m_endinput && token->isLastInLine()) {
+                    m_endinputNow = true;
+                }
+            }
+        }
+        break;
     }
 
     if(token && token->isControl() && expand &&
-                token != m_noexpandToken) {
+                m_noexpandTokens.count(token) == 0) {
         Node::ptr node = rawExpandToken(token);
         if(node) {
-            Token::list newTokens = node->value(Token::list());
-            Token::list::reverse_iterator rend = newTokens.rend();
-            Token::list::reverse_iterator it = newTokens.rbegin();
+            Token::list_ptr newTokens = node->value(Token::list_ptr());
+            assert(newTokens && !newTokens->empty());
+
+            Token::list::reverse_iterator rend = newTokens->rend();
+            Token::list::reverse_iterator it = newTokens->rbegin();
             for(; it+1 != rend; ++it) {
                 assert((*it)->source().empty());
                 m_tokenQueue.push_front(*it);
@@ -525,8 +598,8 @@ Token::ptr Parser::nextToken(vector< Token::ptr >* tokens, bool expand)
         peekToken(expand);
 
     if(tokens) {
-        std::copy(m_tokenSource.begin(), m_tokenSource.end(),
-                    std::back_inserter(*tokens));
+        tokens->insert(tokens->end(),
+                m_tokenSource.begin(), m_tokenSource.end());
     }
 
     Token::ptr token = m_token;
@@ -646,11 +719,13 @@ Token::ptr Parser::peekToken(bool expand)
     // real token
     Token::ptr mtoken = token;
     if(token) {
-        if(token->lineNo())
-            m_lastToken = token;
+        //if(token->lineNo())
+        //    m_lastToken = token;
         tokenSource.push_back(token);
     }
 
+    // XXX
+    /*
     // skipped tokens until EOL
     if(token && !token->isLastInLine()) {
         while(token = rawNextToken(false)) {
@@ -671,6 +746,7 @@ Token::ptr Parser::peekToken(bool expand)
             }
         }
     }
+    */
 
     pushBack(NULL); // peekToken may be called recursively
 
@@ -723,6 +799,50 @@ void Parser::pushBack(vector< Token::ptr >* tokens)
                     std::front_inserter(m_tokenQueue));
     }
     // NOTE: lastToken is NOT changed
+}
+
+void Parser::input(const string& fileName, const string& fullName)
+{
+    // TODO: stop scaning genericText on file boundary
+    // (for example \def\x{...} can't be spread across several files
+    shared_ptr<std::istream> istream(new std::ifstream(fullName.c_str()));
+    if(istream->fail()) {
+        logger()->log(Logger::ERROR,
+            "I can't find file `" + fileName + "'",
+            *this, lastToken());
+
+        logger()->log(Logger::ERROR,
+            "Emergency stop",
+            *this, lastToken());
+
+        end();
+        return;
+    }
+
+    m_inputStack.push_back(std::make_pair(m_lexer, m_tokenQueue));
+
+    shared_ptr<Lexer> lexer(new Lexer(fileName, istream, false, true));
+    lexer->setEndlinechar(m_lexer->endlinechar());
+    for(int n=0; n<256; ++n) {
+        lexer->setCatcode(n, m_lexer->catcode(n));
+    }
+
+    m_lexer = lexer;
+    m_tokenQueue.clear();
+
+    logger()->log(Logger::MESSAGE, "(" + fullName, *this, lastToken());
+}
+
+void Parser::endinputNow()
+{
+    if(m_inputStack.empty())
+        return;
+    m_lexer = m_inputStack.back().first;
+    m_tokenQueue = m_inputStack.back().second;
+    m_inputStack.pop_back();
+    m_endinput = false;
+    m_endinputNow = false;
+    logger()->log(Logger::PLAIN, ")", *this, lastToken());
 }
 
 void Parser::processTextCharacter(char ch, Token::ptr token)
@@ -786,6 +906,7 @@ Node::ptr Parser::parseFalseConditional(size_t level, bool sElse, bool sOr)
     Token::ptr token;
     while((token = peekToken(false)) && m_conditionals.size() >= level) {
         Command::ptr cmd = symbol(token, Command::ptr());
+        nextToken(&node->tokens(), false);
         
         if(dynamic_pointer_cast<ConditionalBegin>(cmd)) {
             ConditionalInfo cinfo;
@@ -795,22 +916,35 @@ Node::ptr Parser::parseFalseConditional(size_t level, bool sElse, bool sOr)
 
         } else if(dynamic_pointer_cast<ConditionalOr>(cmd)) {
             if(sOr && m_conditionals.size() == level) {
-                return node;
+                ConditionalInfo& cinfo = m_conditionals.back();
+                ++cinfo.branch;
+                cinfo.active = (cinfo.value == cinfo.branch);
+                if(cinfo.active)
+                    return node;
             }
 
         } else if(dynamic_pointer_cast<ConditionalElse>(cmd)) {
             if(sElse && m_conditionals.size() == level) {
-                return node;
+                ConditionalInfo& cinfo = m_conditionals.back();
+                if(cinfo.ifcase) {
+                    cinfo.active = cinfo.value < 0 ||
+                                    cinfo.value > cinfo.branch;
+                } else {
+                    cinfo.active = !cinfo.value;
+                }
+                cinfo.branch = -1;
+                sElse = sOr = false;
+                if(cinfo.active)
+                    return node;
             }
 
         } else if(dynamic_pointer_cast<ConditionalEnd>(cmd)) {
             if(m_conditionals.size() == level) {
+                m_conditionals.pop_back();
                 return node;
             }
             m_conditionals.pop_back();
         }
-
-        nextToken(&node->tokens(), false);
     }
 
     // TODO: error
@@ -833,13 +967,25 @@ Node::ptr Parser::parseCommand(Command::ptr command)
             int lastChildNumber = node->childrenCount();
             node->appendChild("prefix", parseControlSequence());
 
-            if(!command->invokeWithPrefixes(*this, node, prefixes)) {
+            m_commandStack.push_back(command);
+            bool r = command->invokeWithPrefixes(*this, node, prefixes);
+            m_commandStack.pop_back();
+
+            if(!r) {
                 pushBack(&node->children().back().second->tokens());
                 node->children().pop_back();
                 break;
             } else if(prefixes.empty()) {
                 node->children()[lastChildNumber].first = "control_sequence";
                 resetNoexpand();
+
+                if(m_afterassignmentToken &&
+                        dynamic_pointer_cast<base::Assignment>(command)) {
+                    Token::list tokens(1, m_afterassignmentToken);
+                    pushBack(&tokens);
+                    m_afterassignmentToken.reset();
+                }
+
                 return node;
             }
         }
@@ -849,7 +995,17 @@ Node::ptr Parser::parseCommand(Command::ptr command)
             *this, lastToken());
     } else {
         node->appendChild("control_sequence", parseControlSequence());
+
+        m_commandStack.push_back(command);
         command->invoke(*this, node); // XXX check errors
+        m_commandStack.pop_back();
+
+        if(m_afterassignmentToken &&
+                dynamic_pointer_cast<base::Assignment>(command)) {
+            Token::list tokens(1, m_afterassignmentToken);
+            pushBack(&tokens);
+            m_afterassignmentToken.reset();
+        }
     }
 
     resetNoexpand();
@@ -865,8 +1021,8 @@ Node::ptr Parser::parseToken(bool expand)
         node->setValue(nextToken(&node->tokens(), expand));
     } else {
         logger()->log(Logger::ERROR, "Missing token inserted", *this, token);
-        node->setValue(Token::ptr(new Token(Token::TOK_CONTROL,
-                            Token::CC_ESCAPE, "inaccessible")));
+        node->setValue(Token::create(Token::TOK_CONTROL,
+                            Token::CC_ESCAPE, "inaccessible"));
     }
 
     resetNoexpand();
@@ -899,8 +1055,8 @@ Node::ptr Parser::parseControlSequence(bool expand)
     } else {
         logger()->log(Logger::ERROR,
             "Missing control sequence inserted", *this, lastToken());
-        node->setValue(Token::ptr(new Token(Token::TOK_CONTROL,
-                            Token::CC_ESCAPE, "inaccessible")));
+        node->setValue(Token::create(Token::TOK_CONTROL,
+                            Token::CC_ESCAPE, "inaccessible"));
     }
 
     resetNoexpand();
@@ -1042,11 +1198,11 @@ Node::ptr Parser::parseNormalInteger()
     if(peekToken()->isCharacter('`', Token::CC_OTHER)) {
         nextToken(&node->tokens());
         if(peekToken(false) && peekToken(false)->isCharacter()) {
-            node->setValue(int(peekToken(false)->value()[0]));
+            node->setValue(int((unsigned char) peekToken(false)->value()[0]));
             nextToken(&node->tokens(), false);
         } else if(peekToken(false) && peekToken(false)->isControl() &&
                     peekToken()->value().size() == 2) {
-            node->setValue(int(peekToken(false)->value()[1]));
+            node->setValue(int((unsigned char) peekToken(false)->value()[1]));
             nextToken(&node->tokens(), false);
         } else {
             logger()->log(Logger::ERROR,
@@ -1224,7 +1380,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit =
+        iunit =
             base::Variable::tryParseVariableValue<base::InternalDimen>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
@@ -1234,7 +1390,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit =
+        iunit =
             base::Variable::tryParseVariableValue<base::InternalGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
@@ -1244,7 +1400,7 @@ Node::ptr Parser::parseNormalDimen(bool fil, bool mu)
     }
 
     if(!iunit) {
-        Node::ptr iunit =
+        iunit =
             base::Variable::tryParseVariableValue<base::InternalMuGlue>(*this);
         if(iunit) {
             node->appendChild("internal_unit", iunit);
@@ -1750,8 +1906,8 @@ Node::ptr Parser::parseBalancedText(bool expand,
                         + (nameToken ? nameToken->texRepr(this) :
                            escapestr() + "undefined"),
                         *this, lastToken());
-                    tokens->push_back(Token::ptr(new Token(
-                        token->type(), token->catCode(), token->value())));
+                    tokens->push_back(Token::create(
+                        token->type(), token->catCode(), token->value()));
                 }
             } else if(nToken) {
                 tokens->push_back(nextToken(&node->tokens(), expand));
@@ -1770,8 +1926,9 @@ Node::ptr Parser::parseFiller(bool expand)
             nextToken(&filler->tokens(), expand);
             continue;
         } else if(peekToken(expand)->isControl()) {
-            Command::ptr obj = symbol(peekToken(expand), Command::ptr());
-            if(obj && obj->name() == "\\relax") {
+            //Command::ptr obj = symbol(peekToken(expand), Command::ptr());
+            Command::ptr cmd = symbolCommand<base::Relax>(peekToken(expand));
+            if(cmd) {
                 nextToken(&filler->tokens(), expand);
                 continue;
             }
@@ -1787,8 +1944,8 @@ Node::ptr Parser::parseGeneralText(bool expand, bool implicitLbrace)
 {
     Node::ptr node(new Node("general_text"));
 
-    // parse filler
-    node->appendChild("filler", parseFiller(expand));
+    // parse filler (always expanded)
+    node->appendChild("filler", parseFiller(true));
 
     // parse left_brace
     Node::ptr left_brace(new Node("left_brace"));
@@ -1802,8 +1959,8 @@ Node::ptr Parser::parseGeneralText(bool expand, bool implicitLbrace)
     } else {
         logger()->log(Logger::ERROR, "Missing { inserted",
                         *this, lastToken());
-        left_brace->setValue(Token::ptr(new Token(
-                    Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
+        left_brace->setValue(Token::create(
+                    Token::TOK_CHARACTER, Token::CC_BGROUP, "{"));
     }
 
     node->appendChild("balanced_text", parseBalancedText(expand));
@@ -1816,8 +1973,8 @@ Node::ptr Parser::parseGeneralText(bool expand, bool implicitLbrace)
         right_brace->setValue(nextToken(&right_brace->tokens(), expand));
     } else {
         // TODO: error
-        right_brace->setValue(Token::ptr(new Token(
-                    Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
+        right_brace->setValue(Token::create(
+                    Token::TOK_CHARACTER, Token::CC_EGROUP, "}"));
     }
 
     resetNoexpand();
@@ -1826,21 +1983,34 @@ Node::ptr Parser::parseGeneralText(bool expand, bool implicitLbrace)
 
 Node::ptr Parser::parseFileName()
 {
+    static bool parsing = false;
+
     Node::ptr node(new Node("file_name"));
+
+    if(parsing)
+        return node;
+    else
+        parsing = true;
+
     string fileName;
 
     while(helperIsImplicitCharacter(Token::CC_SPACE))
         nextToken(&node->tokens());
 
-    while(peekToken()->isCharacterCat(Token::CC_LETTER) ||
-            peekToken()->isCharacterCat(Token::CC_OTHER)) {
+    while(peekToken() && peekToken()->isCharacter() &&
+            !peekToken()->isCharacterCat(Token::CC_SPACE)) {
         Token::ptr letter = nextToken(&node->tokens());
         fileName += letter->value();
     }
 
+    if(helperIsImplicitCharacter(Token::CC_SPACE))
+        nextToken(&node->tokens());
+
     node->setValue(fileName);
 
     resetNoexpand();
+
+    parsing = false;
     return node;
 }
 
@@ -1868,10 +2038,17 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
         string str;
         if(token->isControl()) {
             Command::ptr cmd = symbol(token, Command::ptr());
-            if(dynamic_pointer_cast<base::TheMacro>(cmd)
-                    && mode() == NULLMODE) {
-                return;
-            } else if(dynamic_pointer_cast<Macro>(cmd)) {
+            if(dynamic_pointer_cast<base::TheMacro>(cmd)) {
+                Command::ptr c = currentCommand();
+                if(mode() == NULLMODE ||
+                        dynamic_pointer_cast<base::Write>(c) ||
+                        dynamic_pointer_cast<base::Message>(c) ||
+                        (dynamic_pointer_cast<base::Def>(c) &&
+                         static_pointer_cast<base::Def>(c)->expand())) {
+                    return;
+                }
+            }
+            if(dynamic_pointer_cast<Macro>(cmd)) {
                 if(expanding) {
                     if(tracingcommands < 2) return;
                     if(dynamic_pointer_cast<base::UserMacro>(cmd)) return;
@@ -1898,93 +2075,115 @@ void Parser::traceCommand(Token::ptr token, bool expanding)
     }
 }
 
-Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
+Node::ptr Parser::parseGroup(GroupType groupType)
 {
     GroupType prevGroupType = m_currentGroupType;
     m_currentGroupType = groupType;
 
     Node::ptr node(new Node("group"));
-    if(parseBeginEnd) {
-        bool ok = false;
-        if(groupType == GROUP_NORMAL) {
-            if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
-                node->appendChild("group_begin", parseToken());
-                ok = true;
-            }
-        } else if(groupType == GROUP_MATH) {
-            if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                node->appendChild("group_begin", parseToken());
-                ok = true;
-            }
-        } else if(groupType == GROUP_DMATH) {
-            if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                node->appendChild("group_begin", parseDMathToken());
-                ok = true;
-            }
-        }
-        if(!ok) {
+
+    if(groupType == GROUP_NORMAL) {
+        if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
+            node->appendChild("group_begin", parseToken());
+        } else {
             logger()->log(Logger::ERROR, "Missing { inserted",
                                     *this, lastToken());
             Node::ptr left_brace(new Node("token"));
-            left_brace->setValue(Token::ptr(new Token(
-                        Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
+            left_brace->setValue(Token::create(
+                        Token::TOK_CHARACTER, Token::CC_BGROUP, "{"));
             node->appendChild("group_begin", left_brace);
         }
+        if(m_afterassignmentToken &&
+                dynamic_pointer_cast<base::Setbox>(currentCommand())) {
+            // We are in \setbox=\?box{, afterassignment token should
+            // be inserted here
+            Token::list tokens(1, m_afterassignmentToken);
+            pushBack(&tokens);
+            m_afterassignmentToken.reset();
+        }
+    } else if(groupType == GROUP_SUPER) {
+        assert(symbolCommand<Begingroup>(peekToken()));
+        node->appendChild("group_begin", parseToken());
+    } else if(groupType == GROUP_MATH) {
+        assert(helperIsImplicitCharacter(Token::CC_MATHSHIFT));
+        node->appendChild("group_begin", parseToken());
+    } else if(groupType == GROUP_DMATH) {
+        assert(helperIsImplicitCharacter(Token::CC_MATHSHIFT));
+        node->appendChild("group_begin", parseDMathToken());
     }
 
     while(true) {
         if(!peekToken()) {
-            if(parseBeginEnd) {
-                // TODO: report error
+            if(groupType == GROUP_MATH || groupType == GROUP_DMATH) {
                 Node::ptr group_end(new Node("group_end"));
-                node->appendChild("group_end", parseToken());
-                //endGroup();
+                Token::ptr t(Token::create(Token::TOK_CHARACTER,
+                            Token::CC_MATHSHIFT, "$"));
+                group_end->setValue(t);
+                traceCommand(t);
+
+                node->appendChild("group_end", group_end);
+                logger()->log(Logger::ERROR,
+                        "Missing $ inserted", *this, lastToken());
+
+                if(groupType == GROUP_DMATH)
+                    logger()->log(Logger::ERROR,
+                        "Display math should end with $$",
+                        *this, lastToken());
             }
             break;
         }
 
         traceCommand(peekToken());
 
-        if(parseBeginEnd) {
+        if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
             if(groupType == GROUP_NORMAL) {
-                if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
-                    node->appendChild("group_end", parseToken());
-                    //endGroup();
-                    break;
+                node->appendChild("group_end", parseToken());
+                break;
+            } else {
+                string msg;
+                switch(groupType) {
+                    case GROUP_DOCUMENT:
+                        msg = "Too many }'s";
+                        break;
+                    case GROUP_MATH:
+                    case GROUP_DMATH:
+                        msg = "Extra }, or forgotten $";
+                        break;
+                    case GROUP_SUPER:
+                        msg = "Extra }, or forgotten " +
+                            Token(Token::TOK_CONTROL, Token::CC_ESCAPE,
+                                    "\\endgroup").texRepr(this);
+                        break;
+                    default:
+                        msg = "Extra }";
                 }
-            } else if(groupType == GROUP_MATH) {
-                if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                    node->appendChild("group_end", parseToken());
-                    //endGroup();
-                    break;
-                }
-            } else if(groupType == GROUP_DMATH) {
-                if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
-                    Node::ptr dmathNode = parseDMathToken();
-                    node->appendChild("group_end", dmathNode);
-                    if(helperIsImplicitCharacter(Token::CC_SPACE, false)) {
-                        nextToken(&dmathNode->tokens());
-                    }
-
-                    //endGroup();
-                    break;
-                }
+                logger()->log(Logger::ERROR, msg, *this, lastToken());
+                node->appendChild("ignored_egroup", parseToken());
             }
-        }
 
-        if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
+        } else if(helperIsImplicitCharacter(Token::CC_BGROUP)) {
             beginGroup();
             node->appendChild("group", parseGroup(GROUP_NORMAL));
+            //pushBack(&m_aftergroupTokens);
+            //m_aftergroupTokens.clear();
             endGroup();
 
-        } else if(helperIsImplicitCharacter(Token::CC_EGROUP)) {
-            m_logger->log(Logger::ERROR, "Too many }'s",
-                                            *this, lastToken());
-            node->appendChild("error_extra_group_end",
-                                            parseToken());
-
         } else if(helperIsImplicitCharacter(Token::CC_MATHSHIFT)) {
+
+            if(groupType == GROUP_MATH) {
+                node->appendChild("group_end", parseToken());
+                break;
+            } else if(groupType == GROUP_DMATH) {
+                Node::ptr dmathNode = parseDMathToken();
+                node->appendChild("group_end", dmathNode);
+                if(helperIsImplicitCharacter(Token::CC_SPACE, false)) {
+                    nextToken(&dmathNode->tokens());
+                }
+                break;
+            }
+
             Node::ptr t1 = parseToken();
+
             // XXX: is the following line correct ?
             bool dmath = helperIsImplicitCharacter(Token::CC_MATHSHIFT,
                                                                 false);
@@ -2008,7 +2207,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             }
 
             node->appendChild("inline_math", parseGroup(
-                    dmath ? GROUP_DMATH : GROUP_MATH, true));
+                    dmath ? GROUP_DMATH : GROUP_MATH));
 
             setMode(prevMode);
 
@@ -2037,24 +2236,72 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
             Command::ptr cmd = symbol(peekToken(), Command::ptr());
             Node::ptr cmdNode;
             if(cmd) {
-                Mode prevMode = mode();
-                cmd->presetMode(*this);
-                if(mode() != prevMode)
-                    traceCommand(peekToken());
+                if(dynamic_pointer_cast<Begingroup>(cmd)) {
+                    beginGroup();
+                    node->appendChild("group", parseGroup(GROUP_SUPER));
+                    //pushBack(&m_aftergroupTokens);
+                    //m_aftergroupTokens.clear();
+                    endGroup();
+                } else if(dynamic_pointer_cast<Endgroup>(cmd)) {
+                    if(groupType == GROUP_SUPER) {
+                        node->appendChild("group_end", parseToken());
+                        break;
+                    } else {
+                        string msg;
+                        Token::ptr t;
+                        if(groupType == GROUP_NORMAL) {
+                            msg = "Missing } inserted";
+                            t = Token::create(Token::TOK_CHARACTER,
+                                        Token::CC_EGROUP, "}");
+                        } else if(groupType == GROUP_MATH) {
+                            msg = "Missing $ inserted";
+                            t = Token::create(Token::TOK_CHARACTER,
+                                        Token::CC_MATHSHIFT, "$");
+                        } else if(groupType == GROUP_DMATH) {
+                            logger()->log(Logger::ERROR, 
+                                   "Missing $ inserted", *this, lastToken());
+                            msg = "Display math should end with $$";
+                            t = Token::create(Token::TOK_CHARACTER,
+                                        Token::CC_MATHSHIFT, "$");
+                        } else {
+                            msg = "Extra " + Token(Token::TOK_CONTROL,
+                                Token::CC_ESCAPE, "\\endgroup").texRepr(this);
+                        }
+                        logger()->log(Logger::ERROR, msg, *this, lastToken());
+                        if(groupType != GROUP_DOCUMENT) {
+                            Node::ptr group_end(new Node("group_end"));
+                            if(t) {
+                                group_end->setValue(t);
+                                traceCommand(t);
+                            }
 
-                cmdNode = parseCommand(cmd);
-                //node->appendChild("control", parseCommand(cmd));
+                            node->appendChild("group_end", group_end);
+                            break;
+                        } else {
+                            node->appendChild("extra_endgroup", parseToken());
+                        }
+                    }
+                } else {
+                    Mode prevMode = mode();
+                    cmd->presetMode(*this);
+                    if(mode() != prevMode)
+                        traceCommand(peekToken());
+
+                    cmdNode = parseCommand(cmd);
+                    node->appendChild("control", cmdNode);
+                }
             } else {
-                m_logger->log(Logger::ERROR, "Undefined control sequence",
-                                                *this, lastToken());
+                /*m_logger->log(Logger::ERROR, "Undefined control sequence",
+                                                *this, lastToken());*/
                 cmdNode = parseToken();
+                node->appendChild("unexpanded_macro", cmdNode);
                 //node->appendChild("error_unknown_control",
                 //                                parseToken());
             }
-            if(m_customGroupBegin) {
+            /*if(m_customGroupBegin) {
                 m_customGroupBegin = false;
                 string type = m_customGroupType;
-                Node::ptr customGroup = parseGroup(GROUP_CUSTOM, false);
+                Node::ptr customGroup = parseGroup(GROUP_CUSTOM);
                 customGroup->setType(type);
                 customGroup->children().insert(customGroup->children().begin(),
                                                 std::make_pair("control", cmdNode));
@@ -2068,7 +2315,7 @@ Node::ptr Parser::parseGroup(GroupType groupType, bool parseBeginEnd)
                 m_customGroupEnd = false;
                 if(groupType == GROUP_CUSTOM)
                     break;
-            }
+            }*/
 
         } else {
             node->appendChild("other_token", parseToken());
@@ -2092,7 +2339,7 @@ Node::ptr Parser::parse()
     }
 
     setMode(VERTICAL);
-    Node::ptr document = parseGroup(GROUP_DOCUMENT, false);
+    Node::ptr document = parseGroup(GROUP_DOCUMENT);
     document->setType("document");
     
     // Some skipped tokens may still exists even when

@@ -117,6 +117,13 @@ public:
     bool evaluate(Parser& parser, shared_ptr<Node> node);
 };
 
+class Ifeof: public ConditionalBegin
+{
+public:
+    Ifeof(const string& name = string()): ConditionalBegin(name) {}
+    bool evaluate(Parser& parser, shared_ptr<Node> node);
+};
+
 } // namespace base
 } // namespace texpp
 

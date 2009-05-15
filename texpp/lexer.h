@@ -43,7 +43,8 @@ public:
     bool interactive() const { return m_interactive; }
 
     string jobName() const;
-    const string& fileName() const { return m_fileName; }
+    const string& fileName() const { return *m_fileName; }
+    shared_ptr<string> fileNamePtr() const { return m_fileName; }
     size_t lineNo() const { return m_lineNo; }
     const string& line() const { return m_lineOrig; }
     const string& line(size_t n) const;
@@ -75,7 +76,7 @@ protected:
     shared_ptr<std::istream> m_fileShared;
 
     std::istream*   m_file;
-    string  m_fileName;
+    shared_ptr<string> m_fileName;
 
     string  m_lineOrig;
     string  m_lineTex;
@@ -85,7 +86,7 @@ protected:
     size_t  m_charEnd;
 
     State   m_state;
-    char    m_char;
+    int     m_char;
     Token::CatCode
             m_catCode;
 

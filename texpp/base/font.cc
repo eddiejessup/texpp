@@ -81,8 +81,9 @@ bool Font::invokeOperation(Parser& parser,
     } else if(op == ASSIGN) {
         string name = parseName(parser, node);
 
-        Node::ptr lvalue = parser.parseControlSequence();
+        Node::ptr lvalue = parser.parseControlSequence(false);
         Token::ptr ltoken = lvalue->value(Token::ptr());
+        parser.lockToken(ltoken);
 
         node->appendChild("lvalue", lvalue);
         node->appendChild("equals", parser.parseOptionalEquals());
@@ -140,6 +141,7 @@ bool Font::invokeOperation(Parser& parser,
             Command::ptr(new FontSelector(ltoken->value(), fontInfo)),
             global);
 
+        parser.lockToken(Token::ptr());
         return true;
 
     } else if(op == GET) {
@@ -252,7 +254,7 @@ string FontDimen::parseName(Parser& parser, shared_ptr<Node> node)
     node->appendChild("variable_font", font);
     FontInfo::ptr fontInfo = font->value(defaultFontInfo);
 
-    if(n <= 0 || n > 7) {
+    if(n <= 0/* || n > 7*/) { // TODO: read the number of dimen params
         // TODO: the following calc should be one function
         string str = fontInfo->selector;
         string escape = parser.escapestr();

@@ -5,6 +5,7 @@
 
 \catcode`{=1
 \catcode`}=2
+\catcode`#=6
 
 \expandafter \let \csname x\endcsname = \count
 \show\x
@@ -27,6 +28,14 @@
 
 \immediate\write16{}
 \expandafter \expandafter \testmacrox \testmacroy \testmacroz \testmacrozz
+
+% expandafter and if
+\def\two#1#2{}
+\expandafter\two\ifx1134\fi78
+\expandafter\two\ifx1234\fi78
+\expandafter\two\ifx1234\else56\fi78
+\ifx11 \expandafter\two \fi78
+\ifx11 \expandafter\two \else34\fi78
 
 \end
 

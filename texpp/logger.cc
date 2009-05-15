@@ -55,22 +55,24 @@ string Logger::tokenLines(Parser& parser, Token::ptr token) const
     if(parser.lexer()->fileName().empty()) r << "<*> ";
     else r << "l." << token->lineNo() << " ";
 
-    const string& line = parser.lexer()->line(token->lineNo());
-    if(!line.empty()) {
-        string line1 = line.substr(0, token->charEnd());
-        if(!line1.empty() && line1[line1.size()-1] == '\n')
-            line1 = line1.substr(0, line1.size()-1);
-        int d = line1.size() + r.str().size() - MAX_TLINE_CHARS;
-        if(d > 0)
-            line1 = "..." + line1.substr(d+3, line1.size()-d-3);
-        r << line1 << '\n';
-        
-        string line2 = line.substr(token->charEnd(),
+    if(token->fileName() == parser.lexer()->fileName()) {
+        const string& line = parser.lexer()->line(token->lineNo());
+        if(!line.empty()) {
+            string line1 = line.substr(0, token->charEnd());
+            if(!line1.empty() && line1[line1.size()-1] == '\n')
+                line1 = line1.substr(0, line1.size()-1);
+            int d = line1.size() + r.str().size() - MAX_TLINE_CHARS;
+            if(d > 0)
+                line1 = "..." + line1.substr(d+3, line1.size()-d-3);
+            r << line1 << '\n';
+            
+            string line2 = line.substr(token->charEnd(),
                     line.find_last_not_of(" \r\n") + 1 - token->charEnd());
-        if(line2.size() + r.str().size() - 1 > MAX_LINE_CHARS)
-            line2 = line2.substr(0,
-                MAX_LINE_CHARS - r.str().size() - 2) + "...";
-        r << string(r.str().size()-1, ' ') << line2 << '\n';
+            if(line2.size() + r.str().size() - 1 > MAX_LINE_CHARS)
+                line2 = line2.substr(0,
+                    MAX_LINE_CHARS - r.str().size() - 2) + "...";
+            r << string(r.str().size()-1, ' ') << line2 << '\n';
+        }
     }
 
     return r.str();
@@ -84,23 +86,27 @@ ConsoleLogger::~ConsoleLogger()
 bool ConsoleLogger::log(Level level, const string& message,
                             Parser& parser, Token::ptr token)
 {
+    /*
     if(level <= TRACING && parser.symbol("tracingonline", int(0)) <= 0)
         return true;
+    */
 
     std::ostringstream r;
     
     if(level <= MTRACING) {
-        if(m_linePos) r << '\n';
-        r << message << std::endl;
+        //if(m_linePos) r << '\n';
+        r << message;// << std::endl;
     } else if(level <= TRACING) {
         if(m_linePos) r << '\n';
-        r << '{' << message << '}' << std::endl;
+        r << '{' << message << '}';// << std::endl;
+    } else if(level <= PLAIN) {
+        r << message;
     } else if(level <= MESSAGE) {
         if(m_linePos) r << ' '; 
         r << message;
     } else if(level <= WRITE) {
         if(m_linePos) r << '\n'; 
-        r << message;
+        r << message << '\n';
     } else {
         if(m_linePos) r << '\n';
         if(level <= SHOW) r << "> " << message << ".\n";
@@ -112,28 +118,33 @@ bool ConsoleLogger::log(Level level, const string& message,
     std::ostringstream r1;
     int newlinechar = parser.symbol("newlinechar", int(0));
     BOOST_FOREACH(unsigned char ch, r.str()) {
-        if(ch == newlinechar || ch == '\n') {
+        if(ch == '\n' || ch == newlinechar) {
             r1 << '\n';
-            m_linePos = 0;
+        } else if(ch <= 0x1f) {
+            r1 << "^^" << char(ch+64);
+        } else if(ch >= 0x7f) {
+            r1 << "^^" << std::hex << int(ch);
         } else {
-            if(m_linePos >= MAX_LINE_CHARS) {
-                r1 << '\n';
-                m_linePos = 0;
-            }
-            if(ch >= 0x7f) {
-                r1 << "^^" << std::hex << int(ch);
-                m_linePos += 4;
-            } else {
-                r1 << ch;
-                ++m_linePos;
-            }
+            r1 << ch;
         }
     }
 
-    string msg(r1.str());
-    std::cout << msg;
+    BOOST_FOREACH(unsigned char ch, r1.str()) {
+        if(m_linePos >= MAX_LINE_CHARS) {
+            std::cout << '\n';
+            m_linePos = 0;
+        }
+        std::cout << ch;
+        if(ch == '\n')
+            m_linePos = 0;
+        else
+            ++m_linePos;
+    }
 
-    if(parser.lexer()->interactive() && m_linePos) {
+    std::cout << std::flush;
+
+    if(m_linePos && (parser.lexer()->interactive() ||
+                        level <= TRACING)) {
         std::cout << std::endl;
         m_linePos = 0;
     }

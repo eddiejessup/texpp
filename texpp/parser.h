@@ -53,7 +53,7 @@ public:
 
     Node(const string& type): m_type(type) {}
 
-    string source() const;
+    string source(const string& fileName = string()) const;
 
     const string& type() const { return m_type; }
     void setType(const string& type) { m_type = type; }
@@ -95,11 +95,14 @@ protected:
 class Parser
 {
 public:
+    enum Interaction { ERRORSTOPMODE, SCROLLMODE,
+                       NONSTOPMODE, BATCHMODE };
     enum Mode { NULLMODE,
                 VERTICAL, HORIZONTAL,
                 RVERTICAL, RHORIZONTAL,
                 MATH, DMATH };
-    enum GroupType { GROUP_DOCUMENT, GROUP_NORMAL,
+    enum GroupType { GROUP_DOCUMENT,
+                     GROUP_NORMAL, GROUP_SUPER,
                      GROUP_MATH, GROUP_DMATH,
                      GROUP_CUSTOM };
 
@@ -110,6 +113,9 @@ public:
     Parser(const string& fileName, shared_ptr<std::istream> file,
             bool interactive = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
+
+    Interaction interaction() const { return m_interaction; }
+    void setInteraction(Interaction intr) { m_interaction = intr; }
 
     Node::ptr parse();
 
@@ -126,18 +132,37 @@ public:
     Token::ptr peekToken(bool expand = true);
     Token::ptr nextToken(vector< Token::ptr >* tokens = NULL,
                          bool expand = true);
-    void setNoexpand(Token::ptr token) { m_noexpandToken = token; }
-    void resetNoexpand() { m_noexpandToken.reset(); pushBack(NULL); }
+
     void pushBack(vector< Token::ptr >* tokens);
 
+    //void setNoexpand(Token::ptr token) { m_noexpandToken = token; }
+    void addNoexpand(Token::ptr token) { m_noexpandTokens.insert(token); }
+    void resetNoexpand() { m_noexpandTokens.clear(); pushBack(NULL); }
+
+    void input(const string& fileName, const string& fullName);
     void end() { m_end = true; }
+    void endinput() { m_endinput = true; }
+
+    Command::ptr currentCommand() const {
+        return m_commandStack.empty() ? Command::ptr() : m_commandStack.back();
+    }
+
+    Command::ptr prevCommand(size_t n = 1) const {
+        return m_commandStack.size() <= n ? Command::ptr() :
+            m_commandStack[m_commandStack.size()-1-n];
+    }
+
+    void lockToken(Token::ptr token) { m_lockToken = token; }
+    void setAfterassignmentToken(Token::ptr t) { m_afterassignmentToken = t; }
+    void addAftergroupToken(Token::ptr t) {
+        if(m_groupLevel > 0) m_aftergroupTokensStack.back().push_back(t);
+    }
 
     //////// Parse helpers
     bool helperIsImplicitCharacter(Token::CatCode catCode,
                                         bool expand = true);
 
-    Node::ptr parseGroup(GroupType groupType,
-                                bool parseBeginEnd = true);
+    Node::ptr parseGroup(GroupType groupType);
 
     Node::ptr parseCommand(Command::ptr command);
 
@@ -209,6 +234,7 @@ public:
 
     void beginGroup();
     void endGroup();
+    int groupLevel() const { return m_groupLevel; }
 
     void beginCustomGroup(const string& type) {
         m_customGroupBegin = true; m_customGroupType = type; beginGroup(); }
@@ -226,6 +252,7 @@ public:
     static const string& banner() { return BANNER; }
 
 protected:
+    void endinputNow();
     Node::ptr rawExpandToken(Token::ptr token);
     Token::ptr rawNextToken(bool expand = true);
     Node::ptr parseFalseConditional(size_t level,
@@ -237,6 +264,18 @@ protected:
         Token::ptr
     > TokenQueue;
 
+    typedef std::set<
+        Token::ptr
+    > TokenSet;
+
+    typedef std::vector<
+        Command::ptr
+    > CommandStack;
+
+    typedef std::vector<
+        pair<shared_ptr<Lexer>, TokenQueue>
+    > InputStack;
+
     shared_ptr<Lexer>   m_lexer;
     shared_ptr<Logger>  m_logger;
 
@@ -244,11 +283,13 @@ protected:
     Token::list     m_tokenSource;
 
     Token::ptr      m_lastToken;
-    Token::ptr      m_noexpandToken;
+    TokenSet        m_noexpandTokens;
     TokenQueue      m_tokenQueue;
 
     int             m_groupLevel;
     bool            m_end;
+    bool            m_endinput;
+    bool            m_endinputNow;
 
     struct ConditionalInfo {
         bool parsed;
@@ -283,6 +324,16 @@ protected:
     string  m_customGroupType;
     bool    m_customGroupBegin;
     bool    m_customGroupEnd;
+
+    CommandStack m_commandStack;
+
+    Interaction m_interaction;
+    
+    Token::ptr          m_lockToken;
+    Token::ptr          m_afterassignmentToken;
+    vector<Token::list> m_aftergroupTokensStack;
+
+    InputStack m_inputStack;
 
     static any EMPTY_ANY;
     static string BANNER;

@@ -16,50 +16,12 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <texpp/command.h>
-#include <texpp/parser.h>
-#include <texpp/logger.h>
-
-#include <boost/foreach.hpp>
+#include <string>
 
 namespace texpp {
 
-string Command::texRepr(Parser* parser) const
-{
-    return Token::texReprControl(m_name, parser);
-}
-
-string Command::repr() const
-{
-    return "Command(" + reprString(name())
-            + ", " + reprString(texRepr()) + ")";
-}
-
-string TokenCommand::texRepr(Parser* parser) const
-{
-    return m_token->meaning(parser);
-}
-
-bool TokenCommand::invoke(Parser&, shared_ptr<Node> node)
-{
-    node->setValue(m_token);
-    return true;
-}
-
-Token::list_ptr Macro::stringToTokens(const string& str)
-{
-    Token::list_ptr ret(new Token::list());
-
-    BOOST_FOREACH(char ch, str) {
-        Token::CatCode catcode = Token::CC_OTHER;
-        if(ch == ' ') catcode = Token::CC_SPACE;
-
-        ret->push_back(Token::create(
-            Token::TOK_CHARACTER, catcode, string(1, ch)));
-    }
-
-    return ret;
-}
+std::string kpseextend(const std::string& fname);
+std::string kpsewhich(const std::string& fname);
 
 } // namespace texpp
 

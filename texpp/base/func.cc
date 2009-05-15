@@ -157,8 +157,8 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     global |= m_global;
 
     Node::ptr lvalue = parser.parseControlSequence(false);
-    Token::ptr ltoken = lvalue->value(Token::ptr());
     node->appendChild("lvalue", lvalue);
+    Token::ptr ltoken = lvalue->value(Token::ptr());
 
     Node::ptr paramsNode(new Node("params"));
     node->appendChild("params", paramsNode);
@@ -198,9 +198,9 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
                 parser.logger()->log(Logger::ERROR,
                     "Parameters must be numbered consecutively",
                     parser, parser.lastToken());
-                params->push_back(Token::ptr(
-                    new Token(Token::TOK_CHARACTER, Token::CC_OTHER,
-                            boost::lexical_cast<string>(++paramNum))));
+                params->push_back(Token::create(
+                        Token::TOK_CHARACTER, Token::CC_OTHER,
+                        boost::lexical_cast<string>(++paramNum)));
             } else {
                 params->push_back(
                     parser.nextToken(&paramsNode->tokens(), false));
@@ -223,12 +223,15 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     } else {
         parser.logger()->log(Logger::ERROR, "Missing { inserted",
             parser, parser.lastToken());
-        left_brace->setValue(Token::ptr(new Token(
-                    Token::TOK_CHARACTER, Token::CC_BGROUP, "{")));
+        left_brace->setValue(Token::create(
+                    Token::TOK_CHARACTER, Token::CC_BGROUP, "{"));
     }
 
+    // TODO: implement correct list expansion
     Node::ptr definition =
         parser.parseBalancedText(m_expand, paramNum, ltoken);
+
+    /*
     if(m_expand) {
         Token::list_ptr tokens = definition->value(Token::list_ptr());
         Token::list_ptr tokens_copy(new Token::list());
@@ -245,6 +248,7 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
         }
         definition->setValue(tokens_copy);
     }
+    */
 
     if(lbrace) {
         Token::list_ptr p = definition->value(Token::list_ptr());
@@ -260,8 +264,8 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
         right_brace->setValue(parser.nextToken(&right_brace->tokens(), false));
     } else {
         // TODO: error
-        right_brace->setValue(Token::ptr(new Token(
-                    Token::TOK_CHARACTER, Token::CC_EGROUP, "}")));
+        right_brace->setValue(Token::create(
+                    Token::TOK_CHARACTER, Token::CC_EGROUP, "}"));
     }
 
     parser.setSymbol(ltoken,
@@ -273,7 +277,7 @@ bool Def::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     return true;
 }
 
-string UserMacro::texRepr(Parser* parser) const
+string UserMacro::texRepr(Parser* parser, bool newline, size_t limit) const
 {
     string str;
 
@@ -282,20 +286,30 @@ string UserMacro::texRepr(Parser* parser) const
     if(m_outerAttr) str = str + escape + "outer";
     if(!str.empty()) str += ' ';
 
-    str += "macro:\n" +
-            Token::texReprList(*m_params, parser) + "->" +
-            Token::texReprList(*m_definition, parser);
+    str += string("macro:") + (newline ? "\n" : "") +
+            Token::texReprList(*m_params, parser, true) + "->";
+
+    if(limit) limit = limit > str.size() ? limit - str.size() : 1;
+    str += Token::texReprList(*m_definition, parser, true, limit);
 
     return str;
 }
 
+string UserMacro::texRepr(Parser* parser) const
+{
+    return texRepr(parser, true, 0);
+}
+
 bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
 {
+    // TODO: implement \long and \outer
     if(parser.symbol("tracingmacros", int(0)) > 0) {
+        Token::ptr t = node->child("control_sequence")->value(Token::ptr());
         string str(1, '\n');
-        str += Token::texReprControl(name(), &parser, true) +
-                Token::texReprList(*m_params, &parser) + "->" +
-                Token::texReprList(*m_definition, &parser);
+        str += //Token::texReprControl(name(), &parser, true) +
+                Token::texReprControl(t ? t->value():name(), &parser, true) +
+                Token::texReprList(*m_params, &parser, true) + "->" +
+                Token::texReprList(*m_definition, &parser, true);
         parser.logger()->log(Logger::MTRACING,
             str, parser, Token::ptr());
     }
@@ -319,6 +333,14 @@ bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
             ++it;
             if(it+1 < end && !(*(it+1))->isCharacterCat(Token::CC_PARAM))
                 etoken = *(it+1);
+
+            if(!etoken) {
+                while(parser.peekToken(false) &&
+                        parser.helperIsImplicitCharacter(
+                            Token::CC_SPACE, false))
+                    parser.nextToken(&child->tokens());
+            }
+
 
             int level = 0;
             Token::ptr token;
@@ -395,23 +417,25 @@ bool UserMacro::expand(Parser& parser, shared_ptr<Node> node)
         }
     }
 
-    Token::list result;
+    Token::list_ptr result(new Token::list());
+    result->reserve(m_definition->size());
+
     end = m_definition->end();
     for(Token::list::iterator it = m_definition->begin();
                                             it < end; ++it) {
         if((*it)->isCharacterCat(Token::CC_PARAM)) {
             if(++it >= end) break;
             if((*it)->isCharacterCat(Token::CC_PARAM)) {
-                result.push_back((*it)->lcopy());
+                result->push_back((*it)->lineNo() ? (*it)->lcopy() : *it);
             } else if((*it)->isCharacter()) {
                 char ch = (*it)->value()[0];
                 if(!isdigit(ch) || ch == '0' || !params[ch-'0'-1]) continue;
                 BOOST_FOREACH(Token::ptr token, *params[ch-'0'-1]) {
-                    result.push_back(token->lcopy());
+                    result->push_back(token->lineNo() ? token->lcopy() : token);
                 }
             }
         } else {
-            result.push_back((*it)->lcopy());
+            result->push_back((*it)->lineNo() ? (*it)->lcopy() : *it);
         }
     }
 

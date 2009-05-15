@@ -82,6 +82,7 @@ bool Char::createDef(Parser& parser, shared_ptr<Token> token,
 
     std::ostringstream s; s << name() << '"' << std::hex << num;
     parser.setSymbol(token, Command::ptr(new CharDef(s.str(), num)), global);
+    parser.setSymbolDefault(s.str().substr(1), int(0));
     return true;
 }
 
@@ -98,6 +99,7 @@ bool MathChar::createDef(Parser& parser, shared_ptr<Token> token,
     std::ostringstream s;
     s << name() << '"' << std::hex << std::uppercase << num;
     parser.setSymbol(token, Command::ptr(new CharDef(s.str(), num)), global);
+    parser.setSymbolDefault(s.str().substr(1), int(0));
     return true;
 }
 

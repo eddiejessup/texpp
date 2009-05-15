@@ -34,6 +34,7 @@ public:
     enum Level {
         MTRACING = 5,
         TRACING = 10,
+        PLAIN = 15,
         MESSAGE = 20,
         WRITE = 25,
         SHOW = 30,

@@ -53,4 +53,26 @@
 \let\newtoks=\relax
 \outer\def\newhelp#1#2{\newtoks#1#1\expandafter{\csname#2\endcsname}}
 
+%spaces
+\def\testmacro#1a#2{z#1z#2}
+
+\testmacro x a b /
+
+\def\space{ }
+\edef\arg{\space\space x a\space\space b/}
+\expandafter\testmacro\arg
+
+\edef\arg{\space\space {x} a\space\space {b}/}
+\expandafter\testmacro\arg
+
+\edef\arg{{x} a\space\space {b}/}
+\expandafter\testmacro\arg
+
+\def\testmacro#1 #2/{z#1z#2}
+\edef\arg{\space\space x a\space\space b/}
+\expandafter\testmacro\arg
+
+\edef\arg{\space\space {x} a\space\space {b}/}
+\expandafter\testmacro\arg
+
 \end
