@@ -138,6 +138,7 @@ bool Register<Var>::createDef(Parser& parser, Token::ptr token,
     string iname = this->name() + boost::lexical_cast<string>(num);
     parser.setSymbol(token,
         Command::ptr(new Var(iname, this->initValue())), global);
+    parser.setSymbolDefault(iname.substr(1), this->initValue());
     return true;
 }
 

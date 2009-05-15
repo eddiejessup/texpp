@@ -104,11 +104,11 @@ bool CsnameMacro::expand(Parser& parser, shared_ptr<Node> node)
 
     if(!parser.symbol(name, Command::ptr())) {
         // TODO: Do not create new "\\relax", use exising one instead!
-        parser.setSymbol(name, Command::ptr(new Relax("\\relax")));
+        parser.setSymbol(name, parser.symbolAny("relax"));
     }
 
-    node->setValue(Token::list(1, Token::ptr(
-        new Token(Token::TOK_CONTROL, Token::CC_ESCAPE, name))));
+    node->setValue(Token::list_ptr(new Token::list(1,
+        Token::create(Token::TOK_CONTROL, Token::CC_ESCAPE, name))));
 
     return true;
 }
@@ -140,9 +140,10 @@ bool ExpandafterMacro::expand(Parser& parser, shared_ptr<Node> node)
     if(token2) {
         Node::ptr enode = parser.rawExpandToken(token2->lcopy());
         if(enode) {
-            Token::list newTokens = enode->value(Token::list());
+            Token::list_ptr newTokens = enode->value(Token::list_ptr());
+            assert(newTokens && !newTokens->empty());
             tokens.insert(tokens.end(),
-                    newTokens.begin(), newTokens.end());
+                    newTokens->begin(), newTokens->end());
         } else {
             tokens.push_back(token2->lcopy());
         }
@@ -159,8 +160,8 @@ bool NoexpandMacro::expand(Parser& parser, shared_ptr<Node> node)
     node->appendChild("token", child);
 
     Token::ptr token = child->value(Token::ptr())->lcopy();
-    parser.setNoexpand(token);
-    node->setValue(Token::list(1, token));
+    parser.addNoexpand(token);
+    node->setValue(Token::list_ptr(new Token::list(1, token)));
 
     return true;
 }

@@ -72,6 +72,12 @@ bool Changecase::invoke(Parser& parser, shared_ptr<Node> node)
                         int(0));
                 if(newCode > 0 && newCode <= 255)
                     newToken->setValue(string(1, char(newCode)));
+            } else if(token->isControl() && token->value().substr(0,1)=="`"){
+                int newCode = parser.symbol(m_table +
+                        boost::lexical_cast<string>(int(token->value()[1])),
+                        int(0));
+                if(newCode > 0 && newCode <= 255)
+                    newToken->setValue("`" + string(1, char(newCode)));
             }
 
             newTokens.push_back(newToken);
@@ -79,6 +85,36 @@ bool Changecase::invoke(Parser& parser, shared_ptr<Node> node)
 
         parser.pushBack(&newTokens);
     }
+
+    return true;
+}
+
+bool SetInteraction::invoke(Parser& parser, shared_ptr<Node>)
+{
+    parser.setInteraction(m_interaction);
+    return true;
+}
+
+bool Afterassignment::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr tokenNode = parser.parseToken(false);
+    node->appendChild("token", tokenNode);
+
+    Token::ptr token = tokenNode->value(Token::ptr());
+    if(token)
+        parser.setAfterassignmentToken(token->lcopy());
+
+    return true;
+}
+
+bool Aftergroup::invoke(Parser& parser, shared_ptr<Node> node)
+{
+    Node::ptr tokenNode = parser.parseToken(false);
+    node->appendChild("token", tokenNode);
+
+    Token::ptr token = tokenNode->value(Token::ptr());
+    if(token)
+        parser.addAftergroupToken(token->lcopy());
 
     return true;
 }

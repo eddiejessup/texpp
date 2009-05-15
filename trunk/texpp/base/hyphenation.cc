@@ -30,17 +30,18 @@ bool Hyphenation::invokeOperation(Parser& parser,
         string name = parseName(parser, node);
 
         Node::ptr internal = parser.parseGeneralText(true);
-        Token::list_ptr tokens = internal->child("balanced_text")
-                                    ->value(Token::list_ptr());
-        node->setValue(tokens ? *tokens : Token::list());
+        //Token::list_ptr tokens = internal->child("balanced_text")
+        //                            ->value(Token::list_ptr());
+        //node->setValue(tokens ? *tokens : Token::list());
 
         node->appendChild("rvalue", internal);
 
+        /*
         if(tokens) {
             Token::list h = parser.symbol(name, Token::list());
             std::copy(tokens->begin(), tokens->end(), std::back_inserter(h));
             parser.setSymbol(name, h, true); // global
-        }
+        }*/
         return true;
     }
     return false;

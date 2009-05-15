@@ -78,6 +78,8 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("ifvbox", Ifvbox);
 
     __TEXPP_SET_COMMAND("ifcase", Ifcase);
+    
+    __TEXPP_SET_COMMAND("ifeof", Ifeof);
 
     __TEXPP_SET_COMMAND("or", ConditionalOr);
     __TEXPP_SET_COMMAND("else", ConditionalElse);
@@ -98,11 +100,28 @@ void initSymbols(Parser& parser)
 
     __TEXPP_SET_COMMAND("csname", CsnameMacro);
     __TEXPP_SET_COMMAND("endcsname", EndcsnameMacro);
+
+    // I/O
+    __TEXPP_SET_COMMAND("openin", Openin);
+    __TEXPP_SET_COMMAND("closein", Closein);
+    __TEXPP_SET_COMMAND("read", Read);
+
+    __TEXPP_SET_COMMAND("input", Input);
+    __TEXPP_SET_COMMAND("endinput", Endinput);
+
+    __TEXPP_SET_COMMAND("immediate", Immediate);
+    __TEXPP_SET_COMMAND("openout", Openout);
+    __TEXPP_SET_COMMAND("closeout", Closeout);
+    __TEXPP_SET_COMMAND("write", Write);
+
+    __TEXPP_SET_COMMAND("message", Message);
     
     // various commands
     __TEXPP_SET_COMMAND("end", End);
     __TEXPP_SET_COMMAND("par", Par);
+
     __TEXPP_SET_COMMAND("relax", Relax);
+    parser.setSymbol("relax", parser.symbolAny("\\relax"));
 
     __TEXPP_SET_COMMAND("uppercase", Changecase, "uccode");
     __TEXPP_SET_COMMAND("lowercase", Changecase, "lccode");
@@ -118,9 +137,12 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("show", Show);
     __TEXPP_SET_COMMAND("showthe", ShowThe);
 
-    __TEXPP_SET_COMMAND("immediate", Immediate);
-    __TEXPP_SET_COMMAND("write", Write);
-    __TEXPP_SET_COMMAND("message", Message);
+    __TEXPP_SET_COMMAND("begingroup", Begingroup);
+    __TEXPP_SET_COMMAND("endgroup", Endgroup);
+
+    // TODO: implement everypar etc.
+    __TEXPP_SET_COMMAND("afterassignment", Afterassignment);
+    __TEXPP_SET_COMMAND("aftergroup", Aftergroup);
 
     // horizontal mode
     __TEXPP_SET_COMMAND("vrule", Rule, Parser::VERTICAL);
@@ -351,31 +373,25 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("pageshrink", SpecialDimen, Dimen(0));
     __TEXPP_SET_COMMAND("pagedepth", SpecialDimen, Dimen(0));
 
+    // interaction
+    __TEXPP_SET_COMMAND("errorstopmode", SetInteraction,
+                                            Parser::ERRORSTOPMODE);
+    __TEXPP_SET_COMMAND("scrollmode", SetInteraction, Parser::SCROLLMODE);
+    __TEXPP_SET_COMMAND("nonstopmode", SetInteraction, Parser::NONSTOPMODE);
+    __TEXPP_SET_COMMAND("batchmode", SetInteraction, Parser::BATCHMODE);
+
     // Ignored commands
-    __TEXPP_SET_COMMAND("errorstopmode", IgnoredCommand);
-    __TEXPP_SET_COMMAND("scrollmode", IgnoredCommand);
-    __TEXPP_SET_COMMAND("nonstopmode", IgnoredCommand);
-    __TEXPP_SET_COMMAND("batchmode", IgnoredCommand);
     __TEXPP_SET_COMMAND("dump", IgnoredCommand);
 
     // Unimplemented commands
 
-    __TEXPP_SET_COMMAND("read", UnimplementedCommand);
     __TEXPP_SET_COMMAND("spread", UnimplementedCommand);
 
-    __TEXPP_SET_COMMAND("begingroup", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("endgroup", UnimplementedCommand);
     __TEXPP_SET_COMMAND("showbox", UnimplementedCommand);
     __TEXPP_SET_COMMAND("showlists", UnimplementedCommand);
     __TEXPP_SET_COMMAND("shipout", UnimplementedCommand);
     __TEXPP_SET_COMMAND("ignorespaces", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("afterassignment", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("aftergroup", UnimplementedCommand);
     __TEXPP_SET_COMMAND("errmessage", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("openin", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("closein", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("openout", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("closeout", UnimplementedCommand);
     __TEXPP_SET_COMMAND("special", UnimplementedCommand);
     __TEXPP_SET_COMMAND("penalty", UnimplementedCommand);
     __TEXPP_SET_COMMAND("kern", UnimplementedCommand);
@@ -403,7 +419,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("halign", UnimplementedCommand);
     __TEXPP_SET_COMMAND("indent", UnimplementedCommand);
     __TEXPP_SET_COMMAND("noindent", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("dump", UnimplementedCommand);
 
     // horizontal mode
     __TEXPP_SET_COMMAND("hskip", UnimplementedCommand);
@@ -462,11 +477,6 @@ void initSymbols(Parser& parser)
     __TEXPP_SET_COMMAND("botmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("splitfirstmark", UnimplementedCommand);
     __TEXPP_SET_COMMAND("splitbotmark", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("input", UnimplementedCommand);
-    __TEXPP_SET_COMMAND("endinput", UnimplementedCommand);
-
-    // conditionals
-    __TEXPP_SET_COMMAND("ifeof", UnimplementedCommand);
 
     // INITEX context
     for(int i=0; i<256; ++i) {
@@ -474,6 +484,7 @@ void initSymbols(Parser& parser)
 
         parser.lexer()->setCatcode(i, Token::CC_OTHER);
         parser.setSymbol("catcode"+n, int(Token::CC_OTHER));
+        parser.setSymbol("sfcode"+n, int(1000));
 
         parser.setSymbol("delcode"+n, int(-1));
         parser.setSymbol("mathcode"+n, int(i));
@@ -485,7 +496,6 @@ void initSymbols(Parser& parser)
         parser.lexer()->setCatcode(i, Token::CC_LETTER);
         parser.setSymbol("catcode"+n, int(Token::CC_LETTER));
 
-        parser.setSymbol("sfcode"+n, int(1000));
         parser.setSymbol("lccode"+n, int(i));
         parser.setSymbol("uccode"+n, int(i - 'a' + 'A'));
         parser.setSymbol("mathcode"+n, int(0x7100 + i));

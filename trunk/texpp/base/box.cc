@@ -132,7 +132,7 @@ bool BoxSpec::invokeOperation(Parser& parser,
         Node::ptr spec = parser.parseOptionalKeyword(kw_spec);
         node->appendChild("spec_clause", spec);
 
-        Dimen to;
+        Dimen to(0);
         if(spec->value(string()) == "to") {
             Node::ptr toNode = parser.parseDimen();
             node->appendChild("to", toNode);

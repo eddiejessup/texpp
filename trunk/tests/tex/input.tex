@@ -2,17 +2,15 @@
 \tracingcommands=2
 \tracingmacros=2
 \tracingrestores=2
+\batchmode
 
 \catcode`{=1
 \catcode`}=2
-\catcode`^=7
+\catcode`$=3
+\catcode`#=6
+\catcode`@=11
 
-\newlinechar=`@
-\message{~ \jobname @}
-
-\newlinechar=-1
-\catcode0=11
-\def\x{^^@}
-\show\x
+\input input.1.aux
 
 \end
+

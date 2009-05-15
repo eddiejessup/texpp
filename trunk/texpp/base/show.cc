@@ -22,10 +22,13 @@
 #include <texpp/base/glue.h>
 #include <texpp/base/toks.h>
 #include <texpp/base/font.h>
+#include <texpp/base/func.h>
+#include <texpp/base/files.h>
 #include <texpp/parser.h>
 #include <texpp/logger.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace {
 
@@ -47,6 +50,10 @@ bool parseMeaning(Parser& parser, shared_ptr<Node> node, bool show)
         Command::ptr c = parser.symbol(token, Command::ptr());
         if(c) str += c->texRepr(&parser);
         else str += "undefined";
+
+        // XXX: the following line
+        if(!show && dynamic_pointer_cast<base::UserMacro>(c))
+            boost::algorithm::erase_all(str, "\n");
     }
 
     if(show)
@@ -70,10 +77,18 @@ bool parseThe(Parser& parser, shared_ptr<Node> node, bool show)
     if(!show && dynamic_pointer_cast<base::ToksVariable>(var)) {
         var->invokeOperation(parser, node, base::Variable::GET, false);
         Token::list toks = node->value(Token::list());
-        Token::list toks_copy(toks.size());
+        Token::list_ptr toks_copy(new Token::list(toks.size()));
         for(size_t n=0; n<toks.size(); ++n) {
-            toks_copy[n] = Token::ptr(new Token(
-                toks[n]->type(), toks[n]->catCode(), toks[n]->value()));
+            (*toks_copy)[n] = toks[n]->lcopy();
+            if(!show) {
+                Command::ptr c = parser.prevCommand();
+                if(dynamic_pointer_cast<base::Write>(c) ||
+                        dynamic_pointer_cast<base::Message>(c) ||
+                        (dynamic_pointer_cast<base::Def>(c) &&
+                         static_pointer_cast<base::Def>(c)->expand())) {
+                    parser.addNoexpand((*toks_copy)[n]);
+                }
+            }
         }
         node->setValue(toks_copy);
         return true;

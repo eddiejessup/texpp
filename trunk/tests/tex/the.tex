@@ -27,5 +27,14 @@
 % XXX
 %\showthe\xx\yy\count0
 
+% toks
+\toks0={\number10}
+\the\toks0
+
+\message{~ \the\toks0 @}
+\immediate\write16{~ \the\toks0 @}
+\edef\x{\the\toks0}
+\show\x
+
 \end
 
