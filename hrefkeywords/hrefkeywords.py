@@ -99,7 +99,7 @@ def doReplace(node, macro, concepts):
 
             else:
                 # nothing found
-                src += child.value()
+                src += child.source()
 
         # Walk recursively if whitelisted
         elif child.type() in latexstubs.whitelistEnvironments:
