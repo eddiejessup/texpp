@@ -62,6 +62,9 @@ public:
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
     Node_treeRepr_overloads, treeRepr, 0, 1)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(
+    Node_source_overloads, source, 0, 1)
+
 void export_node()
 {
     using namespace boost::python;
@@ -74,7 +77,8 @@ void export_node()
         .def("__repr__", &Node::repr)
         .def("treeRepr", &Node::treeRepr,
             Node_treeRepr_overloads())
-        .def("source", &Node::source)
+        .def("source", &Node::source,
+            Node_source_overloads())
         .def("type", &Node::type,
             return_value_policy<copy_const_reference>())
         .def("setValue", &Node::setValue)
