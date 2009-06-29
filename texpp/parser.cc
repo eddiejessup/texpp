@@ -811,11 +811,17 @@ void Parser::input(const string& fileName, const string& fullName)
             "I can't find file `" + fileName + "'",
             *this, lastToken());
 
+        /*TODO: made this an option
         logger()->log(Logger::ERROR,
             "Emergency stop",
             *this, lastToken());
 
         end();
+        return;*/
+
+        logger()->log(Logger::ERROR,
+            "Emergency stop (canceled)",
+            *this, lastToken());
         return;
     }
 
