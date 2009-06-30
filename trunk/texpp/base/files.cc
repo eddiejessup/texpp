@@ -48,7 +48,7 @@ bool Openin::invoke(Parser& parser, shared_ptr<Node> node)
     node->appendChild("file_name", fnameNode);
 
     string fname = fnameNode->value(string());
-    string fullname = kpsewhich(fname);
+    string fullname = kpsewhich(fname, parser.workdir());
     //std::cout << "name: '" << fnameNode->value(string()) << "'\n";
     //std::cout << "fullname: '" << fullname << "'\n";
 
@@ -447,7 +447,7 @@ bool Input::invoke(Parser& parser, shared_ptr<Node> node)
     node->appendChild("file_name", fnameNode);
 
     string fname = fnameNode->value(string());
-    string fullname = kpsewhich(fname);
+    string fullname = kpsewhich(fname, parser.workdir());
 
     parser.input(fname, fullname);
 
