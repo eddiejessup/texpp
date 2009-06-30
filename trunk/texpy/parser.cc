@@ -147,6 +147,7 @@ void export_parser()
             Parser_parseControlSequence_overloads())
 
         .def("parseOptionalSpaces", &Parser::parseOptionalSpaces)
+        .def("parseFileName", &Parser::parseFileName)
 
         // Symbols
         .def("symbol", (const any& (Parser::*)(const string&) const)(
@@ -167,6 +168,8 @@ void export_parser()
         .def("endGroup", &Parser::endGroup)
         .def("beginCustomGroup", &Parser::beginCustomGroup)
         .def("endCustomGroup", &Parser::endCustomGroup)
+
+        .def("input", &Parser::input)
 
         .def("end", &Parser::end)
         ;
