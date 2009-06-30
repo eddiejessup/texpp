@@ -46,7 +46,7 @@ def parseDocument(filename, fileobj):
     # Do the real work
     return parser.parse()
 
-def doReplace(node, macro, concepts):
+def doReplace(node, macro, concepts, filename):
     """ Recursively replaces concepts in the node and returns
         a pair (modified source, replacement stats) """
 
@@ -54,7 +54,7 @@ def doReplace(node, macro, concepts):
 
     # Do nothing for leaf nodes
     if childrenCount == 0:
-        return (node.source(), {})
+        return (node.source(filename), {})
 
     src = ''
     n = 0
@@ -99,11 +99,11 @@ def doReplace(node, macro, concepts):
 
             else:
                 # nothing found
-                src += child.source()
+                src += child.source(filename)
 
         # Walk recursively if whitelisted
         elif child.type() in latexstubs.whitelistEnvironments:
-            (src1, stats1) = doReplace(child, macro, concepts)
+            (src1, stats1) = doReplace(child, macro, concepts, filename)
             src += src1
             for w,c in stats1.iteritems():
                 stats.setdefault(w, 0)
@@ -111,7 +111,7 @@ def doReplace(node, macro, concepts):
 
         # Just grab the source otherwise
         else:
-            src += child.source()
+            src += child.source(filename)
 
         n += 1
 
@@ -167,7 +167,8 @@ def main():
     document = parseDocument(filename, fileobj)
 
     # Do the main job
-    (new_source, stats) = doReplace(document, opt.macro, concepts)
+    (new_source, stats) = doReplace(document,
+                opt.macro, concepts, filename)
 
     # Output
     outfile.write(new_source)

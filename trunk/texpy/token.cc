@@ -51,6 +51,8 @@ void export_token_class()
         .add_property("lineNo", &Token::lineNo, &Token::setLineNo)
         .add_property("charPos", &Token::charPos, &Token::setCharPos)
         .add_property("charEnd", &Token::charEnd, &Token::setCharEnd)
+        .def("fileName", &Token::fileName,
+                    return_value_policy<copy_const_reference>())
         .def("isSkipped", &Token::isSkipped)
         .def("isControl", &Token::isControl)
         .def("isCharacter", (bool (Token::*)() const) &Token::isSkipped)
