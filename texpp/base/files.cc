@@ -25,6 +25,7 @@
 #include <boost/foreach.hpp>
 
 #include <fstream>
+#include <sstream>
 
 namespace texpp {
 namespace base {
@@ -128,14 +129,20 @@ bool Read::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
             parser.logger()->log(Logger::ERROR,
                     "Emergency stop",
                     parser, parser.lastToken());
-            parser.end();
-            return true;
-        }
-        // read from terminal
-        std::cin.sync();
-        lexer = shared_ptr<Lexer>(new Lexer("", NULL));
-        if(stream >= 0) {
-            std::cout << ltoken->texRepr() << "=" << std::flush;
+            if(!parser.ignoreEmergency()) {
+                parser.end();
+                return true;
+            } else {
+                lexer = shared_ptr<Lexer>(new Lexer("",
+                    shared_ptr<std::istream>(new std::istringstream(""))));
+            }
+        } else {
+            // read from terminal
+            std::cin.sync();
+            lexer = shared_ptr<Lexer>(new Lexer("", NULL));
+            if(stream >= 0) {
+                std::cout << ltoken->texRepr() << "=" << std::flush;
+            }
         }
     }
 
@@ -265,7 +272,8 @@ bool Openout::invokeWithPrefixes(Parser& parser,
     } else {
         parser.logger()->log(Logger::ERROR, "Emergency stop",
                                 parser, parser.lastToken());
-        parser.end();
+        if(!parser.ignoreEmergency())
+            parser.end();
         //parser.setSymbol("write" + boost::lexical_cast<string>(stream),
         //                            OutFile(), true);
     }

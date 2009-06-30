@@ -55,7 +55,7 @@ def main():
         logger = texpy.ConsoleLogger()
 
     # Create the parser
-    parser = texpy.Parser(filename, fileobj, '', interactive, logger)
+    parser = texpy.Parser(filename, fileobj, '', interactive, False, logger)
 
     # Load latexstubs
     if opt.use_stubs:

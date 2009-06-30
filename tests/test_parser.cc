@@ -49,7 +49,8 @@ shared_ptr<Parser> create_parser(const string& input)
 {
     shared_ptr<std::istream> ifile(new std::istringstream(input));
     return shared_ptr<Parser>(
-        new Parser("", ifile, "", false, shared_ptr<Logger>(new TestLogger)));
+        new Parser("", ifile, "", false, false,
+                    shared_ptr<Logger>(new TestLogger)));
 }
 
 BOOST_AUTO_TEST_CASE( parser_tokens )
