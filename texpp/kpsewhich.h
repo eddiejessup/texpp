@@ -21,7 +21,8 @@
 namespace texpp {
 
 std::string kpseextend(const std::string& fname);
-std::string kpsewhich(const std::string& fname);
+std::string kpsewhich(const std::string& fname,
+                const std::string& dir = std::string());
 
 } // namespace texpp
 

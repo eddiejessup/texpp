@@ -107,15 +107,18 @@ public:
                      GROUP_CUSTOM };
 
     Parser(const string& fileName, std::istream* file,
-            bool interactive = false,
+            const string& workdir = string(), bool interactive = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
 
     Parser(const string& fileName, shared_ptr<std::istream> file,
-            bool interactive = false,
+            const string& workdir = string(), bool interactive = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
 
     Interaction interaction() const { return m_interaction; }
     void setInteraction(Interaction intr) { m_interaction = intr; }
+
+    const string& workdir() const { return m_workdir; }
+    void setWorkdir(const string& workdir) { m_workdir = workdir; }
 
     Node::ptr parse();
 
@@ -275,6 +278,8 @@ protected:
     typedef std::vector<
         pair<shared_ptr<Lexer>, TokenQueue>
     > InputStack;
+
+    string          m_workdir;
 
     shared_ptr<Lexer>   m_lexer;
     shared_ptr<Logger>  m_logger;

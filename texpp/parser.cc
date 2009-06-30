@@ -38,6 +38,7 @@
 #include <climits>
 #include <cassert>
 #include <iterator>
+#include <unistd.h>
 #include <ctime>
 
 #include <boost/foreach.hpp>
@@ -129,8 +130,8 @@ string Node::source(const string& fileName) const
 }
 
 Parser::Parser(const string& fileName, std::istream* file,
-                bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0),
+   const string& workdir, bool interactive, shared_ptr<Logger> logger)
+    : m_workdir(workdir), m_logger(logger), m_groupLevel(0),
       m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
@@ -142,8 +143,8 @@ Parser::Parser(const string& fileName, std::istream* file,
 }
 
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
-                bool interactive, shared_ptr<Logger> logger)
-    : m_logger(logger), m_groupLevel(0),
+    const string& workdir, bool interactive, shared_ptr<Logger> logger)
+    : m_workdir(workdir), m_logger(logger), m_groupLevel(0),
       m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),

@@ -124,11 +124,17 @@ void export_parser()
     export_node();
 
     scope scopeParser = class_<Parser, boost::noncopyable >("Parser",
-            init<std::string, shared_ptr<std::istream>, bool, shared_ptr<Logger> >())
-        .def(init<std::string, shared_ptr<std::istream>, bool>())
+            init<std::string, shared_ptr<std::istream>,
+                 std::string, bool, shared_ptr<Logger> >())
+        .def(init<std::string, shared_ptr<std::istream>, std::string, bool>())
+        .def(init<std::string, shared_ptr<std::istream>, std::string >())
         .def(init<std::string, shared_ptr<std::istream> >())
 
         .def("parse", &Parser::parse)
+
+        .def("workdir", &Parser::workdir,
+            return_value_policy<copy_const_reference>())
+        .def("setWorkdir", &Parser::setWorkdir)
 
         // Tokens
         .def("peekToken", &Parser::peekToken,

@@ -36,7 +36,7 @@ std::string kpseextend(const std::string& fname)
     return n1 == fname.npos ? (fname + ".tex") : fname;
 }
 
-std::string kpsewhich(const std::string& fname)
+std::string kpsewhich(const std::string& fname, const std::string& dir)
 {
     int p_stdout[2];
     pid_t pid;
@@ -56,6 +56,8 @@ std::string kpsewhich(const std::string& fname)
             dup2(p_stdout[1], 1);
             close(p_stdout[1]);
         }
+        if(!dir.empty())
+            chdir(dir.c_str());
         execlp("kpsewhich", "kpsewhich", fname.c_str(), NULL);
         exit(1);
     }
