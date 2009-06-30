@@ -122,7 +122,7 @@ class InputCommand(texpy.Command):
         fname = fnameNode.value() or ''
         if fname.startswith('{'):
             fname = fname[1:-1]
-        fullname = texpy.kpsewhich(fname)
+        fullname = texpy.kpsewhich(fname, parser.workdir())
 
         parser.input(fname, fullname)
         return True
