@@ -130,8 +130,10 @@ string Node::source(const string& fileName) const
 }
 
 Parser::Parser(const string& fileName, std::istream* file,
-   const string& workdir, bool interactive, shared_ptr<Logger> logger)
-    : m_workdir(workdir), m_logger(logger), m_groupLevel(0),
+        const string& workdir, bool interactive, bool ignoreEmergency,
+        shared_ptr<Logger> logger)
+    : m_workdir(workdir), m_ignoreEmergency(ignoreEmergency),
+      m_logger(logger), m_groupLevel(0),
       m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
@@ -143,8 +145,10 @@ Parser::Parser(const string& fileName, std::istream* file,
 }
 
 Parser::Parser(const string& fileName, shared_ptr<std::istream> file,
-    const string& workdir, bool interactive, shared_ptr<Logger> logger)
-    : m_workdir(workdir), m_logger(logger), m_groupLevel(0),
+        const string& workdir, bool interactive, bool ignoreEmergency,
+        shared_ptr<Logger> logger)
+    : m_workdir(workdir), m_ignoreEmergency(ignoreEmergency),
+      m_logger(logger), m_groupLevel(0),
       m_end(false), m_endinput(false), m_endinputNow(false),
       m_lineNo(1), m_mode(NULLMODE), m_prevMode(NULLMODE),
       m_hasOutput(false), m_currentGroupType(GROUP_DOCUMENT),
@@ -812,17 +816,13 @@ void Parser::input(const string& fileName, const string& fullName)
             "I can't find file `" + fileName + "'",
             *this, lastToken());
 
-        /*TODO: made this an option
         logger()->log(Logger::ERROR,
             "Emergency stop",
             *this, lastToken());
 
-        end();
-        return;*/
+        if(!ignoreEmergency())
+            end();
 
-        logger()->log(Logger::ERROR,
-            "Emergency stop (canceled)",
-            *this, lastToken());
         return;
     }
 

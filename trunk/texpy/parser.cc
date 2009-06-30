@@ -125,7 +125,8 @@ void export_parser()
 
     scope scopeParser = class_<Parser, boost::noncopyable >("Parser",
             init<std::string, shared_ptr<std::istream>,
-                 std::string, bool, shared_ptr<Logger> >())
+                 std::string, bool, bool, shared_ptr<Logger> >())
+        .def(init<std::string, shared_ptr<std::istream>, std::string, bool, bool>())
         .def(init<std::string, shared_ptr<std::istream>, std::string, bool>())
         .def(init<std::string, shared_ptr<std::istream>, std::string >())
         .def(init<std::string, shared_ptr<std::istream> >())

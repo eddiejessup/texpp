@@ -43,7 +43,7 @@ int main(int argc, char** argv)
         file = &std::cin;
     }
 
-    texpp::Parser parser(fileName, file, "", interactive,
+    texpp::Parser parser(fileName, file, "", interactive, false,
                     texpp::Logger::ptr(new texpp::ConsoleLogger));
     texpp::Node::ptr document = parser.parse();
 

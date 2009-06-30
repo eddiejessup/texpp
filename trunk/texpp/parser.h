@@ -107,11 +107,13 @@ public:
                      GROUP_CUSTOM };
 
     Parser(const string& fileName, std::istream* file,
-            const string& workdir = string(), bool interactive = false,
+            const string& workdir = string(),
+            bool interactive = false, bool ignoreEmergency = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
 
     Parser(const string& fileName, shared_ptr<std::istream> file,
-            const string& workdir = string(), bool interactive = false,
+            const string& workdir = string(),
+            bool interactive = false, bool ignoreEmergency = false,
             shared_ptr<Logger> logger = shared_ptr<Logger>());
 
     Interaction interaction() const { return m_interaction; }
@@ -120,6 +122,12 @@ public:
     const string& workdir() const { return m_workdir; }
     void setWorkdir(const string& workdir) { m_workdir = workdir; }
 
+    bool ignoreEmergency() const { return m_ignoreEmergency; }
+    void setIgnoreEmergency(bool ignoreEmergency) {
+        m_ignoreEmergency = ignoreEmergency;
+    }
+   
+    ///////// Parse 
     Node::ptr parse();
 
     const string& modeName() const;
@@ -280,6 +288,7 @@ protected:
     > InputStack;
 
     string          m_workdir;
+    bool            m_ignoreEmergency;
 
     shared_ptr<Lexer>   m_lexer;
     shared_ptr<Logger>  m_logger;
