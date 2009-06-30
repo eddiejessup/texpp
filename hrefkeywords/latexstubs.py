@@ -114,6 +114,19 @@ class DefCommand(texpy.Command):
     def checkPrefixes(self, parser):
         return True
 
+class InputCommand(texpy.Command):
+    def invoke(self, parser, node):
+        fnameNode = parser.parseFileName()
+        node.appendChild('file_name', fnameNode)
+
+        fname = fnameNode.value() or ''
+        if fname.startswith('{'):
+            fname = fname[1:-1]
+        fullname = texpy.kpsewhich(fname)
+
+        parser.input(fname, fullname)
+        return True
+
 def createCommand(parser, name, cmd, *args):
     parser.setSymbol('\\' + name, cmd('\\' + name, *args))
 
@@ -146,8 +159,10 @@ def initLaTeXstyle(parser):
     createCommand(parser, 'gdef', DefCommand)
     createCommand(parser, 'xdef', DefCommand)
 
-    createCommand(parser, 'documentclass', Documentclass);
-    createCommand(parser, 'documentstyle', Documentclass);
+    createCommand(parser, 'documentclass', Documentclass)
+    createCommand(parser, 'documentstyle', Documentclass)
+
+    createCommand(parser, 'input', InputCommand)
 
     mathToken = texpy.Token(texpy.Token.Type.CHARACTER,
                             texpy.Token.CatCode.MATHSHIFT, '$')

@@ -18,6 +18,7 @@
 
 #include <boost/python.hpp>
 #include <texpp/token.h>
+#include <texpp/kpsewhich.h>
 
 #include <iostream>
 #include <istream>
@@ -44,5 +45,7 @@ BOOST_PYTHON_MODULE(texpy)
     export_command();
     export_parser();
     export_logger();
+
+    def("kpsewhich", texpp::kpsewhich);
 }
 
