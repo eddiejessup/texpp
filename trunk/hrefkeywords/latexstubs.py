@@ -90,6 +90,13 @@ class Newtheorem(texpy.Command):
 
         return True
 
+class Documentclass(texpy.Command):
+    def invoke(self, parser, node):
+        node.appendChild('options', parseOptionalArgs(parser))
+        node.appendChild('class', parseGeneralArg(parser))
+
+        return True
+
 class DefCommand(texpy.Command):
     def invoke(self, parser, node):
         node.appendChild('token', parser.parseControlSequence())
@@ -138,6 +145,9 @@ def initLaTeXstyle(parser):
     createCommand(parser, 'edef', DefCommand)
     createCommand(parser, 'gdef', DefCommand)
     createCommand(parser, 'xdef', DefCommand)
+
+    createCommand(parser, 'documentclass', Documentclass);
+    createCommand(parser, 'documentstyle', Documentclass);
 
     mathToken = texpy.Token(texpy.Token.Type.CHARACTER,
                             texpy.Token.CatCode.MATHSHIFT, '$')
