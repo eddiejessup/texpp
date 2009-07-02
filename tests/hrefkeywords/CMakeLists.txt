@@ -1,4 +1,9 @@
 set(ARXIV_FILES_DIR "" CACHE FILEPATH "Path to test data from arxiv.org")
+
+if(PYTHONINTERP_FOUND)
+add_test(test_hrefliterals ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_hrefliterals.py ${CMAKE_SOURCE_DIR}/hrefkeywords)
+endif(PYTHONINTERP_FOUND)
+
 if(ARXIV_FILES_DIR)
 
 file(GLOB ARXIV_TEST_FILES "${ARXIV_FILES_DIR}/*")
