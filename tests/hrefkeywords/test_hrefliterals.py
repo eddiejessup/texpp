@@ -76,6 +76,24 @@ class NormLiteralTest(unittest.TestCase):
         self.assertEqual(self.normLiteral('S.E.T.s'), 'S.E.T.S.')
         self.assertEqual(self.normLiteral('dofs'), 'D.O.F.S.')
 
+class AddLiteralTest(unittest.TestCase):
+    def testAddLiteral(self):
+        l = {}
+        hrefliterals.addLiteral(l, u'aa', 1)
+        hrefliterals.addLiteral(l, u'bb', 2)
+        self.assertEqual(set(hrefliterals.listLiterals(l)),
+                            set(['aa', 'bb']))
+
+        hrefliterals.addLiteral(l, u'c', 1)
+        hrefliterals.addLiteral(l, u'a', 2)
+        self.assertEqual(set(hrefliterals.listLiterals(l)),
+                            set(['aa', 'bb', 'c', 'a']))
+
+        hrefliterals.addLiteral(l, u'aaff', 1)
+        hrefliterals.addLiteral(l, u'cffff', 2)
+        self.assertEqual(set(hrefliterals.listLiterals(l)),
+                            set(['aa', 'bb', 'c', 'a', 'aaff', 'cffff']))
+
 if __name__ == '__main__':
     unittest.main()
 

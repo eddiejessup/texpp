@@ -24,7 +24,7 @@ def normLiteral(literal, words, stemmer):
     """
 
     n = 0
-    sliteral = ''
+    nliteral = ''
 
     while n < len(literal):
         m = re_cut.match(literal[n:])
@@ -36,7 +36,7 @@ def normLiteral(literal, words, stemmer):
         m = re_symbol.match(literal[n:])
         if m:
             # Next symbol should be saved as-is
-            sliteral += m.group(0)
+            nliteral += m.group(0)
             n += m.end()
             continue
 
@@ -55,22 +55,58 @@ def normLiteral(literal, words, stemmer):
                     if w.endswith('es') and w[:-2].isupper():
                         w = w[:-2]
                     elif w.endswith('s') and w[:-1].isupper():
-                            w = w[:-1]
+                        w = w[:-1]
 
                     # Insert dots for abbrevations without dots
                     w = reduce(lambda a,b: a+b+'.', w, '')
 
                 # Convert to uppercase
-                sliteral += w.upper()
+                nliteral += w.upper()
 
             else:
                 # Case 2: normal word
                 # Convert to lowercase and stem
-                sliteral += stemmer.stem(w.lower())
+                nliteral += stemmer.stem(w.lower())
 
         n += m.end()
 
-    return sliteral
+    return nliteral
+
+def addLiteral(literals, literal, id):
+    assert(type(literals) is dict)
+    assert(type(literal) is unicode)
+    assert(id and (type(id) is int))
+
+    if not literals or (len(literals) == 1 and literals.keys() == [True]):
+        literals.update({literal: {True: id}})
+        return
+
+    try:
+        l = len(literals.keys()[0])
+    except TypeError:
+        l = len(literals.keys()[1])
+        
+    if l == len(literal):
+        literals.setdefault(literal, {})[True] = id
+
+    elif l > len(literal):
+        literals_old = dict(literals)
+        literals.clear()
+        l = len(literal)
+        for k, v in literals_old.iteritems():
+            literals.setdefault(k[:l], {})[k[l:]] = v
+        addLiteral(literals, literal, id)
+
+    else: # i.e. l < len(literal)
+        addLiteral(literals.setdefault(literal[:l], {}), literal[l:], id)
+
+def listLiterals(literals, prefix=u'', ret=[]):
+    for k, v in literals.iteritems():
+        if k is True:
+            ret.append(prefix)
+        else:
+            ret.extend(listLiterals(v, prefix+k))
+    return ret
 
 def loadWords():
     words = set(['I', 'a'])
