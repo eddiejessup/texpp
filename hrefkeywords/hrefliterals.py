@@ -71,62 +71,6 @@ def normLiteral(literal, words, stemmer):
         n += m.end()
 
     return nliteral
-
-def addLiteral(literals, literal, id):
-    """ Append literal to a literals dictionary """
-
-    assert(type(literals) is dict)
-    assert(type(literal) is unicode)
-    assert(id and (type(id) is int))
-
-    if not literals or (len(literals) == 1 and literals.keys() == [True]):
-        literals.update({literal: {True: id}})
-        return
-
-    try:
-        l = len(literals.keys()[0])
-    except TypeError:
-        l = len(literals.keys()[1])
-        
-    ll = len(literal)
-    if l == ll:
-        literals.setdefault(literal, {})[True] = id
-
-    elif l > ll:
-        literals_old = dict(literals)
-        literals.clear()
-        for k, v in literals_old.iteritems():
-            literals.setdefault(k[:ll], {})[k[ll:]] = v
-        addLiteral(literals, literal, id)
-
-    else: # i.e. l < len(literal)
-        addLiteral(literals.setdefault(literal[:l], {}), literal[l:], id)
-
-def listLiterals(literals, prefix=u''):
-    """ List all literals in dictionary """
-    ret = []
-    for k, v in literals.iteritems():
-        if k is True:
-            ret.append(prefix)
-        else:
-            ret.extend(listLiterals(v, prefix+k))
-    return ret
-
-def findLiteral(literals, literal):
-    """ Find literal in a dictionary and return its id """
-    try:
-        l = len(literals.keys()[0])
-    except TypeError:
-        l = len(literals.keys()[1])
-
-    ll = len(literal)
-    if l == ll:
-        return literals.get(literal, {}).get(True, None)
-    elif l < ll:
-        s = literals.get(literal[:l], None)
-        return findLiteral(s, literal[l:]) if s else None
-    else:
-        return None
         
 def loadWords():
     words = set(['I', 'a'])
