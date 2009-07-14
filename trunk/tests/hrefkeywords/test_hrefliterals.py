@@ -77,34 +77,6 @@ class NormLiteralTest(unittest.TestCase):
         self.assertEqual(self.normLiteral('S.E.T.s'), 'S.E.T.S.')
         self.assertEqual(self.normLiteral('dofs'), 'D.O.F.S.')
 
-class AddLiteralTest(unittest.TestCase):
-    def testAddLiteral(self):
-        l = {}
-        hrefliterals.addLiteral(l, u'aa', 1)
-        hrefliterals.addLiteral(l, u'bb', 2)
-        self.assertEqual(set(hrefliterals.listLiterals(l)),
-                            set(['aa', 'bb']))
-
-        self.assertEqual(hrefliterals.findLiteral(l, u'aa'), 1)
-        self.assertEqual(hrefliterals.findLiteral(l, u'bb'), 2)
-        self.assertEqual(hrefliterals.findLiteral(l, u'cc'), None)
-
-        hrefliterals.addLiteral(l, u'c', 3)
-        hrefliterals.addLiteral(l, u'a', 4)
-        self.assertEqual(set(hrefliterals.listLiterals(l)),
-                            set(['aa', 'bb', 'c', 'a']))
-
-        hrefliterals.addLiteral(l, u'aaff', 1)
-        hrefliterals.addLiteral(l, u'cffff', 2)
-        self.assertEqual(set(hrefliterals.listLiterals(l)),
-                            set(['aa', 'bb', 'c', 'a', 'aaff', 'cffff']))
-
-        self.assertEqual(hrefliterals.findLiteral(l, u'aa'), 1)
-        self.assertEqual(hrefliterals.findLiteral(l, u'bb'), 2)
-        self.assertEqual(hrefliterals.findLiteral(l, u'a'), 4)
-        self.assertEqual(hrefliterals.findLiteral(l, u'aaff'), 1)
-        self.assertEqual(hrefliterals.findLiteral(l, u'cc'), None)
-
 class ScanDocumentText(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(ScanDocumentText, self).__init__(*args, **kwargs)
