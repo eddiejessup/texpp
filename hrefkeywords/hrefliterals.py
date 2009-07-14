@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-#import sys
-#import texpy
+import sys
+import texpy
 
-#import latexstubs
+import latexstubs
 
 import codecs
 import re
@@ -73,6 +73,8 @@ def normLiteral(literal, words, stemmer):
     return nliteral
 
 def addLiteral(literals, literal, id):
+    """ Append literal to a literals dictionary """
+
     assert(type(literals) is dict)
     assert(type(literal) is unicode)
     assert(id and (type(id) is int))
@@ -86,21 +88,23 @@ def addLiteral(literals, literal, id):
     except TypeError:
         l = len(literals.keys()[1])
         
-    if l == len(literal):
+    ll = len(literal)
+    if l == ll:
         literals.setdefault(literal, {})[True] = id
 
-    elif l > len(literal):
+    elif l > ll:
         literals_old = dict(literals)
         literals.clear()
-        l = len(literal)
         for k, v in literals_old.iteritems():
-            literals.setdefault(k[:l], {})[k[l:]] = v
+            literals.setdefault(k[:ll], {})[k[ll:]] = v
         addLiteral(literals, literal, id)
 
     else: # i.e. l < len(literal)
         addLiteral(literals.setdefault(literal[:l], {}), literal[l:], id)
 
-def listLiterals(literals, prefix=u'', ret=[]):
+def listLiterals(literals, prefix=u''):
+    """ List all literals in dictionary """
+    ret = []
     for k, v in literals.iteritems():
         if k is True:
             ret.append(prefix)
@@ -108,6 +112,22 @@ def listLiterals(literals, prefix=u'', ret=[]):
             ret.extend(listLiterals(v, prefix+k))
     return ret
 
+def findLiteral(literals, literal):
+    """ Find literal in a dictionary and return its id """
+    try:
+        l = len(literals.keys()[0])
+    except TypeError:
+        l = len(literals.keys()[1])
+
+    ll = len(literal)
+    if l == ll:
+        return literals.get(literal, {}).get(True, None)
+    elif l < ll:
+        s = literals.get(literal[:l], None)
+        return findLiteral(s, literal[l:]) if s else None
+    else:
+        return None
+        
 def loadWords():
     words = set(['I', 'a'])
     words_file = codecs.open('/usr/share/dict/words', 'r', 'latin1')
@@ -122,7 +142,122 @@ def createStemmer():
     from nltk.stem.porter import PorterStemmer
     return PorterStemmer()
 
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
+def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
+    """ Loads concepts from the files
+        and arranges them in a dictionary """
+    literals = {}
+    for line in conceptsfile:
+        line = line.strip(' \n\r')
+        line1 = line.lower() \
+                    .replace('\\-', '-') \
+                    .replace('\\(', '(') \
+                    .replace('\\)', ')')
+
+        literals.setdefault(normLiteral(line1, words, stemmer), []) \
+                .append(line1)
+
+    return literals
+
+def parseDocument(filename, fileobj):
+    """ Parses the document using TeXpp """
+    parser = texpy.Parser(filename, fileobj, '', False, True)
+
+    # Mimic the most important parts of LaTeX style
+    latexstubs.initLaTeXstyle(parser)
+
+    # Do the real work
+    return parser.parse()
+
+def scanDocument(node, filename, literals, words, stemmer,
+                    replace = '\\href{%(concept)s}{%(text)s}',
+                    maxChars = None):
+    """ Find literals in a parsed document
+
+        Arguments:
+            node     - document node
+            filename - document file name
+            literals - literals dictionary
+            replace  - pattern to replace found literals
+            maxChars - maximum lendth of the normed literal
+
+        Returns a tuple (stats, replaced)
+            stats    - a dictionary which maps each found concept
+                       to a tuple (first_node, last_node)
+            replaced - document source after replacement
+                       (or empty string if replace argument is None)
+    """
+
+    if maxChars is None:
+        maxChars = max(len(c) for c in literals.keys())
+
+    childrenCount = node.childrenCount()
+
+    # Do nothing for leaf nodes
+    if childrenCount == 0:
+        return (node.source(filename), {})
+
+    src = []
+    n = 0
+    stats = {}
+    while n < childrenCount:
+        child = node.child(n)
+
+        # Try replacing text_word or text_character
+        if child.type() in ('text_word', 'text_character'):
+            cur_text = ''
+            found_literals = []
+            for m in xrange(n, childrenCount):
+                childm = node.child(m)
+
+                # look in literals dictionary
+                if childm.type() in ('text_word', 'text_character'):
+                    cur_text += childm.value()
+                    cur_literal = normLiteral(cur_text, words, stemmer)
+                    if len(cur_literal) > maxChars:
+                        break
+
+                    cur_concept = literals.get(cur_literal, None)
+                    if cur_concept is not None:
+                        found_literals.append((cur_concept, cur_text, m))
+            
+                # skip spaces
+                elif childm.type() == 'text_space':
+                    cur_text += childm.value()
+
+                # break on anything else
+                else:
+                    break
+
+            if found_literals:
+                # do replace
+                c = found_literals[-1]
+                concept = c[0][0]
+
+                if replace is not None:
+                    src.append(replace % {'concept': concept, 'text': c[1]})
+                        
+                stats.setdefault(concept, [])
+                stats[concept].append((child, node.child(c[2])))
+                n = c[2]
+
+            elif replace is not None:
+                # nothing found
+                src.append(child.source(filename))
+
+        # Walk recursively if whitelisted
+        elif child.type() in latexstubs.whitelistEnvironments:
+            (src1, stats1) = scanDocument(child, filename,
+                              literals, words, stemmer, replace, maxChars)
+            src.append(src1)
+            for c,s in stats1.iteritems():
+                stats.setdefault(c, [])
+                stats[c].extend(s)
+
+        # Just grab the source otherwise
+        elif replace is not None:
+            src.append(child.source(filename))
+
+        n += 1
+
+    return (stats, ''.join(src))
 
