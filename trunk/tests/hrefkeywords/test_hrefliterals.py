@@ -2,10 +2,11 @@
 
 import sys
 sys.path.append(sys.argv[1])
-sys.argv = sys.argv[0:1] + sys.argv[2:]
+sys.path.append(sys.argv[2])
+sys.argv = sys.argv[0:1] + sys.argv[3:]
 
 import hrefliterals
-
+import StringIO
 import unittest
 
 class NormLiteralTest(unittest.TestCase):
@@ -84,8 +85,12 @@ class AddLiteralTest(unittest.TestCase):
         self.assertEqual(set(hrefliterals.listLiterals(l)),
                             set(['aa', 'bb']))
 
-        hrefliterals.addLiteral(l, u'c', 1)
-        hrefliterals.addLiteral(l, u'a', 2)
+        self.assertEqual(hrefliterals.findLiteral(l, u'aa'), 1)
+        self.assertEqual(hrefliterals.findLiteral(l, u'bb'), 2)
+        self.assertEqual(hrefliterals.findLiteral(l, u'cc'), None)
+
+        hrefliterals.addLiteral(l, u'c', 3)
+        hrefliterals.addLiteral(l, u'a', 4)
         self.assertEqual(set(hrefliterals.listLiterals(l)),
                             set(['aa', 'bb', 'c', 'a']))
 
@@ -93,6 +98,34 @@ class AddLiteralTest(unittest.TestCase):
         hrefliterals.addLiteral(l, u'cffff', 2)
         self.assertEqual(set(hrefliterals.listLiterals(l)),
                             set(['aa', 'bb', 'c', 'a', 'aaff', 'cffff']))
+
+        self.assertEqual(hrefliterals.findLiteral(l, u'aa'), 1)
+        self.assertEqual(hrefliterals.findLiteral(l, u'bb'), 2)
+        self.assertEqual(hrefliterals.findLiteral(l, u'a'), 4)
+        self.assertEqual(hrefliterals.findLiteral(l, u'aaff'), 1)
+        self.assertEqual(hrefliterals.findLiteral(l, u'cc'), None)
+
+class ScanDocumentText(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(ScanDocumentText, self).__init__(*args, **kwargs)
+        self.words = hrefliterals.loadWords()
+        self.stemmer = hrefliterals.createStemmer()
+
+    def testScanDocument(self):
+        literals = {'concept': ['concept']}
+        texfile = StringIO.StringIO('Some text with some concepts inside')
+        document = hrefliterals.parseDocument('texfile', texfile)
+        stats, replaced = hrefliterals.scanDocument(document, 'texfile',
+                                literals, self.words, self.stemmer,
+                                replace = '{%(concept)s}{%(text)s}')
+
+        self.assertEqual(stats.keys(), ['concept'])
+        self.assertEqual(len(stats['concept']), 1)
+        self.assertEqual(len(stats['concept'][0]), 2)
+        self.assertEqual(stats['concept'][0][0].value(), 'concepts')
+        self.assertEqual(stats['concept'][0][1].value(), 'concepts')
+        self.assertEqual(replaced,
+                'Some text with some {concept}{concepts} inside')
 
 if __name__ == '__main__':
     unittest.main()
