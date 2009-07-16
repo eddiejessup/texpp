@@ -7,6 +7,7 @@ import latexstubs
 
 import codecs
 import re
+import os
 
 re_cut = re.compile(r'[-/ ]|(?:\'s(?=[^A-Za-z0-9.]))')
 re_word = re.compile(r'[a-zA-Z0-9]+(?:[a-zA-Z0-9.]*\.)?')
@@ -149,9 +150,17 @@ def scanDocument(node, literals, words, stemmer,
     while n < childrenCount:
         child = node.child(n)
 
+        try_replace = False
+        child_is_word_char = child.type() in ('text_word', 'text_character')
+        if child_is_word_char:
+            if child.isOneFile():
+                cwd = os.getcwd()
+                child_file = child.oneFile()
+                try_replace = cwd == os.path.commonprefix((cwd,
+                                        os.path.abspath(child_file)))
+
         # Try replacing text_word or text_character
-        if child.type() in ('text_word', 'text_character') and child.isOneFile():
-            child_file = child.oneFile()
+        if try_replace:
             cur_text = ''
             found_literals = []
             for m in xrange(n, childrenCount):
@@ -223,10 +232,8 @@ def scanDocument(node, literals, words, stemmer,
 def main():
     """ Main routine """
 
-    import os
-    from optparse import OptionParser
-
     # Define command line options
+    from optparse import OptionParser
     optparser = OptionParser(usage='%prog [options] texfile')
     optparser.add_option('-c', '--concepts', type='string', help='concepts file')
     optparser.add_option('-o', '--output', type='string', help='output directory')
