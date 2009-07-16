@@ -103,9 +103,9 @@ def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
 
     return literals
 
-def isLocalFile(filename):
-    cwd = os.getcwd()
-    return cwd == os.path.commonprefix((cwd, os.path.abspath(filename)))
+def isLocalFile(filename, workdir = ''):
+    w = os.path.abspath(workdir)
+    return w == os.path.commonprefix((w, os.path.abspath(filename)))
 
 def parseDocument(filename, fileobj):
     """ Parses the document using TeXpp """
@@ -119,6 +119,7 @@ def parseDocument(filename, fileobj):
 
 def scanDocument(node, literals, words, stemmer,
                     replace = '\\href{%(concept)s}{%(text)s}',
+                    workdir = '',
                     maxChars = None):
     """ Find literals in a parsed document
 
@@ -156,9 +157,10 @@ def scanDocument(node, literals, words, stemmer,
 
         # Try replacing text_word or text_character
         if child.type() in ('text_word', 'text_character') and \
-                child.isOneFile() and isLocalFile(child.oneFile()):
+                child.isOneFile() and isLocalFile(child.oneFile(), workdir):
             cur_text = ''
             child_file = child.oneFile()
+            start_line, start_pos, end_line, end_pos = child.sourcePos()
             found_literals = []
             for m in xrange(n, childrenCount):
                 childm = node.child(m)
@@ -170,6 +172,13 @@ def scanDocument(node, literals, words, stemmer,
                         break
 
                     cur_text += childm.value()
+                    childm_pos = childm.sourcePos()
+                    if start_line == 0:
+                        start_line = childm_pos[0]
+                        start_pos = childm_pos[1]
+                    if childm_pos[2] != 0:
+                        end_line = childm_pos[2]
+                        end_pos = childm_pos[3]
 
                     # ignore spaces at the end
                     if childm.type() != 'text_space':
@@ -179,7 +188,8 @@ def scanDocument(node, literals, words, stemmer,
 
                         cur_concept = literals.get(cur_literal, None)
                         if cur_concept is not None:
-                            found_literals.append((cur_concept, cur_text, m))
+                            found_literals.append((cur_concept, cur_text, m,
+                                                        end_line, end_pos))
             
                 # break on anything else
                 else:
@@ -194,8 +204,10 @@ def scanDocument(node, literals, words, stemmer,
                     replaced.setdefault(child_file, []) \
                         .append(replace % {'concept': concept, 'text': c[1]})
                         
+                # save replace positions
                 stats.setdefault(concept, [])
-                stats[concept].append((child, node.child(c[2])))
+                stats[concept].append((os.path.abspath(child_file),
+                                start_line, start_pos, c[3], c[4]))
                 n = c[2]
 
             elif replace is not None:
@@ -309,6 +321,8 @@ def main():
     if opt.stats:
         for w,n in stats.iteritems():
             print 'Concept <%s> replaced %d times' % (w, len(n))
+
+    print stats
 
 if __name__ == '__main__':
     main()

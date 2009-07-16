@@ -59,6 +59,9 @@ public:
     string oneFile() const;
     bool isOneFile() const;
 
+    // Returns a vector (start_line, start_char, end_line, end_char)
+    std::vector<size_t> sourcePos() const;
+
     const string& type() const { return m_type; }
     void setType(const string& type) { m_type = type; }
 

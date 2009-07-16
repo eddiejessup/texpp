@@ -196,6 +196,34 @@ bool Node::isOneFile() const
     return true;
 }
 
+std::vector<size_t> Node::sourcePos() const
+{
+    std::vector<size_t> pos(4, 0);
+    BOOST_FOREACH(Token::ptr token, m_tokens) {
+        if(pos[0] == 0) {
+            pos[0] = token->lineNo();
+            pos[1] = token->charPos();
+        }
+        if(token->lineNo() != 0) {
+            pos[2] = token->lineNo();
+            pos[3] = token->charEnd();
+        }
+    }
+    typedef pair<string, Node::ptr> C;
+    BOOST_FOREACH(C c, m_children) {
+        std::vector<size_t> sub_pos = c.second->sourcePos();
+        if(pos[0] == 0) {
+            pos[0] = sub_pos[0];
+            pos[1] = sub_pos[1];
+        }
+        if(sub_pos[2] != 0) {
+            pos[2] = sub_pos[2];
+            pos[3] = sub_pos[3];
+        }
+    }
+    return pos;
+}
+
 Parser::Parser(const string& fileName, std::istream* file,
         const string& workdir, bool interactive, bool ignoreEmergency,
         shared_ptr<Logger> logger)
