@@ -25,7 +25,7 @@ def normLiteral(literal, words, stemmer):
     """
 
     n = 0
-    nliteral = ''
+    nliteral = []
 
     while n < len(literal):
         m = re_cut.match(literal[n:])
@@ -37,7 +37,7 @@ def normLiteral(literal, words, stemmer):
         m = re_symbol.match(literal[n:])
         if m:
             # Next symbol should be saved as-is
-            nliteral += m.group(0)
+            nliteral.append(m.group(0))
             n += m.end()
             continue
 
@@ -62,16 +62,16 @@ def normLiteral(literal, words, stemmer):
                     w = reduce(lambda a,b: a+b+'.', w, '')
 
                 # Convert to uppercase
-                nliteral += w.upper()
+                nliteral.append(w.upper())
 
             else:
                 # Case 2: normal word
                 # Convert to lowercase and stem
-                nliteral += stemmer.stem(w.lower())
+                nliteral.append(stemmer.stem(w.lower()))
 
         n += m.end()
 
-    return nliteral
+    return ''.join(nliteral)
         
 def loadWords():
     words = set(['I', 'a'])
@@ -84,8 +84,10 @@ def loadWords():
     return words
 
 def createStemmer():
-    from nltk.stem.porter import PorterStemmer
-    return PorterStemmer()
+    import _chrefliterals
+    return _chrefliterals.Stemmer()
+    #from nltk.stem.porter import PorterStemmer
+    #return PorterStemmer()
 
 def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
     """ Loads concepts from the files

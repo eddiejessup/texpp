@@ -3,7 +3,8 @@
 import sys
 sys.path.append(sys.argv[1])
 sys.path.append(sys.argv[2])
-sys.argv = sys.argv[0:1] + sys.argv[3:]
+sys.path.append(sys.argv[3])
+sys.argv = sys.argv[0:1] + sys.argv[4:]
 
 import hrefliterals
 import StringIO
@@ -53,8 +54,8 @@ class NormLiteralTest(unittest.TestCase):
     def testSAbbr(self):
         self.assertEqual(self.normLiteral('Dr.A.B.'), 'DR.A.B.')
         self.assertEqual(self.normLiteral('Dr.A.Boy.'), 'DR.A.BOY.')
-        self.assertEqual(self.normLiteral('Dr.A.Boy'), 'DR.A.boy')
-        self.assertEqual(self.normLiteral('Dr.A.boy'), 'DR.A.boy')
+        self.assertEqual(self.normLiteral('Dr.A.Boy'), 'DR.A.boi')
+        self.assertEqual(self.normLiteral('Dr.A.boy'), 'DR.A.boi')
         self.assertEqual(self.normLiteral('Dr.A.Ada'), 'DR.A.ada')
         self.assertEqual(self.normLiteral('Dr.A.ada'), 'DR.A.A.D.A.')
         self.assertEqual(self.normLiteral('Dr.A.B.'), 'DR.A.B.')
