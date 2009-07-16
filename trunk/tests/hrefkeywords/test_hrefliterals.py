@@ -8,6 +8,7 @@ sys.argv = sys.argv[0:1] + sys.argv[3:]
 import hrefliterals
 import StringIO
 import unittest
+import os
 
 class NormLiteralTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -91,11 +92,8 @@ class ScanDocumentText(unittest.TestCase):
                                 literals, self.words, self.stemmer,
                                 replace = '{%(concept)s}{%(text)s}')
 
-        self.assertEqual(stats.keys(), ['concept'])
-        self.assertEqual(len(stats['concept']), 1)
-        self.assertEqual(len(stats['concept'][0]), 2)
-        self.assertEqual(stats['concept'][0][0].value(), 'concepts')
-        self.assertEqual(stats['concept'][0][1].value(), 'concepts')
+        self.assertEqual(stats,
+            {'concept': [(os.path.abspath('texfile'), 1, 20, 1, 28)]})
         self.assertEqual(replaced,
             {'texfile': 'Some text with some {concept}{concepts} inside'})
 

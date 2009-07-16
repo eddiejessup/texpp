@@ -322,8 +322,6 @@ def main():
         for w,n in stats.iteritems():
             print 'Concept <%s> replaced %d times' % (w, len(n))
 
-    print stats
-
 if __name__ == '__main__':
     main()
 
