@@ -55,7 +55,7 @@ bool Openin::invoke(Parser& parser, shared_ptr<Node> node)
 
     shared_ptr<std::istream> istream(new std::ifstream(fullname.c_str()));
     if(!istream->fail()) {
-        shared_ptr<Lexer> lexer(new Lexer(fname, istream));
+        shared_ptr<Lexer> lexer(new Lexer(fullname, istream));
         parser.setSymbol("read" + boost::lexical_cast<string>(stream),
                                     InFile(lexer), true);
     } else {

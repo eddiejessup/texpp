@@ -895,7 +895,7 @@ void Parser::input(const string& fileName, const string& fullName)
 
     m_inputStack.push_back(std::make_pair(m_lexer, m_tokenQueue));
 
-    shared_ptr<Lexer> lexer(new Lexer(fileName, istream, false, true));
+    shared_ptr<Lexer> lexer(new Lexer(fullName, istream, false, true));
     lexer->setEndlinechar(m_lexer->endlinechar());
     for(int n=0; n<256; ++n) {
         lexer->setCatcode(n, m_lexer->catcode(n));
