@@ -17,37 +17,32 @@
 */
 
 #include <boost/python.hpp>
-#include <texpp/token.h>
-#include <texpp/kpsewhich.h>
+#include <set>
+#include <string>
 
-#include <iostream>
-#include <istream>
-#include <memory>
+namespace {
+  template<typename T>
+  struct std_set_to_python_object
+  {
+    static PyObject* convert(const std::set<T>& s)
+    {
+      PyObject* pySet = PySet_New(NULL);
+      typename std::set<T>::const_iterator end = s.end();
+      for(typename std::set<T>::const_iterator it = s.begin();
+                                            it != end; ++it) {
+          PySet_Add(pySet, boost::python::object(*it).ptr());
+      }
+      return pySet;
+    }
+  };
+}
 
-void export_python_stream();
-void export_boost_any();
-void export_std_set();
-void export_token();
-void export_lexer();
-void export_command();
-void export_parser();
-void export_logger();
-
-BOOST_PYTHON_MODULE(texpy)
+void export_std_set()
 {
-    using namespace boost::python;
-    using namespace texpp;
+    boost::python::to_python_converter<
+        std::set<std::string>,
+        std_set_to_python_object<std::string> >();
 
-    export_python_stream();
-    export_boost_any();
-    export_std_set();
-    export_token();
-    export_lexer();
-    export_command();
-    export_parser();
-    export_logger();
-
-    def("kpsewhich", texpp::kpsewhich);
-
+    //python_object_to_boost_any::register_conversion();
 }
 

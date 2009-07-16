@@ -4,6 +4,7 @@ include_directories(${BOOST_PYTHON_INCLUDES})
 set(libtexpy_SOURCES
     python_file_stream.cc
     boost_any.cc
+    std_set.cc
     token.cc
     lexer.cc
     command.cc

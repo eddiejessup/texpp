@@ -87,7 +87,7 @@ class ScanDocumentText(unittest.TestCase):
         literals = {'concept': ['concept']}
         texfile = StringIO.StringIO('Some text with some concepts inside')
         document = hrefliterals.parseDocument('texfile', texfile)
-        stats, replaced = hrefliterals.scanDocument(document, 'texfile',
+        stats, replaced = hrefliterals.scanDocument(document,
                                 literals, self.words, self.stemmer,
                                 replace = '{%(concept)s}{%(text)s}')
 
@@ -97,7 +97,7 @@ class ScanDocumentText(unittest.TestCase):
         self.assertEqual(stats['concept'][0][0].value(), 'concepts')
         self.assertEqual(stats['concept'][0][1].value(), 'concepts')
         self.assertEqual(replaced,
-                'Some text with some {concept}{concepts} inside')
+            {'texfile': 'Some text with some {concept}{concepts} inside'})
 
 if __name__ == '__main__':
     unittest.main()

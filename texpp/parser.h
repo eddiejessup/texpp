@@ -54,6 +54,10 @@ public:
     Node(const string& type): m_type(type) {}
 
     string source(const string& fileName = string()) const;
+    unordered_map<string, string> sources() const;
+    std::set<string> files() const;
+    string oneFile() const;
+    bool isOneFile() const;
 
     const string& type() const { return m_type; }
     void setType(const string& type) { m_type = type; }

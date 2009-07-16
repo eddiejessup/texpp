@@ -38,7 +38,7 @@ def loadConcepts(conceptsfile):
 
 def parseDocument(filename, fileobj):
     """ Parses the document using TeXpp """
-    parser = texpy.Parser(filename, fileobj, '', false, true)
+    parser = texpy.Parser(filename, fileobj, '', False, True)
 
     # Mimic the most important parts of LaTeX style
     latexstubs.initLaTeXstyle(parser)
