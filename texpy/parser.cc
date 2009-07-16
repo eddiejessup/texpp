@@ -78,12 +78,15 @@ void export_node()
         .def("__repr__", &Node::repr)
         .def("treeRepr", &Node::treeRepr,
             Node_treeRepr_overloads())
+        
         .def("source", &Node::source,
             Node_source_overloads())
         .def("sources", &Node::sources)
         .def("files", &Node::files)
         .def("oneFile", &Node::oneFile)
         .def("isOneFile", &Node::isOneFile)
+        .def("sourcePos", &Node::sourcePos)
+
         .def("type", &Node::type,
             return_value_policy<copy_const_reference>())
         .def("setValue", &Node::setValue)
@@ -101,8 +104,12 @@ void export_node()
         .def("appendChild", &Node::appendChild)
         ;
 
+    class_< std::vector<size_t> >("SizeTVector")
+        .def(vector_indexing_suite< std::vector<size_t> >())
+    ;
+
     class_<Node::ChildrenList>("ChildrenList")
-        .def(vector_indexing_suite<Node::ChildrenList, true >())
+        .def(vector_indexing_suite<Node::ChildrenList >())
     ;
 
     class_< unordered_map<string, string> >("SourcesMap")
