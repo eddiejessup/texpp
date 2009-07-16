@@ -109,7 +109,7 @@ void export_node()
     ;
 
     class_<Node::ChildrenList>("ChildrenList")
-        .def(vector_indexing_suite<Node::ChildrenList >())
+        .def(vector_indexing_suite<Node::ChildrenList, true >())
     ;
 
     class_< unordered_map<string, string> >("SourcesMap")
