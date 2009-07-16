@@ -129,6 +129,73 @@ string Node::source(const string& fileName) const
     return str;
 }
 
+unordered_map<string,string> Node::sources() const
+{
+    unordered_map<string,string> src;
+
+    string* cur_str;
+    shared_ptr<string> cur_file;
+
+    BOOST_FOREACH(Token::ptr token, m_tokens) {
+        if(token->fileNamePtr() != cur_file) {
+            cur_file = token->fileNamePtr();
+            cur_str = &(src[*cur_file]);
+        }
+        *cur_str += token->source();
+    }
+    typedef pair<string, Node::ptr> C;
+    BOOST_FOREACH(C c, m_children) {
+        unordered_map<string,string> sub_src(c.second->sources());
+        unordered_map<string,string>::iterator end = sub_src.end();
+        for(unordered_map<string, string>::iterator it = sub_src.begin();
+                                it != end; ++it) {
+            src[it->first] += it->second;
+        }
+    }
+    return src;
+}
+
+std::set<string> Node::files() const
+{
+    std::set<string> f;
+    BOOST_FOREACH(Token::ptr token, m_tokens) {
+        f.insert(token->fileName());
+    }
+    typedef pair<string, Node::ptr> C;
+    BOOST_FOREACH(C c, m_children) {
+        std::set<string> sub_f = c.second->files();
+        f.insert(sub_f.begin(), sub_f.end());
+    }
+    return f;
+}
+
+string Node::oneFile() const
+{
+    std::set<string> f = this->files();
+    if(f.size() == 1) return *f.begin();
+    else return string();
+}
+
+bool Node::isOneFile() const
+{
+    shared_ptr<string> cur_file;
+    BOOST_FOREACH(Token::ptr token, m_tokens) {
+        if(!cur_file) {
+            if(!token->fileNamePtr())
+                return false;
+            cur_file = token->fileNamePtr();
+        } else if(cur_file != token->fileNamePtr()) {
+            return false;
+        }
+    }
+    typedef pair<string, Node::ptr> C;
+    BOOST_FOREACH(C c, m_children) {
+        if(!c.second->isOneFile())
+            return false;
+    }
+    return true;
+}
+
 Parser::Parser(const string& fileName, std::istream* file,
         const string& workdir, bool interactive, bool ignoreEmergency,
         shared_ptr<Logger> logger)

@@ -23,6 +23,7 @@
 #include <memory>
 
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include <boost/python/suite/indexing/map_indexing_suite.hpp>
 
 #include "std_pair.h"
 
@@ -79,6 +80,10 @@ void export_node()
             Node_treeRepr_overloads())
         .def("source", &Node::source,
             Node_source_overloads())
+        .def("sources", &Node::sources)
+        .def("files", &Node::files)
+        .def("oneFile", &Node::oneFile)
+        .def("isOneFile", &Node::isOneFile)
         .def("type", &Node::type,
             return_value_policy<copy_const_reference>())
         .def("setValue", &Node::setValue)
@@ -100,6 +105,9 @@ void export_node()
         .def(vector_indexing_suite<Node::ChildrenList, true >())
     ;
 
+    class_< unordered_map<string, string> >("SourcesMap")
+        .def(map_indexing_suite< unordered_map<string, string>, true >())
+    ;
 }
 
 #define PARSER_OVERLOADS(name, n1, n2) \

@@ -112,7 +112,7 @@ def parseDocument(filename, fileobj):
     # Do the real work
     return parser.parse()
 
-def scanDocument(node, filename, literals, words, stemmer,
+def scanDocument(node, literals, words, stemmer,
                     replace = '\\href{%(concept)s}{%(text)s}',
                     maxChars = None):
     """ Find literals in a parsed document
@@ -127,7 +127,7 @@ def scanDocument(node, filename, literals, words, stemmer,
         Returns a tuple (stats, replaced)
             stats    - a dictionary which maps each found concept
                        to a tuple (first_node, last_node)
-            replaced - document source after replacement
+            replaced - a dict {filename->source} after replacement
                        (or empty string if replace argument is None)
     """
 
@@ -135,39 +135,46 @@ def scanDocument(node, filename, literals, words, stemmer,
         maxChars = max(len(c) for c in literals.keys())
 
     childrenCount = node.childrenCount()
+    stats = {}
+    replaced = {}
 
     # Do nothing for leaf nodes
     if childrenCount == 0:
-        return (node.source(filename), {})
+        for f, s in node.sources():
+            replaced.setdefault(f, []).append(s)
+        return (stats, replaced)
 
-    src = []
+
     n = 0
-    stats = {}
     while n < childrenCount:
         child = node.child(n)
 
         # Try replacing text_word or text_character
-        if child.type() in ('text_word', 'text_character'):
+        if child.type() in ('text_word', 'text_character') and child.isOneFile():
+            child_file = child.oneFile()
             cur_text = ''
             found_literals = []
             for m in xrange(n, childrenCount):
                 childm = node.child(m)
 
                 # look in literals dictionary
-                if childm.type() in ('text_word', 'text_character'):
-                    cur_text += childm.value()
-                    cur_literal = normLiteral(cur_text, words, stemmer)
-                    if len(cur_literal) > maxChars:
+                if childm.type() in ('text_word', 'text_character', 'text_space') \
+                                            and childm.isOneFile():
+                    if childm.oneFile() != child_file:
                         break
 
-                    cur_concept = literals.get(cur_literal, None)
-                    if cur_concept is not None:
-                        found_literals.append((cur_concept, cur_text, m))
-            
-                # skip spaces
-                elif childm.type() == 'text_space':
                     cur_text += childm.value()
 
+                    # ignore spaces at the end
+                    if childm.type() != 'text_space':
+                        cur_literal = normLiteral(cur_text, words, stemmer)
+                        if len(cur_literal) > maxChars:
+                            break
+
+                        cur_concept = literals.get(cur_literal, None)
+                        if cur_concept is not None:
+                            found_literals.append((cur_concept, cur_text, m))
+            
                 # break on anything else
                 else:
                     break
@@ -178,7 +185,8 @@ def scanDocument(node, filename, literals, words, stemmer,
                 concept = c[0][0]
 
                 if replace is not None:
-                    src.append(replace % {'concept': concept, 'text': c[1]})
+                    replaced.setdefault(child_file, []) \
+                        .append(replace % {'concept': concept, 'text': c[1]})
                         
                 stats.setdefault(concept, [])
                 stats[concept].append((child, node.child(c[2])))
@@ -186,22 +194,117 @@ def scanDocument(node, filename, literals, words, stemmer,
 
             elif replace is not None:
                 # nothing found
-                src.append(child.source(filename))
+                for f in child.sources():
+                    replaced.setdefault(f.key(), []).append(f.data())
 
         # Walk recursively if whitelisted
         elif child.type() in latexstubs.whitelistEnvironments:
-            (src1, stats1) = scanDocument(child, filename,
+            (replaced1, stats1) = scanDocument(child,
                               literals, words, stemmer, replace, maxChars)
-            src.append(src1)
+            for f, s in replaced1:
+                replaced.setdefault(f, []).append(s)
             for c,s in stats1.iteritems():
                 stats.setdefault(c, [])
                 stats[c].extend(s)
 
         # Just grab the source otherwise
         elif replace is not None:
-            src.append(child.source(filename))
+            for f in child.sources():
+                replaced.setdefault(f.key(), []).append(f.data())
 
         n += 1
 
-    return (stats, ''.join(src))
+    replaced1 = {}
+    for f, s in replaced.iteritems():
+        replaced1[f] = ''.join(s)
+
+    return (stats, replaced1)
+
+def main():
+    """ Main routine """
+
+    import os
+    from optparse import OptionParser
+
+    # Define command line options
+    optparser = OptionParser(usage='%prog [options] texfile')
+    optparser.add_option('-c', '--concepts', type='string', help='concepts file')
+    optparser.add_option('-o', '--output', type='string', help='output directory')
+    optparser.add_option('-m', '--macro', type='string', default='href', 
+                                    help='macro (default: href)')
+    optparser.add_option('-s', '--stats', action='store_true', help='print stats')
+
+    # Parse command line options
+    opt, args = optparser.parse_args()
+
+    # Additional options verification
+    if opt.concepts is None:
+        optparser.error('Required option --concepts was not specified')
+
+    if opt.output is None:
+        optparser.error('Required option --output was not specified')
+
+    if len(args) != 1:
+        optparser.error('Wrong command line arguments')
+
+    # Open input file
+    try:
+        filename = args[0]
+        fileobj = open(filename, 'r')
+    except IOError, e:
+        optparser.error('Can not open input file (\'%s\'): %s' % \
+                                (filename, str(e)))
+
+    # Open concepts file
+    try:
+        conceptsfile = open(opt.concepts, 'r')
+    except IOError, e:
+        optparser.error('Can not open concepts file (\'%s\'): %s' % \
+                                (opt.concepts, str(e)))
+
+    # Check output dir
+    if not os.path.exists(opt.output):
+        try:
+            os.mkdir(opt.output)
+        except (IOError, OSError), e:
+            optparser.error('Can not create output directory (\'%s\'): %s' % \
+                                (opt.output, str(e)))
+
+    if not os.path.isdir(opt.output):
+        optparser.error('\'%s\' is not a directory')
+
+    # Load words and create stemmer
+    words = loadWords()
+    stemmer = createStemmer()
+
+    # Load concepts
+    literals = loadLiteralsFromConcepts4(conceptsfile, words, stemmer)
+    conceptsfile.close()
+
+    # Load and parse the document
+    document = parseDocument(filename, fileobj)
+
+    # Do the main job
+    (stats, replaced) = scanDocument(document, literals, words, stemmer)
+
+    for f, s in replaced.iteritems():
+        fname = os.path.join(opt.output, f)
+        try:
+            outfile = open(fname, 'w')
+        except IOError, e:
+            sys.stdout('Can not open output file (\'%s\'): %s' % \
+                                (fname, str(e)))
+            continue
+        outfile.write(s)
+        outfile.close()
+
+    fileobj.close()
+
+    # Stats
+    if opt.stats:
+        for w,n in stats.iteritems():
+            print 'Concept <%s> replaced %d times' % (w, len(n))
+
+if __name__ == '__main__':
+    main()
 
