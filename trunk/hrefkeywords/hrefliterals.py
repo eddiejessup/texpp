@@ -103,6 +103,10 @@ def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
 
     return literals
 
+def isLocalFile(filename):
+    cwd = os.getcwd()
+    return cwd == os.path.commonprefix((cwd, os.path.abspath(filename)))
+
 def parseDocument(filename, fileobj):
     """ Parses the document using TeXpp """
     parser = texpy.Parser(filename, fileobj, '', False, True)
@@ -150,18 +154,11 @@ def scanDocument(node, literals, words, stemmer,
     while n < childrenCount:
         child = node.child(n)
 
-        try_replace = False
-        child_is_word_char = child.type() in ('text_word', 'text_character')
-        if child_is_word_char:
-            if child.isOneFile():
-                cwd = os.getcwd()
-                child_file = child.oneFile()
-                try_replace = cwd == os.path.commonprefix((cwd,
-                                        os.path.abspath(child_file)))
-
         # Try replacing text_word or text_character
-        if try_replace:
+        if child.type() in ('text_word', 'text_character') and \
+                child.isOneFile() and isLocalFile(child.oneFile()):
             cur_text = ''
+            child_file = child.oneFile()
             found_literals = []
             for m in xrange(n, childrenCount):
                 childm = node.child(m)
@@ -295,15 +292,16 @@ def main():
     (stats, replaced) = scanDocument(document, literals, words, stemmer)
 
     for f, s in replaced.iteritems():
-        fname = os.path.join(opt.output, f)
-        try:
-            outfile = open(fname, 'w')
-        except IOError, e:
-            sys.stdout('Can not open output file (\'%s\'): %s' % \
-                                (fname, str(e)))
-            continue
-        outfile.write(s)
-        outfile.close()
+        if isLocalFile(f):
+            fname = os.path.join(opt.output, f)
+            try:
+                outfile = open(fname, 'w')
+            except IOError, e:
+                sys.stdout('Can not open output file (\'%s\'): %s' % \
+                                    (fname, str(e)))
+                continue
+            outfile.write(s)
+            outfile.close()
 
     fileobj.close()
 
