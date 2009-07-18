@@ -14,11 +14,15 @@ import os
 class NormLiteralTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(NormLiteralTest, self).__init__(*args, **kwargs)
-        self.words = hrefliterals.loadWords()
-        self.stemmer = hrefliterals.createStemmer()
+        self.stemmer = hrefliterals.Stemmer()
+        self.words = hrefliterals.WordsDict(
+                                    '/usr/share/dict/words', 4)
+        self.words.insert('I')
+        self.words.insert('a')
 
     def normLiteral(self, literal):
-        return hrefliterals.normLiteral(literal, self.words, self.stemmer)
+        return hrefliterals.normLiteral(
+                literal, self.words, self.stemmer)
 
     def testLongWords(self):
         self.assertEqual(self.normLiteral('electrons'), 'electron')
@@ -79,11 +83,24 @@ class NormLiteralTest(unittest.TestCase):
         self.assertEqual(self.normLiteral('S.E.T.s'), 'S.E.T.S.')
         self.assertEqual(self.normLiteral('dofs'), 'D.O.F.S.')
 
+    def testApostrophe(self):
+        self.assertEqual(self.normLiteral('world\'s'), 'world')
+
+    def testMultiWords(self):
+        self.assertEqual(self.normLiteral('hello world'), 'helloworld')
+        self.assertEqual(self.normLiteral('hello-world'), 'helloworld')
+        self.assertEqual(self.normLiteral('hello/world'), 'helloworld')
+        self.assertEqual(self.normLiteral('hello+world'), 'hello+world')
+        self.assertEqual(self.normLiteral('test SET'), 'testS.E.T.')
+
 class ScanDocumentText(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(ScanDocumentText, self).__init__(*args, **kwargs)
-        self.words = hrefliterals.loadWords()
-        self.stemmer = hrefliterals.createStemmer()
+        self.stemmer = hrefliterals.Stemmer()
+        self.words = hrefliterals.WordsDict(
+                                    '/usr/share/dict/words', 4)
+        self.words.insert('I')
+        self.words.insert('a')
 
     def testScanDocument(self):
         literals = {'concept': ['concept']}
