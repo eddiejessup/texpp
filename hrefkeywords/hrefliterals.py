@@ -121,7 +121,8 @@ def scanDocument(node, literals, words, stemmer,
 
         Returns a tuple (stats, replaced)
             stats    - a dictionary which maps each found concept
-                       to a tuple (first_node, last_node)
+                       to a tuple
+                       (filename, start_line, start_char, end_line, end_char)
             replaced - a dict {filename->source} after replacement
                        (or empty string if replace argument is None)
     """
@@ -141,14 +142,21 @@ def scanDocument(node, literals, words, stemmer,
 
 
     n = 0
+    last_file = ''
     while n < childrenCount:
         child = node.child(n)
 
-        # Try replacing text_word or text_character
-        if child.type() in ('text_word', 'text_character') and \
-                child.isOneFile() and isLocalFile(child.oneFile(), workdir):
-            cur_text = ''
+        child_try_replace = child.type() in ('text_word', 'text_character') \
+                                and child.isOneFile()
+        if child_try_replace:
             child_file = child.oneFile()
+            child_try_replace = child_file == last_file or \
+                    isLocalFile(child_file, workdir)
+
+        # Try replacing text_word or text_character
+        if child_try_replace:
+            cur_text = ''
+            last_file = child_file
             start_line, start_pos, end_line, end_pos = child.sourcePos()
             found_literals = []
             for m in xrange(n, childrenCount):
