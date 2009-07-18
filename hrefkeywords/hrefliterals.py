@@ -9,6 +9,8 @@ import codecs
 import re
 import os
 
+from _chrefliterals import normLiteral, Stemmer, WordsDict
+
 re_cut = re.compile(r'[-/ ]|(?:\'s(?=[^A-Za-z0-9.]))')
 re_word = re.compile(r'[a-zA-Z0-9]+(?:[a-zA-Z0-9.]*\.)?')
 re_symbol = re.compile(r'[^a-zA-Z0-9]')
@@ -16,7 +18,7 @@ re_abbr = re.compile(r'[0-9.]|.[A-Z]')
 
 ABBR_MAX = 4
 
-def normLiteral(literal, words, stemmer):
+def ___normLiteral(literal, words, stemmer):
     """ Return normalized representation of literal.
 
         Arguments:
@@ -73,22 +75,6 @@ def normLiteral(literal, words, stemmer):
 
     return ''.join(nliteral)
         
-def loadWords():
-    words = set(['I', 'a'])
-    words_file = codecs.open('/usr/share/dict/words', 'r', 'latin1')
-    for w in words_file:
-        w = w.strip()
-        if len(w) > 1 and len(w) <= ABBR_MAX and not w.endswith('\'s'):
-            words.add(w)
-    words_file.close()
-    return words
-
-def createStemmer():
-    import _chrefliterals
-    return _chrefliterals.Stemmer()
-    #from nltk.stem.porter import PorterStemmer
-    #return PorterStemmer()
-
 def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
     """ Loads concepts from the files
         and arranges them in a dictionary """
@@ -100,8 +86,9 @@ def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
                     .replace('\\(', '(') \
                     .replace('\\)', ')')
 
-        literals.setdefault(normLiteral(line1, words, stemmer), []) \
-                .append(line1)
+        literals.setdefault(
+                normLiteral(line1, words, stemmer), []) \
+            .append(line1)
 
     return literals
 
@@ -184,7 +171,8 @@ def scanDocument(node, literals, words, stemmer,
 
                     # ignore spaces at the end
                     if childm.type() != 'text_space':
-                        cur_literal = normLiteral(cur_text, words, stemmer)
+                        cur_literal = \
+                            normLiteral(cur_text, words, stemmer)
                         if len(cur_literal) > maxChars:
                             break
 
@@ -292,8 +280,10 @@ def main():
         optparser.error('\'%s\' is not a directory')
 
     # Load words and create stemmer
-    words = loadWords()
-    stemmer = createStemmer()
+    stemmer = Stemmer()
+    words = WordsDict('/usr/share/dict/words', ABBR_MAX)
+    words.insert('I')
+    words.insert('a')
 
     # Load concepts
     literals = loadLiteralsFromConcepts4(conceptsfile, words, stemmer)
