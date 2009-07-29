@@ -279,7 +279,7 @@ static void step2(struct stemmer * z) { switch (z->b[z->k-1])
 
              if (ends(z, "\04" "alli")) { r(z, "\02" "al"); break; }
              if (ends(z, "\05" "entli")) { r(z, "\03" "ent"); break; }
-             if (ends(z, "\03" "eli")) { r(z, "\01" "e"); break; }
+/* !!!!!     if (ends(z, "\03" "eli")) { r(z, "\01" "e"); break; }*/
              if (ends(z, "\05" "ousli")) { r(z, "\03" "ous"); break; }
              break;
    case 'o': if (ends(z, "\07" "ization")) { r(z, "\03" "ize"); break; }
@@ -293,7 +293,7 @@ static void step2(struct stemmer * z) { switch (z->b[z->k-1])
              break;
    case 't': if (ends(z, "\05" "aliti")) { r(z, "\02" "al"); break; }
              if (ends(z, "\05" "iviti")) { r(z, "\03" "ive"); break; }
-             if (ends(z, "\06" "biliti")) { r(z, "\03" "ble"); break; }
+/* !!!!!     if (ends(z, "\06" "biliti")) { r(z, "\03" "ble"); break; }*/
              break;
    case 'g': if (ends(z, "\04" "logi")) { r(z, "\03" "log"); break; } /*-DEPARTURE-*/
 
@@ -314,8 +314,8 @@ static void step3(struct stemmer * z) { switch (z->b[z->k])
    case 'l': if (ends(z, "\04" "ical")) { r(z, "\02" "ic"); break; }
              if (ends(z, "\03" "ful")) { r(z, "\00" ""); break; }
              break;
-   case 's': if (ends(z, "\04" "ness")) { r(z, "\00" ""); break; }
-             break;
+/* !!!!!  case 's': if (ends(z, "\04" "ness")) { r(z, "\00" ""); break; }
+             break;*/
 } }
 
 /* step4(z) takes off -ant, -ence etc., in context <c>vcvc<v>. */
@@ -338,7 +338,7 @@ static void step4(struct stemmer * z)
                 /* takes care of -ous */
       case 's': if (ends(z, "\03" "ism")) break; return;
       case 't': if (ends(z, "\03" "ate")) break;
-                if (ends(z, "\03" "iti")) break; return;
+/*   !!!!!      if (ends(z, "\03" "iti")) break;*/ return;
       case 'u': if (ends(z, "\03" "ous")) break; return;
       case 'v': if (ends(z, "\03" "ive")) break; return;
       case 'z': if (ends(z, "\03" "ize")) break; return;
@@ -378,7 +378,7 @@ extern int stem(struct stemmer * z, char * b, int k)
       published algorithm. Remove the line to match the published
       algorithm. */
 
-   step1ab(z); step1c(z); step2(z); step3(z); step4(z); step5(z);
+   step1ab(z); step1c(z); step2(z); /* !!!!! step3(z);*/ step4(z); step5(z);
    return z->k;
 }
 
