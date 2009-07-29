@@ -54,9 +54,9 @@ public:
     Node(const string& type): m_type(type) {}
 
     string source(const string& fileName = string()) const;
-    unordered_map<string, string> sources() const;
-    std::set<string> files() const;
-    string oneFile() const;
+    unordered_map<shared_ptr<string>, string> sources() const;
+    std::set<shared_ptr<string> > files() const;
+    shared_ptr<string> oneFile() const;
     bool isOneFile() const;
 
     // Returns a vector (start_line, start_char, end_line, end_char)

@@ -129,9 +129,9 @@ string Node::source(const string& fileName) const
     return str;
 }
 
-unordered_map<string,string> Node::sources() const
+unordered_map<shared_ptr<string>,string> Node::sources() const
 {
-    unordered_map<string,string> src;
+    unordered_map<shared_ptr<string>,string> src;
 
     string* cur_str;
     shared_ptr<string> cur_file;
@@ -139,41 +139,41 @@ unordered_map<string,string> Node::sources() const
     BOOST_FOREACH(Token::ptr token, m_tokens) {
         if(token->fileNamePtr() != cur_file) {
             cur_file = token->fileNamePtr();
-            cur_str = &(src[*cur_file]);
+            cur_str = &(src[cur_file]);
         }
         *cur_str += token->source();
     }
     typedef pair<string, Node::ptr> C;
     BOOST_FOREACH(C c, m_children) {
-        unordered_map<string,string> sub_src(c.second->sources());
-        unordered_map<string,string>::iterator end = sub_src.end();
-        for(unordered_map<string, string>::iterator it = sub_src.begin();
-                                it != end; ++it) {
+        unordered_map<shared_ptr<string>,string> sub_src(c.second->sources());
+        unordered_map<shared_ptr<string>,string>::iterator end=sub_src.end();
+        for(unordered_map<shared_ptr<string>, string>::iterator it =
+                    sub_src.begin(); it != end; ++it) {
             src[it->first] += it->second;
         }
     }
     return src;
 }
 
-std::set<string> Node::files() const
+std::set<shared_ptr<string> > Node::files() const
 {
-    std::set<string> f;
+    std::set<shared_ptr<string> > f;
     BOOST_FOREACH(Token::ptr token, m_tokens) {
-        f.insert(token->fileName());
+        f.insert(token->fileNamePtr());
     }
     typedef pair<string, Node::ptr> C;
     BOOST_FOREACH(C c, m_children) {
-        std::set<string> sub_f = c.second->files();
+        std::set<shared_ptr<string> > sub_f = c.second->files();
         f.insert(sub_f.begin(), sub_f.end());
     }
     return f;
 }
 
-string Node::oneFile() const
+shared_ptr<string> Node::oneFile() const
 {
-    std::set<string> f = this->files();
+    std::set<shared_ptr<string> > f = this->files();
     if(f.size() == 1) return *f.begin();
-    else return string();
+    else return shared_ptr<string>();
 }
 
 bool Node::isOneFile() const
@@ -2390,7 +2390,28 @@ Node::ptr Parser::parseGroup(GroupType groupType)
                         traceCommand(peekToken());
 
                     cmdNode = parseCommand(cmd);
-                    node->appendChild("control", cmdNode);
+
+                    if(m_customGroupBegin) {
+                        m_customGroupBegin = false;
+                        string type = m_customGroupType;
+                        Node::ptr customGroup = parseGroup(GROUP_CUSTOM);
+                        customGroup->setType(type);
+                        customGroup->children().insert(
+                                customGroup->children().begin(),
+                                std::make_pair("control", cmdNode));
+                        node->appendChild("custom_group", customGroup);
+                    } else if(m_customGroupEnd) {
+                        m_customGroupEnd = false;
+                        if(groupType == GROUP_CUSTOM) {
+                            node->appendChild("control", cmdNode);
+                            break;
+                        } else {
+                            logger()->log(Logger::ERROR,
+                                "Extra " + cmd->texRepr(this), *this, lastToken());
+                        }
+                    } else {
+                        node->appendChild("control", cmdNode);
+                    }
                 }
             } else {
                 /*m_logger->log(Logger::ERROR, "Undefined control sequence",
@@ -2400,25 +2421,6 @@ Node::ptr Parser::parseGroup(GroupType groupType)
                 //node->appendChild("error_unknown_control",
                 //                                parseToken());
             }
-            /*if(m_customGroupBegin) {
-                m_customGroupBegin = false;
-                string type = m_customGroupType;
-                Node::ptr customGroup = parseGroup(GROUP_CUSTOM);
-                customGroup->setType(type);
-                customGroup->children().insert(customGroup->children().begin(),
-                                                std::make_pair("control", cmdNode));
-                node->appendChild("custom_group", customGroup);
-            } else {
-                node->appendChild(cmd ? "control" : "error_unknown_control",
-                                    cmdNode);
-            }
-
-            if(m_customGroupEnd) {
-                m_customGroupEnd = false;
-                if(groupType == GROUP_CUSTOM)
-                    break;
-            }*/
-
         } else {
             node->appendChild("other_token", parseToken());
         }

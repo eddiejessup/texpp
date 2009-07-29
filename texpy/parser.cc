@@ -26,6 +26,7 @@
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
 
 #include "std_pair.h"
+#include "shared_ptr.h"
 
 /*
 namespace texpp { namespace {
@@ -72,6 +73,7 @@ void export_node()
     using namespace texpp;
 
     export_std_pair<string, Node::ptr>();
+    export_shared_ptr<string>();
 
     scope scopeNode = class_<Node, shared_ptr<Node> >(
             "Node", init<std::string>())
@@ -112,8 +114,8 @@ void export_node()
         .def(vector_indexing_suite<Node::ChildrenList, true >())
     ;
 
-    class_< unordered_map<string, string> >("SourcesMap")
-        .def(map_indexing_suite< unordered_map<string, string>, true >())
+    class_< unordered_map<shared_ptr<string>, string> >("SourcesMap")
+        .def(map_indexing_suite< unordered_map<shared_ptr<string>, string>, true >())
     ;
 }
 

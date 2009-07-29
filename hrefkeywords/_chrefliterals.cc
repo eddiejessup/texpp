@@ -17,6 +17,7 @@
 */
 
 #include <boost/python.hpp>
+#include <boost/filesystem.hpp>
 #include <set>
 #include <string>
 #include <fstream>
@@ -25,6 +26,8 @@
 #include <cctype>
 
 #include <iostream>
+
+#include <texpp/parser.h>
 
 extern "C" {
 struct stemmer;
@@ -37,6 +40,8 @@ extern int stem(struct stemmer * z, char * b, int k);
 
 namespace {
 
+using namespace boost::python;
+using namespace texpp;
 using std::string;
 
 class Stemmer {
@@ -207,6 +212,87 @@ string normLiteral(string literal,
     return nliteral;
 }
 
+/*
+struct DocLiteralInfo {
+    shared_ptr<string> fileName;
+    size_t startLine, startChar, endLine, endChar;
+};
+
+typedef unordered_map<shared_ptr<string>, std::vector<DocLiteralInfo> >
+            DocStats;
+typedef unordered_map<shared_ptr<string>, string>
+            DocSources;
+
+string absolutePath(const string& str)
+{
+    using boost::filesystem::path;
+    path p = path(str);
+    if(!p.is_complete())
+        p = boost::filesystem::current_path() / p;
+    return p.normalize().string(); 
+}
+
+bool isLocalFile(const string& str, const string& workdir)
+{
+    string aWorkdir = absolutePath(workdir);
+    return absolutePath(str).compare(0, aWorkdir.size(), aWorkdir) == 0;
+}
+
+std::pair<DocStats, DocSources> scanDocument(Node::ptr node,
+        dict literals, WordsDict* wordsDict, Stemmer* stemmer,
+        bool doReplace, str replace, 
+        const string& workdir = string(),
+        size_t maxChars = 0)
+{
+    if(maxChars == 0) {
+        // Find the longest literal and save its length
+        object keys = literals.iterkeys();
+        object key;
+        while(true) {
+            try {
+                key = keys.attr("next")();
+            } catch (error_already_set const &) {
+                if(PyErr_ExceptionMatches(PyExc_StopIteration)) break;
+                throw;
+            }
+
+            size_t l = len(key);
+            if(l > maxChars)
+                maxChars = l;
+        }
+    }
+
+    size_t childrenCount = node->childrenCount();
+    DocStats stats;
+    DocSources replaced;
+
+    if(childrenCount == 0) {
+        // return none ?
+        return std::make_pair(stats, doReplace ? node->sources() : replaced);
+    }
+
+    shared_ptr<string> lastFile, childFile;
+    for(size_t n = 0; n < childrenCount; ++n) {
+        Node::ptr child = node->child(n);
+        bool childTryReplace = (child->type() == "text_word" ||
+                    child->type() == "text_character") && child->isOneFile();
+        if(childTryReplace) {
+            childFile = child->oneFile();
+            childTryReplace = (childFile == lastFile) || !childFile || // XXX?
+                                isLocalFile(*childFile, workdir);
+        }
+
+        if(childTryReplace) {
+            lastFile = childFile;
+            string curTest;
+
+        }
+    }
+        
+    return std::make_pair( stats, replaced );
+}
+*/
+
 } // namespace
 
 BOOST_PYTHON_MODULE(_chrefliterals)
@@ -222,5 +308,6 @@ BOOST_PYTHON_MODULE(_chrefliterals)
     ;
 
     def("normLiteral", &normLiteral);
+    //def("scanDocument", &scanDocument);
 }
 
