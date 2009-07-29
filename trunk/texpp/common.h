@@ -65,5 +65,13 @@ namespace texpp {
     string reprAny(const any& value);
 } // namespace texpp
 
+namespace std { namespace tr1 {
+    template<typename T> struct hash< texpp::shared_ptr<T> > {
+        size_t operator()(const texpp::shared_ptr<T>& v) const {
+            return hash< void* >()( v.get() );
+        }
+    };
+}} // namespace tr1 // namespace std
+
 #endif
 

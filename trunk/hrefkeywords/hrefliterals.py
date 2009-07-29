@@ -93,6 +93,7 @@ def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
     return literals
 
 def isLocalFile(filename, workdir = ''):
+    print "isLocalFile:", repr(filename), repr(workdir)
     w = os.path.abspath(workdir)
     return w == os.path.commonprefix((w, os.path.abspath(filename)))
 
@@ -136,8 +137,12 @@ def scanDocument(node, literals, words, stemmer,
 
     # Do nothing for leaf nodes
     if childrenCount == 0:
-        for f, s in node.sources():
-            replaced.setdefault(f, []).append(s)
+        if replace is not None:
+            for f, s in node.sources():
+                replaced.setdefault(f, []).append(s)
+        replaced1 = {}
+        for f, s in replaced.iteritems():
+            replaced1[f] = ''.join(s)
         return (stats, replaced)
 
 
@@ -215,9 +220,9 @@ def scanDocument(node, literals, words, stemmer,
 
         # Walk recursively if whitelisted
         elif child.type() in latexstubs.whitelistEnvironments:
-            (replaced1, stats1) = scanDocument(child,
-                              literals, words, stemmer, replace, maxChars)
-            for f, s in replaced1:
+            (stats1, replaced1) = scanDocument(child,
+                      literals, words, stemmer, replace, workdir, maxChars)
+            for f, s in replaced1.iteritems():
                 replaced.setdefault(f, []).append(s)
             for c,s in stats1.iteritems():
                 stats.setdefault(c, [])

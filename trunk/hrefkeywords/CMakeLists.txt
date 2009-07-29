@@ -13,7 +13,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${BOOST_PYTHON_INCLUDES})
 
 add_library(_chrefliterals SHARED ${_chrefliterals_SOURCES})
-target_link_libraries(_chrefliterals ${BOOST_PYTHON_LIBS})
+target_link_libraries(_chrefliterals libtexpp ${BOOST_PYTHON_LIBS})
 set_target_properties(_chrefliterals PROPERTIES PREFIX "" OUTPUT_NAME "_chrefliterals")
 
 install(TARGETS _chrefliterals LIBRARY DESTINATION bin)
