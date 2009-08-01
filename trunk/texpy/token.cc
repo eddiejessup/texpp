@@ -48,6 +48,7 @@ void export_token_class()
         .add_property("source", make_function(&Token::source,
                     return_value_policy<copy_const_reference>()),
                     &Token::setSource)
+        .add_property("linePos", &Token::lineNo, &Token::setLinePos)
         .add_property("lineNo", &Token::lineNo, &Token::setLineNo)
         .add_property("charPos", &Token::charPos, &Token::setCharPos)
         .add_property("charEnd", &Token::charEnd, &Token::setCharEnd)
@@ -65,6 +66,8 @@ void export_token_class()
         .def("texRepr", &Token::texRepr)
         .def("meaning", &Token::meaning)
         ;
+
+    scope_Token.attr("npos") = size_t(Token::npos);
 
     enum_<Token::Type>("Type")
         .value("SKIPPED", Token::TOK_SKIPPED)
@@ -91,7 +94,6 @@ void export_token_class()
         .value("INVALID", Token::CC_INVALID)
         .value("NONE", Token::CC_NONE)
         ;
-
 }
 
 void export_token()

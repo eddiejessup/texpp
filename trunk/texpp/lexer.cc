@@ -26,7 +26,7 @@ Lexer::Lexer(const string& fileName, std::istream* file,
                 bool interactive, bool saveLines)
     : m_fileShared(), m_file(file),
       m_fileName(new string(fileName)),
-      m_lineNo(0), m_charPos(0), m_charEnd(0),
+      m_linePos(0), m_lineNo(0), m_charPos(0), m_charEnd(0),
       m_state(ST_NEW_LINE), m_char(-1), m_catCode(Token::CC_NONE),
       m_interactive(interactive), m_saveLines(saveLines)
 {
@@ -38,7 +38,7 @@ Lexer::Lexer(const string& fileName, shared_ptr<std::istream> file,
                     bool interactive, bool saveLines)
     : m_fileShared(file), m_file(file.get()),
       m_fileName(new string(fileName)),
-      m_lineNo(0), m_charPos(0), m_charEnd(0),
+      m_linePos(0), m_lineNo(0), m_charPos(0), m_charEnd(0),
       m_state(ST_NEW_LINE), m_char(-1), m_catCode(Token::CC_NONE),
       m_interactive(interactive), m_saveLines(saveLines)
 {
@@ -97,6 +97,7 @@ bool Lexer::nextLine()
     m_char = -1;
     m_catCode = Token::CC_NONE;
 
+    m_linePos += m_lineOrig.size();
     m_lineOrig.clear();
 
     if(m_interactive && m_file == &std::cin) {
@@ -192,6 +193,7 @@ inline Token::ptr Lexer::newToken(Token::Type type,
         value.empty() && m_char >= 0 ? string(1, m_char) : value,
         m_lineOrig.substr(std::min(m_charPos, m_lineOrig.size()),
                     m_charEnd - m_charPos),
+                m_linePos,
                 m_lineNo,
                 std::min(m_charPos, m_lineOrig.size()),
                 std::min(m_charEnd, m_lineOrig.size()),

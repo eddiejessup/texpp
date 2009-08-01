@@ -16,7 +16,7 @@ class NormLiteralTest(unittest.TestCase):
         super(NormLiteralTest, self).__init__(*args, **kwargs)
         self.stemmer = hrefliterals.Stemmer()
         self.words = hrefliterals.WordsDict(
-                                    '/usr/share/dict/words', 4)
+                    '/usr/share/dict/words', 4)
         self.words.insert('I')
         self.words.insert('a')
 
@@ -93,27 +93,103 @@ class NormLiteralTest(unittest.TestCase):
         self.assertEqual(self.normLiteral('hello+world'), 'hello+world')
         self.assertEqual(self.normLiteral('test SET'), 'testS.E.T.')
 
-class ScanDocumentText(unittest.TestCase):
+class LiteralFunctionsTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
-        super(ScanDocumentText, self).__init__(*args, **kwargs)
+        super(LiteralFunctionsTest, self).__init__(*args, **kwargs)
+        self.whitelist = {'environment_document':None}
         self.stemmer = hrefliterals.Stemmer()
         self.words = hrefliterals.WordsDict(
-                                    '/usr/share/dict/words', 4)
-        self.words.insert('I')
-        self.words.insert('a')
+                    '/usr/share/dict/words', 4)
+        self.source = r"""
+            \begin{document}words 1 word2 wo%
+                       rd
+                \begin{equation}word\end{equation}
+            \end{document}
+        """
+        self.document = hrefliterals.parseDocument(
+                        'f', StringIO.StringIO(self.source))
 
-    def testScanDocument(self):
-        literals = {'concept': ['concept']}
-        texfile = StringIO.StringIO('Some text with some concepts inside')
-        document = hrefliterals.parseDocument('texfile', texfile)
-        stats, replaced = hrefliterals.scanDocument(document,
-                                literals, self.words, self.stemmer,
-                                replace = '{%(concept)s}{%(text)s}')
+    def testExtractTextInfo(self):
+        textTags = hrefliterals.extractTextInfo(
+                self.document, self.whitelist, '')
+        self.assertEqual(textTags.keys(), ['f'])
+        self.assertEqual(len(textTags['f']), 11)
+        self.assertEqual(textTags['f'][0], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.WORD, 29, 34, 'words'))
+        self.assertEqual(textTags['f'][1], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.CHARACTER, 34, 35, ' '))
+        self.assertEqual(textTags['f'][2], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.CHARACTER, 35, 36, '1'))
+        self.assertEqual(textTags['f'][3], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.CHARACTER, 36, 37, ' '))
+        self.assertEqual(textTags['f'][4], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.WORD, 37, 41, 'word'))
+        self.assertEqual(textTags['f'][5], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.CHARACTER, 41, 42, '2'))
+        self.assertEqual(textTags['f'][6], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.CHARACTER, 42, 43, ' '))
+        self.assertEqual(textTags['f'][7], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.WORD, 43, 72, 'word'))
+        self.assertEqual(textTags['f'][8], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.CHARACTER, 72, 73, ' '))
+        self.assertEqual(textTags['f'][9], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.CHARACTER, 123, 124, ' '))
+        self.assertEqual(textTags['f'][10], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.CHARACTER, 150, 151, ' '))
 
-        self.assertEqual(stats,
-            {'concept': [(os.path.abspath('texfile'), 1, 20, 1, 28)]})
-        self.assertEqual(replaced,
-            {'texfile': 'Some text with some {concept}{concepts} inside'})
+    def testFindLiterals(self):
+        textTags = hrefliterals.extractTextInfo(
+                self.document, self.whitelist, '')
+        literals = {'word':None, 'W.O.R.D.2.':None}
+        literalTags = hrefliterals.findLiterals(
+                textTags['f'], literals, self.words, self.stemmer, 0)
+        self.assertEqual(len(literalTags), 3)
+        self.assertEqual(literalTags[0], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.LITERAL, 29, 34, 'word'))
+        self.assertEqual(literalTags[1], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.LITERAL, 37, 42, 'W.O.R.D.2.'))
+        self.assertEqual(literalTags[2], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.LITERAL, 43, 72, 'word'))
+
+    def testReplaceTags(self):
+        textTags = hrefliterals.extractTextInfo(
+                self.document, self.whitelist, '')
+        literals = {'word':None, 'W.O.R.D.2.':None}
+        literalTags = hrefliterals.findLiterals(
+                textTags['f'], literals, self.words, self.stemmer, 0)
+        literalTags[0].value = '*'
+        literalTags[1].value = '**'
+        literalTags[2].value = '***'
+        replaced = hrefliterals.replaceTags(self.source, literalTags)
+        rsource = r"""
+            \begin{document}* 1 ** ***
+                \begin{equation}word\end{equation}
+            \end{document}
+        """
+        self.assertEqual(replaced, rsource)
+
+class LiteralsTest(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(LiteralsTest, self).__init__(*args, **kwargs)
+        self.whitelist = {'environment_document':None}
+        self.stemmer = hrefliterals.Stemmer()
+        self.words = hrefliterals.WordsDict(
+                    '/usr/share/dict/words', 4)
+
+    def findLiterals(self, source, literals):
+        document = hrefliterals.parseDocument('f', StringIO.StringIO(source))
+        textTags = hrefliterals.extractTextInfo(document, self.whitelist, '')
+        return hrefliterals.findLiterals(textTags['f'], literals,\
+                                                self.words, self.stemmer, 0)
+
+    def testAdjacentChars(self):
+        literalTags = self.findLiterals(' spin -spin spin- spin-1 spin-12',
+                                    {'spin':None, 'spin1.':None})
+        self.assertEqual(len(literalTags), 2)
+        self.assertEqual(literalTags[0], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.LITERAL, 0, 5, 'spin'))
+        self.assertEqual(literalTags[1], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.LITERAL, 18, 24, 'spin1.'))
 
 if __name__ == '__main__':
     unittest.main()
