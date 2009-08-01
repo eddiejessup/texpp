@@ -38,22 +38,45 @@ def parseOptionalArgs(parser):
     if parser.peekToken() and parser.peekToken().isCharacter('['):
         args = texpy.Node('args')
         node.appendChild('args', args)
+        value = ''
         while parser.peekToken():
-            parser.nextToken(args.tokens())
+            value += parser.nextToken(args.tokens()).value
             if parser.lastToken().isCharacter(']'):
                 break
+        node.setValue(value[1:-1])
 
     return node
 
 def parseGeneralArg(parser, expand=False):
     node = texpy.Node('args')
     node.appendChild('optional_spaces', parser.parseOptionalSpaces())
-    if parser.peekToken() and parser.peekToken().isCharacter('{'):
-        node.appendChild('group', parser.parseGeneralText(expand))
-    else:
-        node.appendChild('token', parser.parseToken())
 
+    value = ''
+    if parser.peekToken() and parser.peekToken().isCharacter('{'):
+        textNode = parser.parseGeneralText(expand)
+        node.appendChild('group', textNode)
+        for t in textNode.child('balanced_text').tokens():
+            value += t.value
+    else:
+        tNode = parser.parseToken()
+        node.appendChild('token', tNode)
+        value = t.value().value
+
+    node.setValue(value)
     return node
+
+class Usepackage(texpy.Command):
+    def invoke(self, parser, node):
+        argNode = parseOptionalArgs(parser)
+        pkgNode = parseGeneralArg(parser)
+        node.appendChild('args', argNode)
+        node.appendChild('package', pkgNode)
+
+        if pkgNode.value() == 'inputenc':
+            node.setType('inputenc')
+            node.setValue(argNode.value())
+
+        return True
 
 class Newcommand(texpy.Command):
     def invoke(self, parser, node):
@@ -149,6 +172,8 @@ def initLaTeXstyle(parser):
 
     createCommand(parser, 'begin', BeginCommand)
     createCommand(parser, 'end', EndCommand)
+
+    createCommand(parser, 'usepackage', Usepackage)
 
     createCommand(parser, 'newcommand', Newcommand)
     createCommand(parser, 'renewcommand', Newcommand)

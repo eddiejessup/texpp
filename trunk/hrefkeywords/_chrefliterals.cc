@@ -328,7 +328,7 @@ struct TextTagListPickeSuite: pickle_suite
 };
 
 void _extractTextInfo(dict& result,
-        Node::ptr node, const dict& whitelist,
+        const Node::ptr node, const dict& whitelist,
         const string& workdir = string())
 {
     size_t childrenCount = node->childrenCount();
@@ -379,12 +379,23 @@ void _extractTextInfo(dict& result,
     }
 }
 
-dict extractTextInfo(Node::ptr node, const dict& whitelist,
+dict extractTextInfo(const Node::ptr node, const dict& whitelist,
                 const string& workdir = string())
 {
     dict result;
     _extractTextInfo(result, node, whitelist, workdir);
     return result;
+}
+
+string getDocumentEncoding(const Node::ptr node)
+{
+    const Node::ChildrenList& c = node->children();
+    for(Node::ChildrenList::const_iterator it = c.begin(), e = c.end();
+                            it != e; ++it) {
+        if(it->second->type() == "inputenc")
+            return it->second->value(string());
+    }
+    return string();
 }
 
 TextTagList findLiterals(const TextTagList& tags,
@@ -542,6 +553,7 @@ BOOST_PYTHON_MODULE(_chrefliterals)
     def("isLocalFile", &isLocalFile);
     def("normLiteral", &normLiteral);
     def("extractTextInfo", &extractTextInfo);
+    def("getDocumentEncoding", &getDocumentEncoding);
     def("findLiterals", &findLiterals);
     def("replaceTags", &replaceTags);
 }
