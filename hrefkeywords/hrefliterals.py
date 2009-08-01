@@ -12,7 +12,7 @@ import os
 from _chrefliterals import \
     Stemmer, WordsDict, TextTag, TextTagList, \
     isLocalFile, normLiteral, extractTextInfo, \
-    findLiterals, replaceTags
+    getDocumentEncoding, findLiterals, replaceTags
 
 ABBR_MAX = 4
 

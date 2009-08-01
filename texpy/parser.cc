@@ -90,6 +90,7 @@ void export_node()
         .def("isOneFile", &Node::isOneFile)
         .def("sourcePos", &Node::sourcePos)
 
+        .def("setType", &Node::setType)
         .def("type", &Node::type,
             return_value_policy<copy_const_reference>())
         .def("setValue", &Node::setValue)
