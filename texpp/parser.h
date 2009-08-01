@@ -59,8 +59,8 @@ public:
     shared_ptr<string> oneFile() const;
     bool isOneFile() const;
 
-    // Returns a vector (start_line, start_char, end_line, end_char)
-    std::vector<size_t> sourcePos() const;
+    // Returns a pair (start_pos, end_pos)
+    std::pair<size_t, size_t> sourcePos() const;
 
     const string& type() const { return m_type; }
     void setType(const string& type) { m_type = type; }
@@ -98,6 +98,13 @@ protected:
 
     ChildrenList            m_children;
 };
+
+// XXX: The following is a horrible hack required to
+// XXX: overcome problems with RTTI across shared objects
+// XXX: It will never work good and should be removed !
+// XXX: The only solution is to NOT use boost::any
+extern template string Node::value<string>(string) const;
+extern template int Node::value<int>(int) const;
 
 class Parser
 {

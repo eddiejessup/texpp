@@ -45,6 +45,8 @@ public:
     string jobName() const;
     const string& fileName() const { return *m_fileName; }
     shared_ptr<string> fileNamePtr() const { return m_fileName; }
+
+    size_t linePos() const { return m_linePos; }
     size_t lineNo() const { return m_lineNo; }
     const string& line() const { return m_lineOrig; }
     const string& line(size_t n) const;
@@ -81,6 +83,7 @@ protected:
     string  m_lineOrig;
     string  m_lineTex;
 
+    size_t  m_linePos;
     size_t  m_lineNo;
     size_t  m_charPos;
     size_t  m_charEnd;

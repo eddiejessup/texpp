@@ -6,7 +6,7 @@ include(CTest)
 
 # Find boost libraries
 set(Boost_USE_MULTITHREADED ON)
-find_package(Boost 1.34.0 REQUIRED)
+find_package(Boost 1.34.0 COMPONENTS filesystem python REQUIRED)
 
 # Find python interpreter
 find_package(PythonInterp)

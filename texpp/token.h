@@ -60,22 +60,28 @@ public:
         CC_NONE = 16
     };
 
+    enum { npos = string::npos };
+
     Token(Type type = TOK_SKIPPED, CatCode catCode = CC_INVALID,
             const string& value = string(), const string& source = string(),
-            size_t lineNo = 0, size_t charPos = 0, size_t charEnd = 0,
+            size_t linePos = 0, size_t lineNo = 0,
+            size_t charPos = 0, size_t charEnd = 0,
             bool lastInLine = false,
             shared_ptr<string> fileName = shared_ptr<string>())
         : m_type(type), m_catCode(catCode), m_value(value), m_source(source),
-          m_lineNo(lineNo), m_charPos(charPos), m_charEnd(charEnd),
+          m_linePos(linePos), m_lineNo(lineNo),
+          m_charPos(charPos), m_charEnd(charEnd),
           m_lastInLine(lastInLine), m_fileName(fileName) {}
 
-    static Token::ptr create(Type type = TOK_SKIPPED, CatCode catCode = CC_INVALID,
+    static Token::ptr create(Type type = TOK_SKIPPED,
+            CatCode catCode = CC_INVALID,
             const string& value = string(), const string& source = string(),
-            size_t lineNo = 0, size_t charPos = 0, size_t charEnd = 0,
+            size_t linePos = 0, size_t lineNo = 0,
+            size_t charPos = 0, size_t charEnd = 0,
             bool lastInLine = false,
             shared_ptr<string> fileName = shared_ptr<string>()) {
         return Token::ptr(new Token(type, catCode, value, source,
-                    lineNo, charPos, charEnd, lastInLine, fileName)
+                linePos, lineNo, charPos, charEnd, lastInLine, fileName)
                 );
     }
 
@@ -90,6 +96,9 @@ public:
 
     const string& source() const { return m_source; }
     void setSource(const string& source) { m_source = source; }
+
+    size_t linePos() const { return m_linePos; }
+    void setLinePos(size_t linePos) { m_linePos = linePos; }
 
     size_t lineNo() const { return m_lineNo; }
     void setLineNo(size_t lineNo) { m_lineNo = lineNo; }
@@ -129,7 +138,7 @@ public:
 
     Token::ptr lcopy() const {
         return Token::create(
-            m_type, m_catCode, m_value, "", 0, 0, 0,
+            m_type, m_catCode, m_value, "", 0, 0, 0, 0,
             //m_lineNo, m_charEnd, m_charEnd,
             m_lastInLine, m_fileName);
     }
@@ -145,6 +154,7 @@ protected:
     string      m_value;
     string      m_source;
 
+    size_t      m_linePos;
     size_t      m_lineNo;
     size_t      m_charPos;
     size_t      m_charEnd;

@@ -155,7 +155,8 @@ string Token::repr() const
       << ", Token::" << (m_catCode < 16 ? catCodeNames[m_catCode] : "")
       << ", " << reprString(m_value)
       << ", " << reprString(m_source)
-      << ", " << m_lineNo << ", " << m_charPos << ", " << m_charEnd << ")";
+      << ", " << m_linePos << ", " << m_lineNo
+      << ", " << m_charPos << ", " << m_charEnd << ")";
       //<< ", \"" << reprString(source()) << "\")";
 
     return r.str();

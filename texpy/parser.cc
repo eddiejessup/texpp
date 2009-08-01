@@ -73,6 +73,7 @@ void export_node()
     using namespace texpp;
 
     export_std_pair<string, Node::ptr>();
+    export_std_pair<size_t, size_t>();
     export_shared_ptr<string>();
 
     scope scopeNode = class_<Node, shared_ptr<Node> >(

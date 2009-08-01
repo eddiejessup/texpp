@@ -30,6 +30,9 @@ set(libtexpp_SOURCES
     base/base.cc
 )
 
-add_library(libtexpp ${libtexpp_SOURCES})
+add_library(libtexpp SHARED ${libtexpp_SOURCES})
 set_target_properties(libtexpp PROPERTIES OUTPUT_NAME texpp)
+
+# Temporary hack
+install(TARGETS libtexpp LIBRARY DESTINATION bin)
 

@@ -17,10 +17,15 @@
 */
 
 #include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+
+#include <boost/tuple/tuple.hpp>
 #include <boost/filesystem.hpp>
 #include <set>
 #include <string>
 #include <fstream>
+#include <sstream>
 
 #include <cstring>
 #include <cctype>
@@ -37,8 +42,6 @@ extern void free_stemmer(struct stemmer * z);
 
 extern int stem(struct stemmer * z, char * b, int k);
 }
-
-namespace {
 
 using namespace boost::python;
 using namespace texpp;
@@ -92,6 +95,10 @@ protected:
 
 inline bool _islower(char ch) { return ch >= 'a' && ch <= 'z'; }
 inline bool _isupper(char ch) { return ch >= 'A' && ch <= 'Z'; }
+
+inline bool _isIgnored(char ch) {
+    return ch == ' ' || ch == '-' || ch == '/';
+}
 
 string normLiteral(string literal,
         const WordsDict* wordsDict, const Stemmer* stemmer)
@@ -189,7 +196,7 @@ string normLiteral(string literal,
                 wordStart = lastDot = string::npos;
             }
         } else { // not inside a word
-            if(ch == ' ' || ch == '-' || ch == '/') {
+            if(_isIgnored(ch)) {
                 continue; // ignore these chars
             } else if(_islower(ch) || _isupper(ch) || std::isdigit(ch)) {
                 wordStart = n;
@@ -212,17 +219,6 @@ string normLiteral(string literal,
     return nliteral;
 }
 
-/*
-struct DocLiteralInfo {
-    shared_ptr<string> fileName;
-    size_t startLine, startChar, endLine, endChar;
-};
-
-typedef unordered_map<shared_ptr<string>, std::vector<DocLiteralInfo> >
-            DocStats;
-typedef unordered_map<shared_ptr<string>, string>
-            DocSources;
-
 string absolutePath(const string& str)
 {
     using boost::filesystem::path;
@@ -238,66 +234,291 @@ bool isLocalFile(const string& str, const string& workdir)
     return absolutePath(str).compare(0, aWorkdir.size(), aWorkdir) == 0;
 }
 
-std::pair<DocStats, DocSources> scanDocument(Node::ptr node,
-        dict literals, WordsDict* wordsDict, Stemmer* stemmer,
-        bool doReplace, str replace, 
-        const string& workdir = string(),
+#define __PYTHON_NEXT(obj, iter) \
+    object obj; \
+    try { obj = iter.attr("next")(); } \
+    catch (error_already_set const &) { \
+        if(PyErr_ExceptionMatches(PyExc_StopIteration)) break; \
+        throw; \
+    }
+
+struct TextTag
+{
+    enum Type {
+        TT_OTHER = 0,
+        TT_WORD, TT_CHARACTER, TT_LITERAL
+    };
+
+    Type   type;
+    size_t start;
+    size_t end;
+    string value;
+
+    // XXX: boost::python does not support pickling of enums
+    explicit TextTag(int t = TT_OTHER, size_t s = 0, size_t e = 0,
+                            const string& val = string())
+        : type(Type(t)), start(s), end(e), value(val) {}
+
+    bool operator==(const TextTag& o) {
+        return o.type == type && o.start == start &&
+               o.end == end && o.value == value;
+    }
+
+    bool operator!=(const TextTag& o) {
+        return o.type != type || o.start != start ||
+               o.end != end || o.value != value;
+    }
+
+    string repr() const {
+        static const char* types[] = {
+            "OTHER", "WORD", "CHARACTER", "LITERAL"
+        };
+        std::ostringstream out;
+        out << "TextTag("
+            << (type <= TT_LITERAL && type >= 0 ? types[type] : "UNKNOWN")
+            << ", " << start << ", " << end << ", \"" << value << "\")";
+        return out.str();
+    }
+};
+
+typedef std::vector<TextTag> TextTagList;
+string textTagListRepr(const TextTagList& list)
+{
+    std::ostringstream out;
+    out << "TextTagList(";
+    TextTagList::const_iterator e = list.end();
+    for(TextTagList::const_iterator it = list.begin(); it != e; ++it) {
+        if(it != list.begin())
+            out << ", ";
+        out << it->repr();
+    }
+    out << ")";
+    return out.str();
+}
+
+struct TextTagPickeSuite: pickle_suite
+{
+    static tuple getinitargs(const TextTag& tag) {
+        return make_tuple(int(tag.type), tag.start, tag.end, tag.value);
+    }
+};
+
+struct TextTagListPickeSuite: pickle_suite
+{
+    static list getstate(const TextTagList& l) {
+        list ret; TextTagList::const_iterator e = l.end();
+        for(TextTagList::const_iterator it = l.begin(); it != e; ++it)
+            ret.append(*it);
+        return ret;
+    }
+    static void setstate(TextTagList& l, list state) {
+        l.resize(len(state));
+        size_t n = 0;
+        for(stl_input_iterator<TextTag&> it(state), e; it != e; ++it) {
+            l[n++] = *it;
+        }
+    }
+};
+
+void _extractTextInfo(dict& result,
+        Node::ptr node, const dict& whitelist,
+        const string& workdir = string())
+{
+    size_t childrenCount = node->childrenCount();
+
+    if(childrenCount == 0) {
+        return;
+    }
+
+    shared_ptr<string> lastFile;
+    TextTagList* tags = 0;
+    for(size_t n = 0; n < childrenCount; ++n) {
+        Node::ptr child = node->child(n);
+
+        // check type
+        TextTag::Type type;
+        if(child->type() == "text_word") {
+            type = TextTag::TT_WORD;
+        } else if(child->type() == "text_character" ||
+                  child->type() == "text_space") {
+            type = TextTag::TT_CHARACTER;
+        } else {
+            type = TextTag::TT_OTHER;
+        }
+
+        if(type != TextTag::TT_OTHER) {
+            if(child->isOneFile()) {
+                shared_ptr<string> file = child->oneFile();
+                if(file && (file == lastFile ||
+                            isLocalFile(*file, workdir))) {
+                    if(file != lastFile || !tags) {
+                        lastFile = file;
+                        TextTagList& tl = extract<TextTagList&>(
+                            result.setdefault(*file, TextTagList()));
+                        tags = &tl;
+                    }
+
+                    // Save the node
+                    std::pair<size_t, size_t> pos = child->sourcePos();
+                    tags->push_back(TextTag(type, pos.first, pos.second,
+                                            child->value(string())));
+                }
+            }
+        } else if(child->type().substr(0, 12) == "environment_" &&
+                        whitelist.has_key(child->type())) {
+            _extractTextInfo(result, child, whitelist, workdir);
+            tags = 0; // XXX: it it really required ?
+        }
+    }
+}
+
+dict extractTextInfo(Node::ptr node, const dict& whitelist,
+                const string& workdir = string())
+{
+    dict result;
+    _extractTextInfo(result, node, whitelist, workdir);
+    return result;
+}
+
+TextTagList findLiterals(const TextTagList& tags, const dict& literals,
+        const WordsDict* wordsDict, const Stemmer* stemmer,
         size_t maxChars = 0)
 {
-    if(maxChars == 0) {
-        // Find the longest literal and save its length
-        object keys = literals.iterkeys();
-        object key;
-        while(true) {
-            try {
-                key = keys.attr("next")();
-            } catch (error_already_set const &) {
-                if(PyErr_ExceptionMatches(PyExc_StopIteration)) break;
-                throw;
-            }
+    TextTagList result;
 
-            size_t l = len(key);
+    // Detemine a maximum literal length
+    if(maxChars == 0) {
+        for(stl_input_iterator<str> it(literals), e; it != e; ++it) {
+            size_t l = len(*it);
             if(l > maxChars)
                 maxChars = l;
         }
     }
 
-    size_t childrenCount = node->childrenCount();
-    DocStats stats;
-    DocSources replaced;
-
-    if(childrenCount == 0) {
-        // return none ?
-        return std::make_pair(stats, doReplace ? node->sources() : replaced);
-    }
-
-    shared_ptr<string> lastFile, childFile;
-    for(size_t n = 0; n < childrenCount; ++n) {
-        Node::ptr child = node->child(n);
-        bool childTryReplace = (child->type() == "text_word" ||
-                    child->type() == "text_character") && child->isOneFile();
-        if(childTryReplace) {
-            childFile = child->oneFile();
-            childTryReplace = (childFile == lastFile) || !childFile || // XXX?
-                                isLocalFile(*childFile, workdir);
+    // Process the text
+    size_t count = tags.size();
+    for(size_t n = 0; n < count; ++n) {
+        if(tags[n].type == TextTag::TT_CHARACTER) {
+            // Do not start from ignored character
+            if(_isIgnored(tags[n].value[0])) continue;
+        } else if(tags[n].type != TextTag::TT_WORD) {
+            // Ignore unknown tags
+            continue;
         }
 
-        if(childTryReplace) {
-            lastFile = childFile;
-            string curTest;
+        // If previous tag is character and is adjacent,
+        // then it should be a space
+        if(n && tags[n-1].end == tags[n].start &&
+                tags[n-1].type == TextTag::TT_CHARACTER &&
+                tags[n-1].value[0] != ' ') {
+            continue;
+        }
 
+        string text;
+        size_t pos = tags[n].start;
+        std::vector<boost::tuple<string, size_t, size_t> > foundLiterals;
+
+        for(size_t k = n; k < count; ++k) {
+            const TextTag& tagk = tags[k];
+
+            // Stop if tag is not adjacent
+            if(tagk.start != pos) {
+                break;
+            }
+            pos = tagk.end;
+
+            text += tagk.value;
+            if(tagk.type == TextTag::TT_CHARACTER) {
+                // Skip ignored characters
+                if(_isIgnored(tagk.value[0])) continue;
+            } else if(tagk.type != TextTag::TT_WORD) {
+                // Stop on unknown tags
+                break;
+            }
+
+            // If next tag is character and is adjacent,
+            // then it should be a space
+            if(k+1 < count && tags[k+1].start == tags[k].end &&
+                    tags[k+1].type == TextTag::TT_CHARACTER &&
+                    tags[k+1].value[0] != ' ') {
+                continue;
+            }
+
+            // Norm literal
+            string literal = normLiteral(text, wordsDict, stemmer);
+            if(literal.size() > maxChars) {
+                continue; // XXX: can normLiteral size gets smaller ?
+            }
+
+            // Lookup in dictionary
+            if(literals.has_key(literal)) {
+                foundLiterals.push_back(
+                        boost::make_tuple(literal, tagk.end, k));
+            }
+        }
+
+        if(!foundLiterals.empty()) { // XXX: return all found literals !
+            // Create a tag for the longest literal found
+            result.push_back(TextTag(TextTag::TT_LITERAL, tags[n].start,
+                                foundLiterals.back().get<1>(),
+                                foundLiterals.back().get<0>()));
+            n = foundLiterals.back().get<2>();
         }
     }
-        
-    return std::make_pair( stats, replaced );
+
+    return result;
 }
-*/
 
-} // namespace
+string replaceTags(const string& source,
+                    const TextTagList& tags)
+{
+    string result;
+    result.reserve(source.size() + source.size()/5);
+    size_t pos = 0;
+    TextTagList::const_iterator end = tags.end();
+    for(TextTagList::const_iterator it = tags.begin(); it != end; ++it) {
+        result += source.substr(pos, it->start - pos);
+        result += it->value;
+        pos = it->end;
+    }
+    result += source.substr(pos, source.size() - pos);
+    return result;
+}
+
+void export_TextTag()
+{
+    using namespace boost::python;
+    scope scope_TextTag = class_<TextTag>("TextTag",
+            init<int, size_t, size_t, string>())
+        .def_readwrite("type", &TextTag::type)
+        .def_readwrite("start", &TextTag::start)
+        .def_readwrite("end", &TextTag::end)
+        .def_readwrite("value", &TextTag::value)
+        .def(self == self)
+        .def(self != self)
+        .def("__repr__", &TextTag::repr)
+        .def_pickle(TextTagPickeSuite())
+    ;
+
+    enum_<TextTag::Type>("Type")
+        .value("OTHER", TextTag::TT_OTHER)
+        .value("WORD", TextTag::TT_WORD)
+        .value("CHARACTER", TextTag::TT_CHARACTER)
+        .value("LITERAL", TextTag::TT_LITERAL)
+    ;
+}
 
 BOOST_PYTHON_MODULE(_chrefliterals)
 {
     using namespace boost::python;
+
+    export_TextTag();
+    class_<TextTagList>("TextTagList")
+        .def("__repr__", &textTagListRepr)
+        .def(vector_indexing_suite<TextTagList>())
+        .def_pickle(TextTagListPickeSuite())
+    ;
+
     class_<Stemmer>("Stemmer", init<>())
         .def("stem", &Stemmer::stem)
     ;
@@ -307,7 +528,10 @@ BOOST_PYTHON_MODULE(_chrefliterals)
         .def("contains", &WordsDict::contains)
     ;
 
+    def("isLocalFile", &isLocalFile);
     def("normLiteral", &normLiteral);
-    //def("scanDocument", &scanDocument);
+    def("extractTextInfo", &extractTextInfo);
+    def("findLiterals", &findLiterals);
+    def("replaceTags", &replaceTags);
 }
 

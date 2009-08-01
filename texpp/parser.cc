@@ -64,6 +64,9 @@ string Parser::BANNER = "This is TeXpp, Version 0.0";
 
 using base::Dimen;
 
+template string Node::value<string>(string) const;
+template int Node::value<int>(int) const;
+
 Node::ptr Node::child(const string& name)
 {
     ChildrenList::iterator end = m_children.end();
@@ -133,11 +136,11 @@ unordered_map<shared_ptr<string>,string> Node::sources() const
 {
     unordered_map<shared_ptr<string>,string> src;
 
-    string* cur_str;
+    string* cur_str = 0;
     shared_ptr<string> cur_file;
 
     BOOST_FOREACH(Token::ptr token, m_tokens) {
-        if(token->fileNamePtr() != cur_file) {
+        if(!cur_str || token->fileNamePtr() != cur_file) {
             cur_file = token->fileNamePtr();
             cur_str = &(src[cur_file]);
         }
@@ -196,29 +199,23 @@ bool Node::isOneFile() const
     return true;
 }
 
-std::vector<size_t> Node::sourcePos() const
+std::pair<size_t, size_t> Node::sourcePos() const
 {
-    std::vector<size_t> pos(4, 0);
+    std::pair<size_t, size_t> pos(Token::npos, Token::npos);
     BOOST_FOREACH(Token::ptr token, m_tokens) {
-        if(pos[0] == 0) {
-            pos[0] = token->lineNo();
-            pos[1] = token->charPos();
-        }
         if(token->lineNo() != 0) {
-            pos[2] = token->lineNo();
-            pos[3] = token->charEnd();
+            if(pos.first == Token::npos)
+                pos.first = token->linePos() + token->charPos();
+            pos.second = token->linePos() + token->charEnd();
         }
     }
     typedef pair<string, Node::ptr> C;
     BOOST_FOREACH(C c, m_children) {
-        std::vector<size_t> sub_pos = c.second->sourcePos();
-        if(pos[0] == 0) {
-            pos[0] = sub_pos[0];
-            pos[1] = sub_pos[1];
-        }
-        if(sub_pos[2] != 0) {
-            pos[2] = sub_pos[2];
-            pos[3] = sub_pos[3];
+        std::pair<size_t, size_t> sub_pos = c.second->sourcePos();
+        if(sub_pos.first != Token::npos) {
+            if(pos.first == Token::npos)
+                pos.first = sub_pos.first;
+            pos.second = sub_pos.second;
         }
     }
     return pos;
@@ -486,7 +483,8 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
             "Undefined control sequence", *this, token);
         /*token = Token::create(Token::TOK_SKIPPED,
                     token->catCode(), token->value(), token->source(),
-                    token->lineNo(), token->charPos(), token->charEnd(),
+                    token->listPos(), token->lineNo(),
+                    token->charPos(), token->charEnd(),
                     token->isLastInLine(), token->fileNamePtr());*/
         //token = token->lcopy();
         //token->setType(Token::TOK_SKIPPED);
@@ -553,7 +551,8 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
             node->setValue(Token::list_ptr(
                 new Token::list(1, Token::create(
                 token->type(), token->catCode(), token->value(),
-                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                "", token->linePos(), token->lineNo(),
+                token->charEnd(), token->charEnd(),
                 token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if((m_conditionals.empty() ||
@@ -577,7 +576,8 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
             node->setValue(Token::list_ptr(
                 new Token::list(1, Token::create(
                 token->type(), token->catCode(), token->value(),
-                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                "", token->linePos(), token->lineNo(),
+                token->charEnd(), token->charEnd(),
                 token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if((m_conditionals.empty() ||
@@ -605,7 +605,8 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
             node->setValue(Token::list_ptr(
                 new Token::list(1, Token::create(
                 token->type(), token->catCode(), token->value(),
-                "", token->lineNo(), token->charEnd(), token->charEnd(),
+                "", token->linePos(), token->lineNo(),
+                token->charEnd(), token->charEnd(),
                 token->isLastInLine(), token->fileNamePtr()))));
             expanded = false;
         } else if(m_conditionals.empty()) {
@@ -632,7 +633,7 @@ Node::ptr Parser::rawExpandToken(Token::ptr token)
                 Token::create(
                     expanded ? Token::TOK_SKIPPED : token->type(),
                     token->catCode(), token->value(), node->source(),
-                    0, 0, 0,
+                    0, 0, 0, 0,
                     false, lexer()->fileNamePtr())
             );
 #warning XXX node can consists from tokens from several files!
