@@ -89,6 +89,7 @@ class NormLiteralTest(unittest.TestCase):
     def testArticle(self):
         self.assertEqual(self.normLiteral('The word'), 'word')
         self.assertEqual(self.normLiteral('a word'), 'word')
+        self.assertEqual(self.normLiteral('an apple'), 'appl')
         self.assertEqual(self.normLiteral('2 the word'), '2.word')
         self.assertEqual(self.normLiteral('word a'), 'worda')
 
