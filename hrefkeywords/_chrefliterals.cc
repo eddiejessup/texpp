@@ -389,13 +389,19 @@ dict extractTextInfo(const Node::ptr node, const dict& whitelist,
 
 string getDocumentEncoding(const Node::ptr node)
 {
+    string result;
     const Node::ChildrenList& c = node->children();
     for(Node::ChildrenList::const_iterator it = c.begin(), e = c.end();
                             it != e; ++it) {
-        if(it->second->type() == "inputenc")
-            return it->second->value(string());
+        if(it->second->type() == "inputenc") {
+            result = it->second->value(string());
+            break;
+        }
     }
-    return string();
+    if(!result.empty())
+        return result;
+    else
+        return string("ascii");
 }
 
 TextTagList findLiterals(const TextTagList& tags,
