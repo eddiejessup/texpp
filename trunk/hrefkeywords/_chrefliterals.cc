@@ -139,6 +139,10 @@ string normLiteral(string literal,
                 std::string word(literal, wordStart, wordSize);
                 std::string word1(literal, wordStart, wordSize);
 
+                // reset the word
+                size_t pLastDot = lastDot;
+                wordStart = lastDot = string::npos;
+
                 for(size_t k = 0; k < wordSize; ++k) {
                     if(_isupper(word1[k])) {
                         word1[k] += ('a' - 'A');
@@ -151,6 +155,12 @@ string normLiteral(string literal,
                     }
                 }
 
+                if(n+1 < s && (word1 == "the" ||
+                                word1 == "an" || word1 == "a")) {
+                    // Skip articles, but not at the end
+                    continue;
+                }
+
                 // check for abbr in dictionary
                 if(!isAbbr && wordSize <= wordsDict->abbrMaxLen()) {
                     isAbbr = !wordsDict->contains(word);
@@ -160,7 +170,7 @@ string normLiteral(string literal,
                 
                 // process the word
                 if(isAbbr) {
-                    if(lastDot > n) {
+                    if(pLastDot > n) {
                         // Stem plural forms for uppercase abbrevations
                         if(wordSize > 2 && firstLower == wordSize-2 &&
                                 word[wordSize-2] == 'e' &&
@@ -191,9 +201,6 @@ string normLiteral(string literal,
                 } else {
                     nliteral += stemmer->stem(word1);
                 }
-                
-                // reset the word
-                wordStart = lastDot = string::npos;
             }
         } else { // not inside a word
             if(_isIgnored(ch)) {
