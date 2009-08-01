@@ -203,7 +203,8 @@ class LiteralsTest(unittest.TestCase):
                             dict.fromkeys(('D.E.', 'I.E.')), {})
         self.assertEqual(len(literalTags), 3)
         literalTags = self.findLiterals(' DE de i.e. ',
-            dict.fromkeys(('D.E.', 'I.E.')), dict.fromkeys(('de', 'i.e.')))
+                            dict.fromkeys(('D.E.', 'I.E.')),
+                            dict.fromkeys(('de', 'i.e.')))
         self.assertEqual(len(literalTags), 1)
         self.assertEqual(literalTags[0], hrefliterals.TextTag(
                     hrefliterals.TextTag.Type.LITERAL, 0, 3, 'D.E.'))
