@@ -380,7 +380,8 @@ dict extractTextInfo(Node::ptr node, const dict& whitelist,
     return result;
 }
 
-TextTagList findLiterals(const TextTagList& tags, const dict& literals,
+TextTagList findLiterals(const TextTagList& tags,
+        const dict& literals, const dict& notLiterals,
         const WordsDict* wordsDict, const Stemmer* stemmer,
         size_t maxChars = 0)
 {
@@ -452,8 +453,11 @@ TextTagList findLiterals(const TextTagList& tags, const dict& literals,
 
             // Lookup in dictionary
             if(literals.has_key(literal)) {
-                foundLiterals.push_back(
-                        boost::make_tuple(literal, tagk.end, k));
+                // Skip known non-literal words
+                if(!notLiterals.has_key(text)) {
+                    foundLiterals.push_back(
+                            boost::make_tuple(literal, tagk.end, k));
+                }
             }
         }
 

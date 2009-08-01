@@ -14,12 +14,14 @@ from _chrefliterals import \
     isLocalFile, normLiteral, extractTextInfo, \
     findLiterals, replaceTags
 
-re_cut = re.compile(r'[-/ ]|(?:\'s(?=[^A-Za-z0-9.]))')
-re_word = re.compile(r'[a-zA-Z0-9]+(?:[a-zA-Z0-9.]*\.)?')
-re_symbol = re.compile(r'[^a-zA-Z0-9]')
-re_abbr = re.compile(r'[0-9.]|.[A-Z]')
-
 ABBR_MAX = 4
+
+knownNotLiterals = dict.fromkeys((
+    'i.e.', 'ie.',
+    'c.f.', 'cf.', 'cf',
+    'e.g.', 'eg.'
+    'de', 'De' # for de in the names of Universities
+))
 
 def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
     """ Loads concepts from the files
@@ -121,7 +123,8 @@ def main():
     replaced = {}
     for f, tags in textTags.iteritems():
         if f is not None and isLocalFile(f, ''):
-            literalTags = findLiterals(tags, literals, words, stemmer, 0)
+            literalTags = findLiterals(tags, literals, knownNotLiterals,
+                                                words, stemmer, 0)
             source = open(f, 'r').read()
             for t in literalTags:
                 t.value = ''.join(('\\href{', t.value, '}{',
