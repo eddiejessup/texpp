@@ -114,7 +114,7 @@ class LiteralFunctionsTest(unittest.TestCase):
             \end{document}
         """
         self.document = hrefliterals.parseDocument(
-                        'f', StringIO.StringIO(self.source))
+                        'f', StringIO.StringIO(self.source), os.getcwd())
 
     def testExtractTextInfo(self):
         textTags = hrefliterals.extractTextInfo(
@@ -184,7 +184,8 @@ class LiteralsTest(unittest.TestCase):
                     '/usr/share/dict/words', 4)
 
     def findLiterals(self, source, literals, notLiterals):
-        document = hrefliterals.parseDocument('f', StringIO.StringIO(source))
+        document = hrefliterals.parseDocument('f', StringIO.StringIO(source),
+                                                os.getcwd())
         textTags = hrefliterals.extractTextInfo(document, self.whitelist, '')
         return hrefliterals.findLiterals(textTags['f'], literals, notLiterals,
                                                 self.words, self.stemmer, 0)
