@@ -40,9 +40,9 @@ def loadLiteralsFromConcepts4(conceptsfile, words, stemmer):
 
     return literals
 
-def parseDocument(filename, fileobj):
+def parseDocument(filename, fileobj, workdir):
     """ Parses the document using TeXpp """
-    parser = texpy.Parser(filename, fileobj, '', False, True)
+    parser = texpy.Parser(filename, fileobj, workdir, False, True)
 
     # Mimic the most important parts of LaTeX style
     latexstubs.initLaTeXstyle(parser)
@@ -78,6 +78,7 @@ def main():
     # Open input file
     try:
         filename = os.path.abspath(args[0])
+        workdir, rest = os.path.split(filename)
         fileobj = open(filename, 'r')
     except IOError, e:
         optparser.error('Can not open input file (\'%s\'): %s' % \
@@ -112,28 +113,31 @@ def main():
     conceptsfile.close()
 
     # Load and parse the document
-    document = parseDocument(filename, fileobj)
+    document = parseDocument(filename, fileobj, workdir)
     fileobj.close()
 
     # Extract text tags
     textTags = extractTextInfo(document,
-                        latexstubs.whitelistEnvironments, '')
+                        latexstubs.whitelistEnvironments, workdir)
 
     # Find literals in each file
     replaced = {}
+    foundLiterals = {}
     for f, tags in textTags.iteritems():
-        if f is not None and isLocalFile(f, ''):
-            literalTags = findLiterals(tags, literals, knownNotLiterals,
-                                                words, stemmer, 0)
-            source = open(f, 'r').read()
-            for t in literalTags:
-                t.value = ''.join(('\\href{', t.value, '}{',
-                                source[t.start:t.end], '}'))
-            replaced[f] = replaceTags(source, literalTags)
+        assert f is not None and isLocalFile(f, workdir)
+        literalTags = findLiterals(tags, literals, knownNotLiterals,
+                                            words, stemmer, 0)
+        source = open(f, 'r').read()
+        for t in literalTags:
+            foundLiterals[t.value] = foundLiterals.get(t.value, 0) + 1
+            t.value = ''.join(('\\href{', t.value, '}{',
+                            source[t.start:t.end], '}'))
+        replaced[f] = replaceTags(source, literalTags)
 
     # Save results
     for f, s in replaced.iteritems():
-        fname = os.path.join(opt.output, f)
+        assert f is not None and isLocalFile(f, workdir)
+        fname = os.path.join(opt.output, os.path.relpath(f, workdir))
         try:
             outfile = open(fname, 'w')
         except IOError, e:
@@ -145,8 +149,8 @@ def main():
 
     # Stats
     if opt.stats:
-        for w,n in stats.iteritems():
-            print 'Concept <%s> replaced %d times' % (w, len(n))
+        for w,n in foundLiterals.iteritems():
+            print 'Concept <%s> replaced %d times' % (w, n)
 
 if __name__ == '__main__':
     main()

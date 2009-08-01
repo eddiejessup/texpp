@@ -96,8 +96,12 @@ protected:
 inline bool _islower(char ch) { return ch >= 'a' && ch <= 'z'; }
 inline bool _isupper(char ch) { return ch >= 'A' && ch <= 'Z'; }
 
+inline bool _isglue(char ch) {
+    return isdigit(ch) || ch == '-' || ch == '/' || ch == '~';
+}
+
 inline bool _isIgnored(char ch) {
-    return ch == ' ' || ch == '-' || ch == '/';
+    return ch == ' ' || ch == '-' || ch == '/' || ch == '~';
 }
 
 string normLiteral(string literal,
@@ -413,7 +417,8 @@ TextTagList findLiterals(const TextTagList& tags,
 
     // Detemine a maximum literal length
     if(maxChars == 0) {
-        for(stl_input_iterator<str> it(literals), e; it != e; ++it) {
+        for(stl_input_iterator<str> it(literals.iterkeys()), e;
+                                                it != e; ++it) {
             size_t l = len(*it);
             if(l > maxChars)
                 maxChars = l;
@@ -435,7 +440,7 @@ TextTagList findLiterals(const TextTagList& tags,
         // then it should be a space
         if(n && tags[n-1].end == tags[n].start &&
                 tags[n-1].type == TextTag::TT_CHARACTER &&
-                tags[n-1].value[0] != ' ') {
+                _isglue(tags[n-1].value[0])) {
             continue;
         }
 
@@ -465,7 +470,7 @@ TextTagList findLiterals(const TextTagList& tags,
             // then it should be a space
             if(k+1 < count && tags[k+1].start == tags[k].end &&
                     tags[k+1].type == TextTag::TT_CHARACTER &&
-                    tags[k+1].value[0] != ' ') {
+                    _isglue(tags[k+1].value[0])) {
                 continue;
             }
 
@@ -478,7 +483,11 @@ TextTagList findLiterals(const TextTagList& tags,
             // Lookup in dictionary
             if(literals.has_key(literal)) {
                 // Skip known non-literal words
-                if(!notLiterals.has_key(text)) {
+                if((!notLiterals.has_key(text)) &&
+                        (k+1>=count ||
+                         tags[k+1].type != TextTag::TT_CHARACTER ||
+                         tags[k+1].value[0] != '.' ||
+                         !notLiterals.has_key(text+'.'))) {
                     foundLiterals.push_back(
                             boost::make_tuple(literal, tagk.end, k));
                 }
