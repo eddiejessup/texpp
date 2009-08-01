@@ -142,7 +142,7 @@ class LiteralFunctionsTest(unittest.TestCase):
                 self.document, self.whitelist, '')
         literals = {'word':None, 'W.O.R.D.2.':None}
         literalTags = hrefliterals.findLiterals(
-                textTags['f'], literals, self.words, self.stemmer, 0)
+                textTags['f'], literals, {}, self.words, self.stemmer, 0)
         self.assertEqual(len(literalTags), 3)
         self.assertEqual(literalTags[0], hrefliterals.TextTag(
                     hrefliterals.TextTag.Type.LITERAL, 29, 34, 'word'))
@@ -156,7 +156,7 @@ class LiteralFunctionsTest(unittest.TestCase):
                 self.document, self.whitelist, '')
         literals = {'word':None, 'W.O.R.D.2.':None}
         literalTags = hrefliterals.findLiterals(
-                textTags['f'], literals, self.words, self.stemmer, 0)
+                textTags['f'], literals, {}, self.words, self.stemmer, 0)
         literalTags[0].value = '*'
         literalTags[1].value = '**'
         literalTags[2].value = '***'
@@ -176,20 +176,30 @@ class LiteralsTest(unittest.TestCase):
         self.words = hrefliterals.WordsDict(
                     '/usr/share/dict/words', 4)
 
-    def findLiterals(self, source, literals):
+    def findLiterals(self, source, literals, notLiterals):
         document = hrefliterals.parseDocument('f', StringIO.StringIO(source))
         textTags = hrefliterals.extractTextInfo(document, self.whitelist, '')
-        return hrefliterals.findLiterals(textTags['f'], literals,\
+        return hrefliterals.findLiterals(textTags['f'], literals, notLiterals,
                                                 self.words, self.stemmer, 0)
 
     def testAdjacentChars(self):
         literalTags = self.findLiterals(' spin -spin spin- spin-1 spin-12',
-                                    {'spin':None, 'spin1.':None})
+                           dict.fromkeys(('spin', 'spin1.')), {})
         self.assertEqual(len(literalTags), 2)
         self.assertEqual(literalTags[0], hrefliterals.TextTag(
                     hrefliterals.TextTag.Type.LITERAL, 0, 5, 'spin'))
         self.assertEqual(literalTags[1], hrefliterals.TextTag(
                     hrefliterals.TextTag.Type.LITERAL, 18, 24, 'spin1.'))
+
+    def testNonLiterals(self):
+        literalTags = self.findLiterals(' DE de i.e. ',
+                            dict.fromkeys(('D.E.', 'I.E.')), {})
+        self.assertEqual(len(literalTags), 3)
+        literalTags = self.findLiterals(' DE de i.e. ',
+            dict.fromkeys(('D.E.', 'I.E.')), dict.fromkeys(('de', 'i.e.')))
+        self.assertEqual(len(literalTags), 1)
+        self.assertEqual(literalTags[0], hrefliterals.TextTag(
+                    hrefliterals.TextTag.Type.LITERAL, 0, 3, 'D.E.'))
 
 if __name__ == '__main__':
     unittest.main()
