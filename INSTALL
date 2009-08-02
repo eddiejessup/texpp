@@ -6,8 +6,9 @@ For compiling and installation you need:
 Basic installation:
 $ mkdir build
 $ cd build
-$ cmake ..
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
 $ make
 $ make test
-$ make install (does nothing at the moment)
+$ make install
 
+LD_LIBRARY_PATH must contain path with libtexpp.so
