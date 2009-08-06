@@ -167,7 +167,7 @@ class LiteralFunctionsTest(unittest.TestCase):
         literalTags[0].value = '*'
         literalTags[1].value = '**'
         literalTags[2].value = '***'
-        replaced = hrefliterals.replaceTags(self.source, literalTags)
+        replaced = hrefliterals.replaceLiterals(self.source, literalTags)
         rsource = r"""
             \begin{document}* 1 ** ***
                 \begin{equation}word\end{equation}
