@@ -506,7 +506,7 @@ TextTagList findLiterals(const TextTagList& tags,
     return result;
 }
 
-string replaceTags(const string& source,
+string replaceLiterals(const string& source,
                     const TextTagList& tags)
 {
     string result;
@@ -514,9 +514,11 @@ string replaceTags(const string& source,
     size_t pos = 0;
     TextTagList::const_iterator end = tags.end();
     for(TextTagList::const_iterator it = tags.begin(); it != end; ++it) {
-        result += source.substr(pos, it->start - pos);
-        result += it->value;
-        pos = it->end;
+        if(it->type == TextTag::TT_LITERAL) {
+            result += source.substr(pos, it->start - pos);
+            result += it->value;
+            pos = it->end;
+        }
     }
     result += source.substr(pos, source.size() - pos);
     return result;
@@ -570,6 +572,6 @@ BOOST_PYTHON_MODULE(_chrefliterals)
     def("extractTextInfo", &extractTextInfo);
     def("getDocumentEncoding", &getDocumentEncoding);
     def("findLiterals", &findLiterals);
-    def("replaceTags", &replaceTags);
+    def("replaceLiterals", &replaceLiterals);
 }
 

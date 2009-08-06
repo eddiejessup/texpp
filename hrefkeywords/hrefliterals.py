@@ -12,7 +12,7 @@ import os
 from _chrefliterals import \
     Stemmer, WordsDict, TextTag, TextTagList, \
     isLocalFile, normLiteral, extractTextInfo, \
-    getDocumentEncoding, findLiterals, replaceTags
+    getDocumentEncoding, findLiterals, replaceLiterals
 
 ABBR_MAX = 4
 
@@ -132,7 +132,7 @@ def main():
             foundLiterals[t.value] = foundLiterals.get(t.value, 0) + 1
             t.value = ''.join(('\\href{', t.value, '}{',
                             source[t.start:t.end], '}'))
-        replaced[f] = replaceTags(source, literalTags)
+        replaced[f] = replaceLiterals(source, literalTags)
 
     # Save results
     for f, s in replaced.iteritems():
