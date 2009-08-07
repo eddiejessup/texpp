@@ -72,6 +72,12 @@ public:
         else return *unsafe_any_cast<T>(&m_value);
     }
 
+    // XXX: The following is a horrible hack required to
+    // XXX: overcome problems with RTTI across shared objects
+    // XXX: It will never work good and should be removed !
+    // XXX: The only solution is to NOT use boost::any
+    const string& valueString() const;
+
     const vector< Token::ptr >& tokens() const { return m_tokens; }
     vector< Token::ptr >& tokens() { return m_tokens; }
 
@@ -98,13 +104,6 @@ protected:
 
     ChildrenList            m_children;
 };
-
-// XXX: The following is a horrible hack required to
-// XXX: overcome problems with RTTI across shared objects
-// XXX: It will never work good and should be removed !
-// XXX: The only solution is to NOT use boost::any
-extern template string Node::value<string>(string) const;
-extern template int Node::value<int>(int) const;
 
 class Parser
 {

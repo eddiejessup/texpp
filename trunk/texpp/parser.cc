@@ -64,8 +64,12 @@ string Parser::BANNER = "This is TeXpp, Version 0.0";
 
 using base::Dimen;
 
-template string Node::value<string>(string) const;
-template int Node::value<int>(int) const;
+const string& Node::valueString() const
+{
+    static const string empty;
+    if(m_value.type() != typeid(string)) return empty;
+    else return *unsafe_any_cast<string>(&m_value);
+}
 
 Node::ptr Node::child(const string& name)
 {
