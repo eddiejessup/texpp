@@ -230,19 +230,32 @@ string normLiteral(string literal,
     return nliteral;
 }
 
-string absolutePath(const string& str)
+string absolutePath(const string& str, const string& workdir)
 {
     using boost::filesystem::path;
     path p = path(str);
-    if(!p.is_complete())
-        p = boost::filesystem::current_path() / p;
-    return p.normalize().string(); 
+    if(!p.is_complete()) {
+        if(!workdir.empty()) {
+            path w = path(workdir);
+            if(!w.is_complete()) 
+                w = boost::filesystem::current_path() / w;
+            p = w / p;
+        } else {
+            p = boost::filesystem::current_path() / p;
+        }
+    }
+
+    string result = p.normalize().string(); 
+    if(result.size() > 2 && 0==result.compare(result.size()-2, 2, "/."))
+        result.resize(result.size()-2);
+    return result;
 }
 
 bool isLocalFile(const string& str, const string& workdir)
 {
-    string aWorkdir = absolutePath(workdir);
-    return absolutePath(str).compare(0, aWorkdir.size(), aWorkdir) == 0;
+    string aWorkdir = absolutePath(workdir, string());
+    return absolutePath(str, aWorkdir)
+            .compare(0, aWorkdir.size(), aWorkdir) == 0;
 }
 
 #define __PYTHON_NEXT(obj, iter) \
@@ -341,6 +354,7 @@ void _extractTextInfo(dict& result,
         return;
     }
 
+    string aWorkdir = absolutePath(workdir, string());
     shared_ptr<string> lastFile;
     TextTagList* tags = 0;
     for(size_t n = 0; n < childrenCount; ++n) {
@@ -364,8 +378,10 @@ void _extractTextInfo(dict& result,
                             isLocalFile(*file, workdir))) {
                     if(file != lastFile || !tags) {
                         lastFile = file;
+                        string ffile = absolutePath(*file, aWorkdir)
+                                        .substr(aWorkdir.size()+1);
                         TextTagList& tl = extract<TextTagList&>(
-                            result.setdefault(*file, TextTagList()));
+                            result.setdefault(ffile, TextTagList()));
                         tags = &tl;
                     }
 
@@ -567,6 +583,7 @@ BOOST_PYTHON_MODULE(_chrefliterals)
         .def("contains", &WordsDict::contains)
     ;
 
+    def("absolutePath", &absolutePath);
     def("isLocalFile", &isLocalFile);
     def("normLiteral", &normLiteral);
     def("extractTextInfo", &extractTextInfo);
