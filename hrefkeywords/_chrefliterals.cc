@@ -45,7 +45,6 @@ extern int stem(struct stemmer * z, char * b, int k);
 
 using namespace boost::python;
 using namespace texpp;
-using std::string;
 
 class Stemmer {
 public:
@@ -388,7 +387,7 @@ void _extractTextInfo(dict& result,
                     // Save the node
                     std::pair<size_t, size_t> pos = child->sourcePos();
                     tags->push_back(TextTag(type, pos.first, pos.second,
-                                            child->value(string())));
+                                                child->valueString()));
                 }
             }
         } else if(child->type().substr(0, 12) == "environment_" &&
@@ -414,7 +413,7 @@ string getDocumentEncoding(const Node::ptr node)
     for(Node::ChildrenList::const_iterator it = c.begin(), e = c.end();
                             it != e; ++it) {
         if(it->second->type() == "inputenc") {
-            result = it->second->value(string());
+            result = it->second->valueString();
             break;
         }
     }
