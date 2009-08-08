@@ -98,6 +98,18 @@ std::string kpsewhich(const std::string& fname, const std::string& dir)
     if(!fullname.empty() && fullname[fullname.size()-1] == '\n')
         fullname.resize(fullname.size()-1);
 
+    if(!fullname.empty() && !dir.empty()) {
+#ifndef WINDOWS
+        if(fullname[0] != PATH_SEP)
+#else
+        if(fullname.size() < 3 ||
+                (fullname[1] == ':' && fullname[2] == PATH_SEP))
+#endif
+        {
+            fullname = dir + PATH_SEP + fullname;
+        }
+    }
+
     return fullname;
 }
 
