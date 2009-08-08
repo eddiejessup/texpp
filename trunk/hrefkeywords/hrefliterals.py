@@ -11,7 +11,7 @@ import os
 
 from _chrefliterals import \
     Stemmer, WordsDict, TextTag, TextTagList, \
-    isLocalFile, normLiteral, extractTextInfo, \
+    absolutePath, isLocalFile, normLiteral, extractTextInfo, \
     getDocumentEncoding, findLiterals, replaceLiterals
 
 ABBR_MAX = 4
@@ -127,7 +127,7 @@ def main():
         assert f is not None and isLocalFile(f, workdir)
         literalTags = findLiterals(tags, literals, knownNotLiterals,
                                             words, stemmer, 0)
-        source = open(f, 'r').read()
+        source = open(os.path.join(workdir, f), 'r').read()
         for t in literalTags:
             foundLiterals[t.value] = foundLiterals.get(t.value, 0) + 1
             t.value = ''.join(('\\href{', t.value, '}{',
@@ -137,7 +137,7 @@ def main():
     # Save results
     for f, s in replaced.iteritems():
         assert f is not None and isLocalFile(f, workdir)
-        fname = os.path.join(opt.output, os.path.relpath(f, workdir))
+        fname = os.path.join(opt.output, f)
         try:
             outfile = open(fname, 'w')
         except IOError, e:

@@ -96,11 +96,11 @@ inline bool _islower(char ch) { return ch >= 'a' && ch <= 'z'; }
 inline bool _isupper(char ch) { return ch >= 'A' && ch <= 'Z'; }
 
 inline bool _isglue(char ch) {
-    return isdigit(ch) || ch == '-' || ch == '/' || ch == '~';
+    return isdigit(ch) || ch == '-' || ch == '/';
 }
 
 inline bool _isIgnored(char ch) {
-    return ch == ' ' || ch == '-' || ch == '/' || ch == '~';
+    return ch == ' ' || ch == '~' || ch == '-' || ch == '/';
 }
 
 string normLiteral(string literal,
