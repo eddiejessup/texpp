@@ -60,7 +60,7 @@ def parseGeneralArg(parser, expand=False):
     else:
         tNode = parser.parseToken()
         node.appendChild('token', tNode)
-        value = t.value().value
+        value = '' # XXX
 
     node.setValue(value)
     return node
