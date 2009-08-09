@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.append(sys.argv[1])
-sys.path.append(sys.argv[2])
-sys.path.append(sys.argv[3])
+sys.path.insert(0, sys.argv[1])
+sys.path.insert(0, sys.argv[2])
+sys.path.insert(0, sys.argv[3])
 sys.argv = sys.argv[0:1] + sys.argv[4:]
 
 import hrefliterals
