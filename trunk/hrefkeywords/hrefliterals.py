@@ -16,6 +16,11 @@ from _chrefliterals import \
 
 ABBR_MAX = 4
 
+excludedEnvironments = \
+    r'.*math.*|.*equation.*|.*eqn.*|.*array.*|' + \
+    r'.*align.*|.*multiline.*|.*gather.*|' + \
+    r'.*verbatim.*|.*biblio.*'
+
 knownNotLiterals = dict.fromkeys((
     'i.e.', 'ie.',
     'c.f.', 'cf.', 'cf',
@@ -117,8 +122,7 @@ def main():
     fileobj.close()
 
     # Extract text tags
-    textTags = extractTextInfo(document,
-                        latexstubs.whitelistEnvironments, workdir)
+    textTags = extractTextInfo(document, excludedEnvironments, workdir)
 
     # Find literals in each file
     replaced = {}

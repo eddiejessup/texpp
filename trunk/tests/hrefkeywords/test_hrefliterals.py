@@ -103,7 +103,7 @@ class NormLiteralTest(unittest.TestCase):
 class LiteralFunctionsTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(LiteralFunctionsTest, self).__init__(*args, **kwargs)
-        self.whitelist = {'environment_document':None}
+        self.exclude_re = '.*equation.*|.*eqn.*'
         self.stemmer = hrefliterals.Stemmer()
         self.words = hrefliterals.WordsDict(
                     '/usr/share/dict/words', 4)
@@ -118,7 +118,7 @@ class LiteralFunctionsTest(unittest.TestCase):
 
     def testExtractTextInfo(self):
         textTags = hrefliterals.extractTextInfo(
-                self.document, self.whitelist, '')
+                self.document, self.exclude_re, '')
         self.assertEqual(textTags.keys(), ['f'])
         self.assertEqual(len(textTags['f']), 11)
         self.assertEqual(textTags['f'][0], hrefliterals.TextTag(
@@ -146,7 +146,7 @@ class LiteralFunctionsTest(unittest.TestCase):
 
     def testFindLiterals(self):
         textTags = hrefliterals.extractTextInfo(
-                self.document, self.whitelist, '')
+                self.document, self.exclude_re, '')
         literals = {'word':None, 'W.O.R.D.2.':None}
         literalTags = hrefliterals.findLiterals(
                 textTags['f'], literals, {}, self.words, self.stemmer, 0)
@@ -160,7 +160,7 @@ class LiteralFunctionsTest(unittest.TestCase):
 
     def testReplaceTags(self):
         textTags = hrefliterals.extractTextInfo(
-                self.document, self.whitelist, '')
+                self.document, self.exclude_re, '')
         literals = {'word':None, 'W.O.R.D.2.':None}
         literalTags = hrefliterals.findLiterals(
                 textTags['f'], literals, {}, self.words, self.stemmer, 0)
@@ -178,7 +178,7 @@ class LiteralFunctionsTest(unittest.TestCase):
 class LiteralsTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(LiteralsTest, self).__init__(*args, **kwargs)
-        self.whitelist = {'environment_document':None}
+        self.exclude_re = '.*equation.*|.*eqn.*'
         self.stemmer = hrefliterals.Stemmer()
         self.words = hrefliterals.WordsDict(
                     '/usr/share/dict/words', 4)
@@ -186,7 +186,7 @@ class LiteralsTest(unittest.TestCase):
     def findLiterals(self, source, literals, notLiterals):
         document = hrefliterals.parseDocument('f', StringIO.StringIO(source),
                                                 os.getcwd())
-        textTags = hrefliterals.extractTextInfo(document, self.whitelist, '')
+        textTags = hrefliterals.extractTextInfo(document, self.exclude_re, '')
         return hrefliterals.findLiterals(textTags['f'], literals, notLiterals,
                                                 self.words, self.stemmer, 0)
 

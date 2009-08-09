@@ -22,6 +22,7 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
 #include <set>
 #include <string>
 #include <fstream>
@@ -343,8 +344,8 @@ struct TextTagListPickeSuite: pickle_suite
     }
 };
 
-void _extractTextInfo(dict& result,
-        const Node::ptr node, const dict& whitelist,
+void _extractTextInfo(dict& result, const Node::ptr node,
+        const boost::regex& exclude_regex,
         const string& workdir = string())
 {
     size_t childrenCount = node->childrenCount();
@@ -391,18 +392,19 @@ void _extractTextInfo(dict& result,
                 }
             }
         } else if(child->type().substr(0, 12) == "environment_" &&
-                        whitelist.has_key(child->type())) {
-            _extractTextInfo(result, child, whitelist, workdir);
+                    !boost::regex_match(child->type(), exclude_regex)) {
+            _extractTextInfo(result, child, exclude_regex, workdir);
             tags = 0; // XXX: it it really required ?
         }
     }
 }
 
-dict extractTextInfo(const Node::ptr node, const dict& whitelist,
+dict extractTextInfo(const Node::ptr node, const string& exclude_regex,
                 const string& workdir = string())
 {
     dict result;
-    _extractTextInfo(result, node, whitelist, workdir);
+    boost::regex rx(exclude_regex, boost::regex::extended);
+    _extractTextInfo(result, node, rx, workdir);
     return result;
 }
 
