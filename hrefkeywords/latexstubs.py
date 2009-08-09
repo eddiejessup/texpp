@@ -201,15 +201,3 @@ def initLaTeXstyle(parser):
     parser.setSymbol('\\[', texpy.TokenCommand(mathToken))
     parser.setSymbol('\\]', texpy.TokenCommand(mathToken))
 
-whitelistEnvironments = dict.fromkeys((
-    'environment_document',
-    'environment_abstract',
-    'environment_itemize',
-    'environment_enumerate',
-    'environment_description',
-    'environment_list',
-    'environment_theorem',
-    'environment_center'
-))
-
-
