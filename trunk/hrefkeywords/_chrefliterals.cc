@@ -104,6 +104,11 @@ inline bool _isIgnored(char ch) {
     return ch == ' ' || ch == '~' || ch == '-' || ch == '/';
 }
 
+inline bool _isIgnoredWord(const string& word) {
+    return word == "the" || word == "a" || word == "an" ||
+           word == "The" || word == "A" || word == "An";
+}
+
 string normLiteral(string literal,
         const WordsDict* wordsDict, const Stemmer* stemmer)
 {
@@ -159,8 +164,7 @@ string normLiteral(string literal,
                     }
                 }
 
-                if(n+1 < s && (word1 == "the" ||
-                                word1 == "an" || word1 == "a")) {
+                if(n+1 < s && _isIgnoredWord(word)) {
                     // Skip articles, but not at the end
                     continue;
                 }
@@ -306,6 +310,7 @@ struct TextTag
 };
 
 typedef std::vector<TextTag> TextTagList;
+
 string textTagListRepr(const TextTagList& list)
 {
     std::ostringstream out;
@@ -331,15 +336,20 @@ struct TextTagListPickeSuite: pickle_suite
 {
     static list getstate(const TextTagList& l) {
         list ret; TextTagList::const_iterator e = l.end();
-        for(TextTagList::const_iterator it = l.begin(); it != e; ++it)
-            ret.append(*it);
+        for(TextTagList::const_iterator it = l.begin(); it != e; ++it) {
+            ret.append(make_tuple(int(it->type), it->start, it->end, it->value));
+        }
         return ret;
     }
     static void setstate(TextTagList& l, list state) {
         l.resize(len(state));
         size_t n = 0;
-        for(stl_input_iterator<TextTag&> it(state), e; it != e; ++it) {
-            l[n++] = *it;
+        for(stl_input_iterator<tuple> it(state), e; it != e; ++it) {
+            int type = extract<int>((*it)[0]);
+            size_t start = extract<size_t>((*it)[1]);
+            size_t end = extract<size_t>((*it)[2]);
+            string value = extract<string>((*it)[3]);
+            l[n++] = TextTag(type, start, end, value);
         }
     }
 };
@@ -458,6 +468,11 @@ TextTagList findLiterals(const TextTagList& tags,
         if(n && tags[n-1].end == tags[n].start &&
                 tags[n-1].type == TextTag::TT_CHARACTER &&
                 _isglue(tags[n-1].value[0])) {
+            continue;
+        }
+
+        // Do not start on an article
+        if(_isIgnoredWord(tags[n].value)) {
             continue;
         }
 
