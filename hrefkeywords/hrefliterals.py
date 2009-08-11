@@ -24,7 +24,7 @@ excludedEnvironments = \
 knownNotLiterals = dict.fromkeys((
     'i.e.', 'ie.',
     'c.f.', 'cf.', 'cf',
-    'e.g.', 'eg.'
+    'e.g.', 'eg.',
     'de', 'De' # for de in the names of Universities
 ))
 
