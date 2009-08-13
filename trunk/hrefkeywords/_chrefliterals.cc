@@ -215,7 +215,9 @@ string normLiteral(string literal,
                 continue; // ignore these chars
             } else if(_islower(ch) || _isupper(ch) || std::isdigit(ch)) {
                 wordStart = n;
-            } else if(ch == '\'' && n+1 < s && (literal[n+1] == 's')) {
+            } else if(ch == '\'' && n+1 < s && (literal[n+1] == 's') &&
+                    n != 0 && (_islower(literal[n-1]) ||
+                               _isupper(literal[n-1]))) {
                 if(n+2==s) break;
                 char ch2 = literal[n+2];
                 if(_islower(ch2) || _isupper(ch2) || std::isdigit(ch2)
@@ -401,7 +403,7 @@ void _extractTextInfo(dict& result, const Node::ptr node,
                                                 child->valueString()));
                 }
             }
-        } else if(child->type().substr(0, 12) == "environment_" &&
+        } else if(child->type().compare(0, 12, "environment_") == 0 &&
                     !boost::regex_match(child->type(), exclude_regex)) {
             _extractTextInfo(result, child, exclude_regex, workdir);
             tags = 0; // XXX: it it really required ?

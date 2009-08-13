@@ -85,6 +85,8 @@ class NormLiteralTest(unittest.TestCase):
 
     def testApostrophe(self):
         self.assertEqual(self.normLiteral('world\'s'), 'world')
+        self.assertEqual(self.normLiteral('\'s x'), '\'S.X.')
+        self.assertEqual(self.normLiteral(' \'s x'), '\'S.X.')
 
     def testArticle(self):
         self.assertEqual(self.normLiteral('The word'), 'word')
