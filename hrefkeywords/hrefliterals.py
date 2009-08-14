@@ -66,6 +66,7 @@ def main():
     optparser.add_option('-m', '--macro', type='string', default='href', 
                                     help='macro (default: href)')
     optparser.add_option('-s', '--stats', action='store_true', help='print stats')
+    optparser.add_option('-t', '--timings', action='store_true', help='print timings')
 
     # Parse command line options
     opt, args = optparser.parse_args()
@@ -117,26 +118,41 @@ def main():
     literals = loadLiteralsFromConcepts4(conceptsfile, words, stemmer)
     conceptsfile.close()
 
+    import time
+    timings = []
+
     # Load and parse the document
+    tm = time.time()
     document = parseDocument(filename, fileobj, workdir)
+    timings.append('parseDocument: %f' % (time.time()-tm,))
     fileobj.close()
 
     # Extract text tags
+    tm = time.time()
     textTags = extractTextInfo(document, excludedEnvironments, workdir)
+    timings.append('extractTextInfo: %f' % (time.time()-tm,))
 
     # Find literals in each file
     replaced = {}
     foundLiterals = {}
     for f, tags in textTags.iteritems():
         assert f is not None and isLocalFile(f, workdir)
+        tm = time.time()
         literalTags = findLiterals(tags, literals, knownNotLiterals,
                                             words, stemmer, 0)
+        timings.append('findLiterals: %f' % (time.time()-tm,))
+        tm = time.time()
         source = open(os.path.join(workdir, f), 'r').read()
+        timings.append('readSourceFile: %f' % (time.time()-tm,))
+        tm = time.time()
         for t in literalTags:
             foundLiterals[t.value] = foundLiterals.get(t.value, 0) + 1
             t.value = ''.join(('\\href{', t.value, '}{',
                             source[t.start:t.end], '}'))
+        timings.append('prepareReplacements: %f' % (time.time()-tm,))
+        tm = time.time()
         replaced[f] = replaceLiterals(source, literalTags)
+        timings.append('replaceLiterals: %f' % (time.time()-tm,))
 
     # Save results
     for f, s in replaced.iteritems():
@@ -148,13 +164,19 @@ def main():
             sys.stdout('Can not open output file (\'%s\'): %s' % \
                                 (fname, str(e)))
             continue
+        tm = time.time()
         outfile.write(s)
         outfile.close()
+        timings.append('writeSourceFile: %f' % (time.time()-tm,))
 
     # Stats
     if opt.stats:
         for w,n in foundLiterals.iteritems():
-            print 'Concept <%s> replaced %d times' % (w, n)
+            print 'Concept <%s> replaced %f times' % (w, n)
+
+    if opt.timings:
+        for l in timings:
+            print l
 
 if __name__ == '__main__':
     main()
