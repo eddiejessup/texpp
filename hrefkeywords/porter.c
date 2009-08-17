@@ -272,28 +272,24 @@ static void step2(struct stemmer * z) { switch (z->b[z->k-1])
              break;
    case 'e': if (ends(z, "\04" "izer")) { r(z, "\03" "ize"); break; }
              break;
-   case 'l': if (ends(z, "\03" "bli")) { r(z, "\03" "ble"); break; } /*-DEPARTURE-*/
-
- /* To match the published algorithm, replace this line with
-    case 'l': if (ends(z, "\04" "abli")) { r(z, "\04" "able"); break; } */
-
+/* !!!!!   case 'l': if (ends(z, "\03" "bli")) { r(z, "\03" "ble"); break; }
              if (ends(z, "\04" "alli")) { r(z, "\02" "al"); break; }
              if (ends(z, "\05" "entli")) { r(z, "\03" "ent"); break; }
-/* !!!!!     if (ends(z, "\03" "eli")) { r(z, "\01" "e"); break; }
-             if (ends(z, "\05" "ousli")) { r(z, "\03" "ous"); break; }*/
+             if (ends(z, "\03" "eli")) { r(z, "\01" "e"); break; }
+             if (ends(z, "\05" "ousli")) { r(z, "\03" "ous"); break; }
              break;
-/* !!!!!   case 'o': if (ends(z, "\07" "ization")) { r(z, "\03" "ize"); break; }
+   case 'o': if (ends(z, "\07" "ization")) { r(z, "\03" "ize"); break; }
              if (ends(z, "\05" "ation")) { r(z, "\03" "ate"); break; }
              if (ends(z, "\04" "ator")) { r(z, "\03" "ate"); break; }
-             break;*/
-/* !!!!!   case 's': if (ends(z, "\05" "alism")) { r(z, "\02" "al"); break; }
+             break;
+   case 's': if (ends(z, "\05" "alism")) { r(z, "\02" "al"); break; }
              if (ends(z, "\07" "iveness")) { r(z, "\03" "ive"); break; }
              if (ends(z, "\07" "fulness")) { r(z, "\03" "ful"); break; }
              if (ends(z, "\07" "ousness")) { r(z, "\03" "ous"); break; }
              break;
    case 't': if (ends(z, "\05" "aliti")) { r(z, "\02" "al"); break; }
              if (ends(z, "\05" "iviti")) { r(z, "\03" "ive"); break; }
-     if (ends(z, "\06" "biliti")) { r(z, "\03" "ble"); break; }
+             if (ends(z, "\06" "biliti")) { r(z, "\03" "ble"); break; }
              break;*/
    case 'g': if (ends(z, "\04" "logi")) { r(z, "\03" "log"); break; } /*-DEPARTURE-*/
 
@@ -326,7 +322,7 @@ static void step4(struct stemmer * z)
 /* !!!!!  case 'c': if (ends(z, "\04" "ance")) break;
                 if (ends(z, "\04" "ence")) break; return;*/
       case 'e': if (ends(z, "\02" "er")) break; return;
-      case 'i': if (ends(z, "\02" "ic")) break; return;
+/* !!!!!      case 'i': if (ends(z, "\02" "ic")) break; return;*/
       case 'l': if (ends(z, "\04" "able")) break;
                 if (ends(z, "\04" "ible")) break; return;
       case 'n': if (ends(z, "\03" "ant")) break;
@@ -336,7 +332,7 @@ static void step4(struct stemmer * z)
       case 'o': if (ends(z, "\03" "ion") && (z->b[z->j] == 's' || z->b[z->j] == 't')) break;
                 if (ends(z, "\02" "ou")) break; return;
                 /* takes care of -ous */
-      case 's': if (ends(z, "\03" "ism")) break; return;
+/* !!!!!  case 's': if (ends(z, "\03" "ism")) break; return;*/
       case 't': if (ends(z, "\03" "ate")) break;
 /*   !!!!!      if (ends(z, "\03" "iti")) break;*/ return;
       case 'u': if (ends(z, "\03" "ous")) break; return;
