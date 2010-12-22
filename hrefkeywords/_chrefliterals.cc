@@ -110,7 +110,7 @@ inline bool _isIgnoredWord(const string& word) {
 }
 
 string normLiteral(string literal,
-        const WordsDict* wordsDict, const Stemmer* stemmer)
+        const WordsDict* wordsDict, const Stemmer* stemmer, const dict& whiteList)
 {
     /* TODO: support arbitrary stemmers and wordDicts */
     /* TODO: unicode and locales */
@@ -118,6 +118,10 @@ string normLiteral(string literal,
     size_t n = 0, s = literal.size();
     size_t wordStart = string::npos;
     size_t lastDot = string::npos;
+    string lowercaseLiteral(literal);
+    for(size_t i = 0; i < lowercaseLiteral.size(); ++i)
+        if(_isupper(lowercaseLiteral[i])) lowercaseLiteral[i] -= 'A'-'a';
+    if(whiteList.has_key(lowercaseLiteral)) return literal;
 
     /* TODO: handle 's */
     for(n=0; ; ++n) {
@@ -439,7 +443,7 @@ string getDocumentEncoding(const Node::ptr node)
 
 TextTagList findLiterals(const TextTagList& tags,
         const dict& literals, const dict& notLiterals,
-        const WordsDict* wordsDict, const Stemmer* stemmer,
+        const WordsDict* wordsDict, const Stemmer* stemmer, const dict& whiteList,
         size_t maxChars = 0)
 {
     TextTagList result;
@@ -509,7 +513,7 @@ TextTagList findLiterals(const TextTagList& tags,
             }
 
             // Norm literal
-            string literal = normLiteral(text, wordsDict, stemmer);
+            string literal = normLiteral(text, wordsDict, stemmer, whiteList);
             if(literal.size() > maxChars) {
                 continue; // XXX: can normLiteral size gets smaller ?
             }
