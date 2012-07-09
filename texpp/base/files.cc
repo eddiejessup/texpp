@@ -138,11 +138,14 @@ bool Read::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
             }
         } else {
             // read from terminal
-            std::cin.sync();
-            lexer = shared_ptr<Lexer>(new Lexer("", NULL));
-            if(stream >= 0) {
-                std::cout << ltoken->texRepr() << "=" << std::flush;
-            }
+            //std::cin.sync();
+            //lexer = shared_ptr<Lexer>(new Lexer("", NULL));
+            //if(stream >= 0) {
+            //    std::cout << ltoken->texRepr() << "=" << std::flush;
+            //}
+            // XXX: implement enforced batchmode
+            lexer = shared_ptr<Lexer>(new Lexer("",
+                shared_ptr<std::istream>(new std::istringstream(""))));
         }
     }
 
@@ -174,9 +177,9 @@ bool Read::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
 
     if(!token) {
         // end of file
-        int endlinechar = infile.lexer->endlinechar();
+        int endlinechar = lexer->endlinechar();
         if(endlinechar >= 0 && endlinechar <= 255) {
-            int cc = infile.lexer->catcode(endlinechar);
+            int cc = lexer->catcode(endlinechar);
             if(cc == Token::CC_EOL)
                 tokens->push_back(Token::create(
                     Token::TOK_CONTROL, Token::CC_ESCAPE, "\\par"));
@@ -191,10 +194,10 @@ bool Read::invokeWithPrefixes(Parser& parser, shared_ptr<Node> node,
     }
 
     // sync if reading from the terminal
-    if(!infile.lexer) {
-        lexer.reset();
-        std::cin.sync();
-    }
+    //if(!infile.lexer) {
+    //    lexer.reset();
+    //    std::cin.sync();
+    //}
 
     parser.setSymbol(ltoken,
         Command::ptr(new UserMacro(ltoken ? ltoken->value() : "\\undefined",

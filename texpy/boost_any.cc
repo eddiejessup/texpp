@@ -36,6 +36,10 @@ namespace {
           return incref(object().ptr());
       else if(s.type() == typeid(int))
           return incref(object(*boost::unsafe_any_cast<int>(&s)).ptr());
+      else if(s.type() == typeid(short))
+          return incref(object(*boost::unsafe_any_cast<short>(&s)).ptr());
+      else if(s.type() == typeid(long))
+          return incref(object(*boost::unsafe_any_cast<long>(&s)).ptr());
       else if(s.type() == typeid(std::string))
           return incref(object(*boost::unsafe_any_cast<std::string>(&s)).ptr());
       else if(s.type() == typeid(object))
@@ -43,7 +47,7 @@ namespace {
       else if(s.type() == typeid(Command::ptr))
           return incref(object(boost::unsafe_any_cast<Command::ptr>(&s)).ptr());
       else
-          throw std::runtime_error("unknown boost::any type"); // TODO
+          return incref(object(reprAny(s)).ptr());
     }
 
   };
