@@ -1,0 +1,1 @@
+TeXpp is a library for parsing TeX documents into a document tree suitable for document manipulation and information extraction. Please take a look at [Introduction](Introduction.md) for a basic TeXpp overview. Current implementation status can be found in ImplementedTexFeatures.
